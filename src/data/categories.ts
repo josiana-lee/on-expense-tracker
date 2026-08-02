@@ -223,6 +223,12 @@ export const CATEGORIES: Category[] = [
   },
 ];
 
+/** The input screen's grid is 4 columns x 3 rows so the whole flow fits one
+ *  screen without scrolling — the point of the app. Past this, the grid
+ *  grows a row and that stops being true, so category management enforces
+ *  it as a hard cap rather than a starting point. */
+export const MAX_HOME_CATEGORIES = 12;
+
 /** Shown on the input screen out of the box — 4 columns x 3 rows. */
 export const DEFAULT_VISIBLE: string[] = [
   'food',

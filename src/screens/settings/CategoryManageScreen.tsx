@@ -1,6 +1,9 @@
 import { Icon } from '../../components/Icon';
+import { Toast } from '../../components/Toast';
 import { setCategoryVisible } from '../../db/categories';
+import { MAX_HOME_CATEGORIES } from '../../data/categories';
 import { useCatalog } from '../../hooks/useCatalog';
+import { useToast } from '../../hooks/useToast';
 import styles from './SettingsScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
@@ -11,10 +14,20 @@ type Props = {
 
 export function CategoryManageScreen({ onBack }: Props) {
   const { categories } = useCatalog();
+  const { text: toast, flash } = useToast();
   // Deprecated presets (dropped from the catalogue) still hold historical
   // records, but there's nothing to toggle for them here.
   const rows = categories.filter((c) => !c.deprecated);
   const visibleCount = rows.filter((c) => c.visibleOnHome).length;
+  const atCap = visibleCount >= MAX_HOME_CATEGORIES;
+
+  const toggle = (id: string, current: boolean) => {
+    if (!current && atCap) {
+      flash(`입력 화면엔 최대 ${MAX_HOME_CATEGORIES}개까지만 표시할 수 있어. 다른 카테고리를 먼저 꺼줘.`);
+      return;
+    }
+    setCategoryVisible(id, !current);
+  };
 
   return (
     <div className={styles.sub}>
@@ -30,14 +43,15 @@ export function CategoryManageScreen({ onBack }: Props) {
 
       <div className={styles.subBody}>
         <p className={styles.subNote}>
-          입력 화면에 보일 카테고리를 골라줘. 탭할 때마다 켜고 꺼져.
+          전체 {rows.length}개 중 입력 화면에는 최대 {MAX_HOME_CATEGORIES}개까지 보여줄 수 있어.
+          탭해서 켜고 꺼줘 — 하나를 끄면 다른 걸 켤 수 있어.
         </p>
         <div className={styles.subCard}>
           {rows.map((c) => (
             <button
               key={c.id}
               type="button"
-              onClick={() => setCategoryVisible(c.id, !c.visibleOnHome)}
+              onClick={() => toggle(c.id, c.visibleOnHome)}
               aria-pressed={c.visibleOnHome}
               className={`${styles.catRow} ${c.visibleOnHome ? '' : styles.catRowDim}`}
             >
@@ -59,6 +73,8 @@ export function CategoryManageScreen({ onBack }: Props) {
           ))}
         </div>
       </div>
+
+      {toast && <Toast text={toast} />}
     </div>
   );
 }
