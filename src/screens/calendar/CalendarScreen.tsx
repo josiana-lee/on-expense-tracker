@@ -10,10 +10,12 @@ import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { dateText, won } from '../../lib/format';
 import { EntrySheet } from './EntrySheet';
+import { SearchScreen } from './SearchScreen';
 import styles from './CalendarScreen.module.css';
 
 const CHEVRON_LEFT = 'M15 5l-7 7 7 7';
 const CHEVRON_RIGHT = 'M9 5l7 7-7 7';
+const SEARCH_ICON = 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.35-4.35';
 
 const DOW_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -49,6 +51,7 @@ export function CalendarScreen() {
   const { text: toast, flash } = useToast();
   /** null = closed. `{ record: null }` opens the sheet in create mode. */
   const [sheet, setSheet] = useState<{ record: ExpenseRecord | null } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const shiftMonth = (delta: number) => {
     const d = new Date(view.year, view.month - 1 + delta, 1);
@@ -59,6 +62,17 @@ export function CalendarScreen() {
     // starts at the 1st, which is predictable in both directions.
     const isThisMonth = year === today.getFullYear() && month === today.getMonth() + 1;
     setSelected(fmt(isThisMonth ? today : d));
+  };
+
+  /** Jumps the grid behind it to the found record's day, so closing the
+   *  edit sheet lands somewhere that makes sense rather than wherever the
+   *  view happened to be before the search. */
+  const openFromSearch = (record: ExpenseRecord) => {
+    const d = parseDateStr(record.date);
+    setView({ year: d.getFullYear(), month: d.getMonth() + 1 });
+    setSelected(record.date);
+    setSearchOpen(false);
+    setSheet({ record });
   };
 
   const dows = useMemo(
@@ -106,9 +120,19 @@ export function CalendarScreen() {
             <Icon path={CHEVRON_RIGHT} size={19} stroke="currentColor" strokeWidth={2.2} />
           </button>
         </div>
-        <div className={styles.headTotal}>
-          <div className={styles.headTotalLabel}>이번 달 지출</div>
-          <div className={`${styles.headTotalValue} tabular`}>{won(monthTotal)}원</div>
+        <div className={styles.headRight}>
+          <div className={styles.headTotal}>
+            <div className={styles.headTotalLabel}>이번 달 지출</div>
+            <div className={`${styles.headTotalValue} tabular`}>{won(monthTotal)}원</div>
+          </div>
+          <button
+            type="button"
+            className={styles.searchBtn}
+            onClick={() => setSearchOpen(true)}
+            aria-label="기록 검색"
+          >
+            <Icon path={SEARCH_ICON} size={19} stroke="currentColor" strokeWidth={2.2} />
+          </button>
         </div>
       </div>
 
@@ -219,6 +243,10 @@ export function CalendarScreen() {
           onClose={() => setSheet(null)}
           onDone={flash}
         />
+      )}
+
+      {searchOpen && (
+        <SearchScreen onBack={() => setSearchOpen(false)} onSelectRecord={openFromSearch} />
       )}
 
       {toast && <Toast key={toast} text={toast} />}

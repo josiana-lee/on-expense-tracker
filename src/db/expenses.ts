@@ -62,6 +62,19 @@ export function loadRange(from: DateStr, to: DateStr): Promise<ExpenseRecord[]> 
   return db.expenses.where('date').between(from, to, true, true).toArray();
 }
 
+/** Every record, newest first. Used for search, which has to scan memo/sub
+ *  text across all dates — there's no index for free-text matching, and at
+ *  a few thousand rows a year, an in-memory scan is cheap enough not to need
+ *  one. */
+export function listAllExpenses(): Promise<ExpenseRecord[]> {
+  return db.expenses.toArray().then((rows) =>
+    rows.sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.time < b.time ? 1 : -1;
+    }),
+  );
+}
+
 export type DayTotals = { expense: number; income: number; count: number };
 
 /** Grouped in JS rather than by an index: a month is 200-300 rows, and a

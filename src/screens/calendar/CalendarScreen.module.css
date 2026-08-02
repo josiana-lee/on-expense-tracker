@@ -50,9 +50,36 @@
   transform: scale(0.85);
 }
 
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
 .headTotal {
   text-align: right;
   flex: none;
+}
+
+.searchBtn {
+  border: 0;
+  background: var(--sf);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--tx2);
+  flex: none;
+  box-shadow: 0 2px 8px rgba(20, 25, 40, 0.05);
+  transition: transform 0.14s var(--spring-hard);
+}
+
+.searchBtn:active {
+  transform: scale(0.88);
 }
 
 .headTotalLabel {
