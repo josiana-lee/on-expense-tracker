@@ -44,14 +44,17 @@
   flex: none;
 }
 
-/* Overflow stays visible vertically so the selected ring is not clipped. */
+/* A horizontal scroller cannot keep the other axis visible — CSS promotes
+   `overflow-y: visible` to `auto` as soon as one axis scrolls — so the box
+   clips on all four sides. The selected ring reaches 5px past the circle
+   (3px outline + 2px offset), so the padding has to clear that on every
+   side; the negative margin cancels it again for layout. */
 .cats {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  overflow-y: visible;
-  padding: 8px 2px;
-  margin: -4px -2px;
+  padding: 8px;
+  margin: -4px -8px;
 }
 
 .cat {
