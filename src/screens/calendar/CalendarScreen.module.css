@@ -199,10 +199,35 @@
   color: var(--tx);
 }
 
+.dayHeadRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .dayHeadTotal {
   font-size: 14px;
   font-weight: 800;
   color: var(--brand);
+}
+
+.add {
+  border: 0;
+  background: var(--brandSoft);
+  color: var(--brand);
+  border-radius: 999px;
+  padding: 7px 13px 7px 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: transform 0.14s var(--spring-hard);
+}
+
+.add:active {
+  transform: scale(0.92);
 }
 
 .list {

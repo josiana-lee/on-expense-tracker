@@ -9,7 +9,7 @@ import { useMonth } from '../../hooks/useMonth';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { dateText, won } from '../../lib/format';
-import { EditSheet } from './EditSheet';
+import { EntrySheet } from './EntrySheet';
 import styles from './CalendarScreen.module.css';
 
 const CHEVRON_LEFT = 'M15 5l-7 7 7 7';
@@ -47,7 +47,8 @@ export function CalendarScreen() {
   const { records, total: dayTotal } = useDateExpenses(selected);
   const { byId, paymentById } = useCatalog();
   const { text: toast, flash } = useToast();
-  const [editing, setEditing] = useState<ExpenseRecord | null>(null);
+  /** null = closed. `{ record: null }` opens the sheet in create mode. */
+  const [sheet, setSheet] = useState<{ record: ExpenseRecord | null } | null>(null);
 
   const shiftMonth = (delta: number) => {
     const d = new Date(view.year, view.month - 1 + delta, 1);
@@ -156,7 +157,20 @@ export function CalendarScreen() {
 
       <div className={styles.dayHead}>
         <span className={styles.dayHeadLabel}>{dateText(parseDateStr(selected))}</span>
-        <span className={`${styles.dayHeadTotal} tabular`}>{won(dayTotal)}원</span>
+        <div className={styles.dayHeadRight}>
+          <span className={`${styles.dayHeadTotal} tabular`}>{won(dayTotal)}원</span>
+          {/* The input tab only ever records "now", so back-dating a forgotten
+              expense — or pencilling in a future one — happens here. */}
+          <button
+            type="button"
+            className={styles.add}
+            onClick={() => setSheet({ record: null })}
+            aria-label="이 날짜에 기록 추가"
+          >
+            <Icon path="M12 5v14M5 12h14" size={17} stroke="currentColor" strokeWidth={2.4} />
+            추가
+          </button>
+        </div>
       </div>
 
       <div className={styles.list}>
@@ -172,7 +186,7 @@ export function CalendarScreen() {
                   key={r.id}
                   type="button"
                   className={styles.row}
-                  onClick={() => setEditing(r)}
+                  onClick={() => setSheet({ record: r })}
                 >
                   <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>
                     {cat && <Icon path={cat.iconPath} size={19} strokeWidth={1.8} />}
@@ -180,7 +194,11 @@ export function CalendarScreen() {
                   <div className={styles.rowMain}>
                     <div className={styles.rowName}>{r.subLabel || cat?.name}</div>
                     <div className={styles.rowSub}>
-                      {[r.memo, cat?.name, pay?.name].filter(Boolean).join(' · ')}
+                      {/* The category name is only worth repeating underneath
+                          when the title above is a sub-label instead. */}
+                      {[r.memo, r.subLabel ? cat?.name : null, pay?.name]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </div>
                   </div>
                   <div className={styles.rowRight}>
@@ -194,8 +212,13 @@ export function CalendarScreen() {
         </div>
       </div>
 
-      {editing && (
-        <EditSheet record={editing} onClose={() => setEditing(null)} onDone={flash} />
+      {sheet && (
+        <EntrySheet
+          record={sheet.record}
+          date={selected}
+          onClose={() => setSheet(null)}
+          onDone={flash}
+        />
       )}
 
       {toast && <Toast text={toast} />}
