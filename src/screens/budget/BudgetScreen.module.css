@@ -1,0 +1,254 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 18px 14px 0;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.head {
+  padding: 0 6px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.titleWrap {
+  min-width: 0;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--tx);
+  letter-spacing: -0.8px;
+}
+
+.period {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tx2);
+  margin-top: 2px;
+}
+
+.editBtn {
+  flex: none;
+  border: 0;
+  background: var(--brandSoft);
+  color: var(--brand);
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.14s var(--spring-hard);
+}
+
+.editBtn:active {
+  transform: scale(0.94);
+}
+
+/* ── main card ──────────────────────────────────────────────── */
+
+.card {
+  background: var(--sf);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 2px 14px rgba(20, 25, 40, 0.05);
+  flex: none;
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.cardLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+.remainRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.remainValue {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--tx);
+  letter-spacing: -2px;
+}
+
+.remainValueOver {
+  color: var(--warn);
+}
+
+.remainUnit {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+.bar {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--sf2);
+  margin-top: 14px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand);
+  transition: width 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+.barFillOver {
+  background: var(--warn);
+}
+
+.statsRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+/* ── empty state ────────────────────────────────────────────── */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 4px;
+  text-align: center;
+}
+
+.emptyText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx2);
+  line-height: 1.5;
+}
+
+.emptyCta {
+  border: 0;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 16px;
+  padding: 13px 22px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.16s var(--spring-hard);
+}
+
+.emptyCta:active {
+  transform: scale(0.96);
+}
+
+/* ── over-budget banner ────────────────────────────────────────── */
+
+.warnCard {
+  background: var(--warnSoft);
+  border-radius: 18px;
+  padding: 15px 17px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  flex: none;
+}
+
+.warnIcon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.warnText {
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 700;
+  color: var(--warn);
+}
+
+/* ── weekly card ────────────────────────────────────────────── */
+
+.weekCard {
+  background: var(--sf);
+  border-radius: 22px;
+  padding: 6px 18px;
+  flex: none;
+}
+
+.weekRow {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.weekRow:last-child {
+  border-bottom: 0;
+}
+
+.weekTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.weekName {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.weekAmt {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.weekAmtOver {
+  color: var(--warn);
+}
+
+.weekBar {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--sf2);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.weekBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand);
+}
+
+.weekBarFillOver {
+  background: var(--warn);
+}
+
+.weekNote {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx2);
+  margin-top: 5px;
+}
+
+.spacer {
+  flex: none;
+  height: 8px;
+}

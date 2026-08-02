@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TabBar, TABS, type TabId } from './components/TabBar';
 import { useTheme } from './hooks/useTheme';
+import { BudgetScreen } from './screens/budget/BudgetScreen';
 import { CalendarScreen } from './screens/calendar/CalendarScreen';
 import { InputScreen } from './screens/input/InputScreen';
 import { SettingsScreen } from './screens/settings/SettingsScreen';
@@ -22,7 +23,7 @@ export function App() {
   const [tab, setTab] = useState<TabId>('input');
   useTheme();
 
-  const known = tab === 'input' || tab === 'calendar' || tab === 'settings';
+  const known = tab === 'input' || tab === 'calendar' || tab === 'budget' || tab === 'settings';
 
   return (
     <div className={styles.shell} ref={setShell}>
@@ -31,6 +32,7 @@ export function App() {
         <main className={styles.screen} key={tab}>
           {tab === 'input' && <InputScreen />}
           {tab === 'calendar' && <CalendarScreen />}
+          {tab === 'budget' && <BudgetScreen />}
           {tab === 'settings' && <SettingsScreen />}
           {!known && <Placeholder tab={tab} />}
         </main>

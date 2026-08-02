@@ -1,0 +1,53 @@
+.head {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx2);
+  margin-top: -6px;
+}
+
+.amountRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px 0 2px;
+}
+
+.amount {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.unit {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+.save {
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s var(--spring-hard);
+}
+
+.save:active {
+  transform: scale(0.97);
+}
+
+.save:disabled {
+  opacity: 0.55;
+}

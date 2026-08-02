@@ -20,8 +20,10 @@ export function parseDateStr(s: DateStr): Date {
   return new Date(y, m - 1, d);
 }
 
-/** Accounting-month bounds, inclusive. monthStartDay=25 makes "August" run
- *  from Jul 25 to Aug 24. */
+/** Accounting-month bounds, inclusive. A cycle is named by the calendar
+ *  month it starts in: monthStartDay=25 makes the "2026-08" cycle run
+ *  Aug 25 – Sep 24, not Jul 25 – Aug 24. monthStartDay=1 collapses to the
+ *  plain calendar month, which is the common case. */
 export function monthRange(
   year: number,
   month1to12: number,
@@ -31,4 +33,58 @@ export function monthRange(
   const end = new Date(year, month1to12, monthStartDay);
   end.setDate(end.getDate() - 1);
   return { from: fmt(start), to: fmt(end) };
+}
+
+/** Which accounting cycle `today` currently falls in, as a (year, 1-12
+ *  month) label matching monthRange's naming — i.e. the month the cycle
+ *  started in. Before the start day, that's still last month's cycle. */
+export function currentAccountingMonth(
+  monthStartDay: number,
+  today: Date = new Date(),
+): { year: number; month: number } {
+  let month = today.getMonth() + 1;
+  let year = today.getFullYear();
+  if (today.getDate() < monthStartDay) {
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
+  return { year, month };
+}
+
+/** Splits [from, to] into weekStartDay-aligned chunks. The first and last
+ *  chunk are partial whenever the range doesn't start/end exactly on
+ *  weekStartDay — an accounting month rarely does. */
+export function splitWeeks(
+  from: DateStr,
+  to: DateStr,
+  weekStartDay: number,
+): Array<{ from: DateStr; to: DateStr }> {
+  const end = parseDateStr(to);
+  const weeks: Array<{ from: DateStr; to: DateStr }> = [];
+  let cursor = parseDateStr(from);
+
+  while (cursor <= end) {
+    const weekStart = new Date(cursor);
+    const weekEnd = new Date(weekStart);
+    // Advance to the day right before the next weekStartDay occurrence.
+    while ((weekEnd.getDay() - weekStartDay + 7) % 7 !== 6 && weekEnd < end) {
+      weekEnd.setDate(weekEnd.getDate() + 1);
+    }
+    if (weekEnd > end) weekEnd.setTime(end.getTime());
+    weeks.push({ from: fmt(weekStart), to: fmt(weekEnd) });
+    cursor = new Date(weekEnd);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return weeks;
+}
+
+/** Inclusive day count between two DateStr, for prorating a monthly budget
+ *  across partial weeks. */
+export function daySpan(from: DateStr, to: DateStr): number {
+  const ms = parseDateStr(to).getTime() - parseDateStr(from).getTime();
+  return Math.round(ms / 86_400_000) + 1;
 }
