@@ -101,8 +101,11 @@ export function CategoryPopup({
           ))}
         </div>
 
+        {/* Labelled differently from the screen's own "추가!" button — this one
+            fires from a category the user actually picked, so "입력 완료" reads
+            as "done filling this in" rather than a second, competing add. */}
         <button type="button" className={styles.cta} onClick={onSave} disabled={saving}>
-          추가!
+          입력 완료
         </button>
       </div>
     </>,

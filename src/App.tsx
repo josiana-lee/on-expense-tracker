@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { TabBar, TABS, type TabId } from './components/TabBar';
+import { useTheme } from './hooks/useTheme';
 import { CalendarScreen } from './screens/calendar/CalendarScreen';
 import { InputScreen } from './screens/input/InputScreen';
+import { SettingsScreen } from './screens/settings/SettingsScreen';
 import { ShellContext } from './shell/ShellContext';
 import styles from './App.module.css';
 
@@ -18,6 +20,9 @@ function Placeholder({ tab }: { tab: TabId }) {
 export function App() {
   const [shell, setShell] = useState<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<TabId>('input');
+  useTheme();
+
+  const known = tab === 'input' || tab === 'calendar' || tab === 'settings';
 
   return (
     <div className={styles.shell} ref={setShell}>
@@ -26,7 +31,8 @@ export function App() {
         <main className={styles.screen} key={tab}>
           {tab === 'input' && <InputScreen />}
           {tab === 'calendar' && <CalendarScreen />}
-          {tab !== 'input' && tab !== 'calendar' && <Placeholder tab={tab} />}
+          {tab === 'settings' && <SettingsScreen />}
+          {!known && <Placeholder tab={tab} />}
         </main>
         <TabBar active={tab} onChange={setTab} />
       </ShellContext.Provider>
