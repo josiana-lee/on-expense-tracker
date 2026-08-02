@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
+import { emailBackup } from '../../db/backup';
 import { exportExpensesCsv } from '../../db/exportCsv';
 import { updateSettings } from '../../db/settings';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -24,15 +25,27 @@ export function SettingsScreen() {
   const [sub, setSub] = useState<'categories' | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const { text: toast, flash } = useToast();
-  const { busy: exporting, guard } = useGuardedAction();
+  const csvExport = useGuardedAction();
+  const emailExport = useGuardedAction();
 
   const exportCsv = () => {
-    guard(async () => {
+    csvExport.guard(async () => {
       try {
         const count = await exportExpensesCsv();
         flash(count === 0 ? '내보낼 기록이 없어' : `${count}건을 CSV로 내보냈어`);
       } catch {
         flash('내보내지 못했어. 다시 시도해줘');
+      }
+    });
+  };
+
+  const sendEmailBackup = () => {
+    emailExport.guard(async () => {
+      try {
+        const rows = await emailBackup();
+        flash(rows === 0 ? '백업할 데이터가 없어' : '백업 파일을 준비했어. 이메일 앱에서 보내줘');
+      } catch {
+        flash('백업 파일을 만들지 못했어. 다시 시도해줘');
       }
     });
   };
@@ -97,9 +110,27 @@ export function SettingsScreen() {
         </button>
       </div>
 
+      <div className={styles.sectionTitle}>백업 및 복구</div>
       <div className={styles.card}>
-        <button type="button" className={styles.row} onClick={exportCsv} disabled={exporting}>
-          <span className={styles.rowLabel}>CSV 내보내기</span>
+        <button
+          type="button"
+          className={styles.row}
+          onClick={sendEmailBackup}
+          disabled={emailExport.busy}
+        >
+          <span className={styles.rowLabel}>이메일로 백업하기</span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={styles.row}
+          onClick={exportCsv}
+          disabled={csvExport.busy}
+        >
+          <span className={styles.rowLabel}>CSV 파일로 내보내기</span>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
