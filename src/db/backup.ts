@@ -58,6 +58,33 @@ export function totalBackupRows(counts: BackupFile['counts']): number {
   return Object.values(counts).reduce((sum, n) => sum + n, 0);
 }
 
+export interface ICloudBackupResult {
+  rows: number;
+  shared: boolean;
+}
+
+/** "아이클라우드에 백업하기" — a web PWA has no CloudKit access (that needs a
+ *  native iOS plugin, which waits for the Capacitor wrap), so this hands the
+ *  backup file to the OS share sheet and lets the user pick "파일에 저장" →
+ *  iCloud Drive themselves, the same way emailBackup() lets them pick a mail
+ *  app. `shared` tells the caller whether the share sheet actually took it,
+ *  so it can word the toast correctly when it fell back to a plain
+ *  download instead. */
+export async function icloudBackup(): Promise<ICloudBackupResult> {
+  const backup = await buildBackupFile();
+  const rows = totalBackupRows(backup.counts);
+  const filename = `가계부_백업_${fmt(new Date())}.json`;
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+
+  const shared = await shareOrDownload(
+    blob,
+    filename,
+    '가계부 백업 파일이야. "파일에 저장"을 골라서 iCloud Drive에 저장해줘.',
+  );
+
+  return { rows, shared };
+}
+
 /** "이메일로 백업하기" — there's no client-side way to actually send an email
  *  with an attachment (that needs a mail server), so this hands the backup
  *  file to whatever the platform offers instead. On Android that's the share
