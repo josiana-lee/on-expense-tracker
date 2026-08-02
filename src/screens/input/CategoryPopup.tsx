@@ -17,11 +17,12 @@ type Props = {
   memo: string;
   payments: PaymentMethodRecord[];
   paymentId: string;
-  saving: boolean;
   onSelectSub: (sub: string) => void;
   onMemoChange: (memo: string) => void;
   onSelectPayment: (id: string) => void;
-  onSave: () => void;
+  /** Stages this category/sub/memo on the screen behind it — does not touch
+   *  the database. Only the screen's own "추가!" button does that. */
+  onConfirm: () => void;
   onClose: () => void;
 };
 
@@ -34,11 +35,10 @@ export function CategoryPopup({
   memo,
   payments,
   paymentId,
-  saving,
   onSelectSub,
   onMemoChange,
   onSelectPayment,
-  onSave,
+  onConfirm,
   onClose,
 }: Props) {
   const shell = useShell();
@@ -101,10 +101,10 @@ export function CategoryPopup({
           ))}
         </div>
 
-        {/* Labelled differently from the screen's own "추가!" button — this one
-            fires from a category the user actually picked, so "입력 완료" reads
-            as "done filling this in" rather than a second, competing add. */}
-        <button type="button" className={styles.cta} onClick={onSave} disabled={saving}>
+        {/* Not a save — this only hands the pick back to the screen. Distinct
+            from the screen's own "추가!", which is the one action that
+            actually writes a record. */}
+        <button type="button" className={styles.cta} onClick={onConfirm}>
           입력 완료
         </button>
       </div>

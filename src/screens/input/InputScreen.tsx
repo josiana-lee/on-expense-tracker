@@ -14,7 +14,8 @@ import { offsetFromShellCentre, useShell } from '../../shell/ShellContext';
 import { CategoryPopup, type PopupOrigin } from './CategoryPopup';
 import styles from './InputScreen.module.css';
 
-/** Where a bare "추가!" press files an entry when no icon was picked. */
+/** Where a bare "추가!" press files an entry when nothing was ever confirmed
+ *  in a category popup. */
 const FALLBACK_CATEGORY = 'etc';
 
 const POPUP_EXIT_MS = 250;
@@ -33,40 +34,59 @@ export function InputScreen() {
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [closing, setClosing] = useState(false);
-  const [sub, setSub] = useState<string | null>(null);
-  const [memo, setMemo] = useState('');
   const [saving, setSaving] = useState(false);
   const exitTimer = useRef<number | undefined>(undefined);
 
-  const paymentId = pickedPayment ?? payments[0]?.id ?? null;
+  /* Tapping an icon only opens a popup to review it — nothing is written
+   *  anywhere yet. "입력 완료" inside the popup commits that pick into these
+   *  three, which is what "추가!" actually saves. Two separate actions,
+   *  on purpose: picking a category and saving the expense are not the same
+   *  step, so a cancelled popup can never leak into the next record. */
+  const [stagedCategoryId, setStagedCategoryId] = useState<string | null>(null);
+  const [stagedSub, setStagedSub] = useState<string | null>(null);
+  const [stagedMemo, setStagedMemo] = useState('');
 
-  /** The sub-label and memo belong to one visit to one category's popup, so
-   *  both opening and dismissing clear them. Without this a sub picked and
-   *  then cancelled rides along into whatever the next save records — the
-   *  screen shows no trace of it, but the stored row is wrong. */
-  const resetEntryDetails = useCallback(() => {
-    setSub(null);
-    setMemo('');
-  }, []);
+  /** Live only while a popup is open — what the user is currently editing,
+   *  before they press "입력 완료". Reopening the already-staged category
+   *  resumes from it; opening a different one starts blank. */
+  const [draftSub, setDraftSub] = useState<string | null>(null);
+  const [draftMemo, setDraftMemo] = useState('');
+
+  const paymentId = pickedPayment ?? payments[0]?.id ?? null;
 
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
       window.clearTimeout(exitTimer.current);
-      resetEntryDetails();
       setClosing(false);
+      if (categoryId === stagedCategoryId) {
+        setDraftSub(stagedSub);
+        setDraftMemo(stagedMemo);
+      } else {
+        setDraftSub(null);
+        setDraftMemo('');
+      }
       setPopup({ categoryId, ...offsetFromShellCentre(el, shell) });
     },
-    [shell, resetEntryDetails],
+    [shell, stagedCategoryId, stagedSub, stagedMemo],
   );
 
+  /** Plays the popup back into the icon it grew from. Used both when the
+   *  user cancels and right after they confirm. */
   const closePopup = useCallback(() => {
     setClosing(true);
-    resetEntryDetails();
     exitTimer.current = window.setTimeout(() => {
       setPopup(null);
       setClosing(false);
     }, POPUP_EXIT_MS);
-  }, [resetEntryDetails]);
+  }, []);
+
+  const confirmPopup = useCallback(() => {
+    if (!popup) return;
+    setStagedCategoryId(popup.categoryId);
+    setStagedSub(draftSub);
+    setStagedMemo(draftMemo);
+    closePopup();
+  }, [popup, draftSub, draftMemo, closePopup]);
 
   const save = useCallback(async () => {
     // Guards a double tap on the save button from writing two records.
@@ -84,24 +104,28 @@ export function InputScreen() {
     try {
       await addExpense({
         amount: Number(amount),
-        categoryId: popup?.categoryId ?? FALLBACK_CATEGORY,
-        subLabel: sub ?? undefined,
-        memo,
+        categoryId: stagedCategoryId ?? FALLBACK_CATEGORY,
+        subLabel: stagedSub ?? undefined,
+        memo: stagedMemo,
         paymentMethodId: paymentId,
       });
       flash(`${won(amount)}원 저장했어!`);
       setAmount('');
-      // Runs the popup back into the icon it grew from rather than cutting it.
-      if (popup) closePopup();
-      else resetEntryDetails();
+      setStagedCategoryId(null);
+      setStagedSub(null);
+      setStagedMemo('');
     } catch {
       flash('저장하지 못했어. 다시 눌러줘');
     } finally {
       setSaving(false);
     }
-  }, [saving, amount, paymentId, popup, sub, memo, flash, closePopup, resetEntryDetails]);
+  }, [saving, amount, paymentId, stagedCategoryId, stagedSub, stagedMemo, flash]);
 
   const popupCategory = popup ? byId.get(popup.categoryId) : undefined;
+  const stagedCategory = stagedCategoryId ? byId.get(stagedCategoryId) : undefined;
+  const ctaLabel = stagedCategory
+    ? `${stagedCategory.name}${stagedSub ? ` · ${stagedSub}` : ''} 추가!`
+    : '추가!';
 
   return (
     <div className={styles.screen}>
@@ -137,7 +161,10 @@ export function InputScreen() {
               className={styles.cat}
               onClick={(e) => openPopup(c.id, e.currentTarget)}
             >
-              <span className={styles.catBadge} style={{ background: c.colorHex }}>
+              <span
+                className={`${styles.catBadge} ${c.id === stagedCategoryId ? styles.catBadgeOn : ''}`}
+                style={{ background: c.colorHex }}
+              >
                 <Icon path={c.iconPath} size={26} />
               </span>
               <span className={styles.catName}>{c.name}</span>
@@ -195,7 +222,7 @@ export function InputScreen() {
           onClick={save}
           disabled={saving}
         >
-          추가!
+          <span className={styles.ctaLabel}>{ctaLabel}</span>
         </button>
       </div>
 
@@ -218,15 +245,14 @@ export function InputScreen() {
           origin={popup}
           closing={closing}
           amount={amount}
-          sub={sub}
-          memo={memo}
+          sub={draftSub}
+          memo={draftMemo}
           payments={payments}
           paymentId={paymentId}
-          saving={saving}
-          onSelectSub={setSub}
-          onMemoChange={setMemo}
+          onSelectSub={setDraftSub}
+          onMemoChange={setDraftMemo}
           onSelectPayment={setPickedPayment}
-          onSave={save}
+          onConfirm={confirmPopup}
           onClose={closePopup}
         />
       )}
