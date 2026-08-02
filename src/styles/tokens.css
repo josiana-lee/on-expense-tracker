@@ -1,0 +1,33 @@
+/* Design tokens — ported verbatim from the Claude Design prototype
+   (project "가계부 퀵 입력 시안", Quick Expense App.dc.html) */
+
+:root {
+  --bg: #f0f2f6;
+  --sf: #ffffff;
+  --sf2: #f6f7fa;
+  --tx: #15181e;
+  --tx2: #8b9199;
+  --line: #eceff4;
+  --brand: #7b87f5;
+  --brandSoft: #eef0ff;
+  --warn: #f0806e;
+  --warnSoft: #ffefec;
+
+  /* Motion — every popup/sheet uses the same overshooting spring curve */
+  --spring: cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  --spring-hard: cubic-bezier(0.2, 0.9, 0.3, 1.4);
+  --ease-out-fast: cubic-bezier(0.5, 0, 0.75, 0);
+}
+
+:root[data-theme='dark'] {
+  --bg: #111318;
+  --sf: #1b1e25;
+  --sf2: #232830;
+  --tx: #f1f3f7;
+  --tx2: #878e99;
+  --line: #2a2f39;
+  --brand: #8e98ff;
+  --brandSoft: #262b3b;
+  --warn: #ff9585;
+  --warnSoft: #33262a;
+}

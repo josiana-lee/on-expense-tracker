@@ -1,0 +1,27 @@
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 14, 25, 0.28);
+  animation: fadeIn 0.2s ease;
+  z-index: 12;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 13;
+  background: var(--sf);
+  border-radius: 26px 26px 0 0;
+  padding: 16px 14px calc(20px + env(safe-area-inset-bottom));
+  animation: sheetUp 0.34s var(--spring);
+  box-shadow: 0 -8px 30px rgba(15, 20, 35, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}

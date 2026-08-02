@@ -1,0 +1,38 @@
+.shell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  animation: screenIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+.placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--tx2);
+}
+
+.placeholderTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--tx);
+  letter-spacing: -0.6px;
+}
+
+.placeholderNote {
+  font-size: 13px;
+  font-weight: 600;
+}
