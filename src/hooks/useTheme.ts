@@ -14,6 +14,10 @@ export function useTheme(): void {
     const apply = (dark: boolean) => {
       if (dark) root.setAttribute('data-theme', 'dark');
       else root.removeAttribute('data-theme');
+      // Native form controls (the reminder time picker's clock popup, etc.)
+      // don't see our CSS variables — this is how they know to draw
+      // themselves light or dark instead of defaulting to light always.
+      root.style.setProperty('color-scheme', dark ? 'dark' : 'light');
     };
 
     if (mode === 'system') {

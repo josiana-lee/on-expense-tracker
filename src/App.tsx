@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { TabBar, TABS, type TabId } from './components/TabBar';
+import { useReminderScheduler } from './hooks/useReminderScheduler';
 import { useTheme } from './hooks/useTheme';
 import { AssetsScreen } from './screens/assets/AssetsScreen';
 import { BudgetScreen } from './screens/budget/BudgetScreen';
@@ -23,6 +24,7 @@ export function App() {
   const [shell, setShell] = useState<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<TabId>('input');
   useTheme();
+  useReminderScheduler();
 
   const known =
     tab === 'input' ||

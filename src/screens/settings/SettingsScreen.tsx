@@ -50,6 +50,26 @@ export function SettingsScreen() {
     });
   };
 
+  const toggleReminder = async () => {
+    const turningOn = !settings?.reminderEnabled;
+    if (turningOn) {
+      if (typeof Notification === 'undefined') {
+        flash('이 브라우저는 알림을 지원하지 않아');
+        return;
+      }
+      let permission = Notification.permission;
+      if (permission === 'default') permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        flash('알림 권한을 허용해야 알람을 켤 수 있어');
+        return;
+      }
+    }
+    await updateSettings({
+      reminderEnabled: turningOn,
+      reminderTime: settings?.reminderTime ?? '21:00',
+    });
+  };
+
   const dark = settings?.themeMode === 'dark';
   const visibleCount = categories.filter((c) => c.visibleOnHome && !c.deprecated).length;
   const monthStartDay = settings?.monthStartDay ?? 1;
@@ -108,7 +128,45 @@ export function SettingsScreen() {
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
         </button>
+
+        <div className={styles.row} style={{ cursor: 'default' }}>
+          <span className={styles.rowLabel}>알람</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings?.reminderEnabled ?? false}
+            onClick={toggleReminder}
+            className={`${styles.switch} ${settings?.reminderEnabled ? styles.switchOn : ''}`}
+          >
+            <span className={styles.knob} />
+          </button>
+        </div>
+
+        {settings?.reminderEnabled && (
+          <div className={styles.row} style={{ cursor: 'default' }}>
+            <span className={styles.rowLabel}>알림 시간</span>
+            <input
+              type="time"
+              className={styles.timeInput}
+              value={settings.reminderTime ?? '21:00'}
+              onChange={(e) => updateSettings({ reminderTime: e.target.value })}
+              aria-label="알림 시간"
+            />
+          </div>
+        )}
       </div>
+
+      {settings?.reminderEnabled && (
+        <div className={styles.noteBox}>
+          <span className={styles.noteIcon}>
+            <Icon path="M12 8h.01M12 12v5" size={16} stroke="currentColor" strokeWidth={2.4} />
+          </span>
+          <p className={styles.noteText}>
+            앱이 완전히 꺼져 있으면 알림이 안 울릴 수 있어. 브라우저나 설치된 앱이 실행 중일 때만
+            믿을 수 있어.
+          </p>
+        </div>
+      )}
 
       <div className={styles.sectionTitle}>백업 및 복구</div>
       <div className={styles.card}>
