@@ -1,8 +1,7 @@
 import { createPortal } from 'react-dom';
 import type { CSSProperties } from 'react';
 import { Icon } from '../../components/Icon';
-import type { Category } from '../../data/categories';
-import type { PaymentMethod } from '../../data/payments';
+import type { CategoryRecord, PaymentMethodRecord } from '../../db/types';
 import { useShell } from '../../shell/ShellContext';
 import { won } from '../../lib/format';
 import styles from './CategoryPopup.module.css';
@@ -10,14 +9,15 @@ import styles from './CategoryPopup.module.css';
 export type PopupOrigin = { dx: number; dy: number };
 
 type Props = {
-  category: Category;
+  category: CategoryRecord;
   origin: PopupOrigin;
   closing: boolean;
   amount: string;
   sub: string | null;
   memo: string;
-  payments: PaymentMethod[];
+  payments: PaymentMethodRecord[];
   paymentId: string;
+  saving: boolean;
   onSelectSub: (sub: string) => void;
   onMemoChange: (memo: string) => void;
   onSelectPayment: (id: string) => void;
@@ -34,6 +34,7 @@ export function CategoryPopup({
   memo,
   payments,
   paymentId,
+  saving,
   onSelectSub,
   onMemoChange,
   onSelectPayment,
@@ -57,8 +58,8 @@ export function CategoryPopup({
         aria-label={`${category.name} 기록`}
       >
         <div className={styles.head}>
-          <span className={styles.badge} style={{ background: category.color }}>
-            <Icon path={category.icon} size={26} />
+          <span className={styles.badge} style={{ background: category.colorHex }}>
+            <Icon path={category.iconPath} size={26} />
           </span>
           <div>
             <div className={styles.name}>{category.name}</div>
@@ -100,7 +101,7 @@ export function CategoryPopup({
           ))}
         </div>
 
-        <button type="button" className={styles.cta} onClick={onSave}>
+        <button type="button" className={styles.cta} onClick={onSave} disabled={saving}>
           추가!
         </button>
       </div>

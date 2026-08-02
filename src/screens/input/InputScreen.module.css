@@ -1,8 +1,12 @@
+/* Everything here is sized so the whole flow fits one screen without
+   scrolling — the point of the app is finishing an entry in three taps.
+   The banner costs ~52px, so the fixed blocks below are trimmed to keep the
+   today's-records card readable rather than letting it collapse. */
 .screen {
-  padding: 22px 20px 0;
+  padding: 20px 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 10px;
   height: 100%;
   overflow: hidden;
 }
@@ -57,7 +61,7 @@
 .amountCard {
   background: var(--sf);
   border-radius: 22px;
-  padding: 20px 22px 18px;
+  padding: 15px 22px 13px;
   box-shadow: 0 2px 14px rgba(20, 25, 40, 0.05);
   border: 2px solid transparent;
   cursor: pointer;
@@ -108,7 +112,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 13px 6px;
+  gap: 10px 6px;
   flex: none;
 }
 
@@ -135,9 +139,11 @@
   transform: scale(0.9);
 }
 
+/* 50px keeps the tap target above the 44px accessibility floor while
+   reclaiming height for the records card. */
 .catBadge {
-  width: 54px;
-  height: 54px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -181,11 +187,14 @@
 
 /* ── today's records ────────────────────────────────────────── */
 
+/* flex-basis holds the header plus one row so the card never collapses into
+   its own title; it still shrinks below that on very short screens rather
+   than pushing the save button off-screen. */
 .today {
   background: var(--sf);
   border-radius: 20px;
   padding: 4px 16px;
-  flex: 1;
+  flex: 1 1 88px;
   min-height: 0;
   overflow-y: auto;
 }
@@ -252,7 +261,8 @@
 }
 
 .empty {
-  padding: 14px 0 18px;
+  margin: 0;
+  padding: 9px 0 12px;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--tx2);

@@ -223,8 +223,6 @@ export const CATEGORIES: Category[] = [
   },
 ];
 
-export const CATEGORY_BY_ID = new Map(CATEGORIES.map((c) => [c.id, c]));
-
 /** Shown on the input screen out of the box — 4 columns x 3 rows. */
 export const DEFAULT_VISIBLE: string[] = [
   'food',
@@ -240,3 +238,36 @@ export const DEFAULT_VISIBLE: string[] = [
   'event',
   'etc',
 ];
+
+/* ── Preset catalogue ────────────────────────────────────────────────────
+   These constants are the source of truth; the DB holds the user's copy.
+   Bump PRESET_VERSION whenever the catalogue above changes so the reconcile
+   pass runs — this is separate from the Dexie schema version, which only
+   moves when tables or indexes change. */
+
+export const PRESET_VERSION = 1;
+
+export type PresetCategory = {
+  /** Permanent. Doubles as the DB row id, so changing one orphans existing
+   *  records — never edit a key that has shipped. */
+  key: string;
+  type: 'expense';
+  name: string;
+  colorHex: string;
+  iconPath: string;
+  subs: string[];
+  defaultVisibleOnHome: boolean;
+  defaultSortOrder: number;
+};
+
+export const PRESET_CATEGORIES: readonly PresetCategory[] = CATEGORIES.map((c, i) => ({
+  key: c.id,
+  type: 'expense',
+  name: c.name,
+  colorHex: c.color,
+  iconPath: c.icon,
+  subs: c.subs,
+  defaultVisibleOnHome: DEFAULT_VISIBLE.includes(c.id),
+  // Leaves gaps so a user can drag a category between two presets.
+  defaultSortOrder: (i + 1) * 10,
+}));

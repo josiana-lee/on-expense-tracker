@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
+import { AdSlot } from '../../components/AdSlot';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
-import { CATEGORIES, CATEGORY_BY_ID, DEFAULT_VISIBLE } from '../../data/categories';
-import { DEFAULT_PAYMENTS } from '../../data/payments';
-import { useExpenses } from '../../hooks/useExpenses';
+import { addExpense } from '../../db/expenses';
+import { useCatalog } from '../../hooks/useCatalog';
+import { useDayExpenses } from '../../hooks/useExpenses';
 import { useNow } from '../../hooks/useNow';
 import { useToast } from '../../hooks/useToast';
 import { dateText, timeText, won } from '../../lib/format';
@@ -13,7 +14,7 @@ import { offsetFromShellCentre, useShell } from '../../shell/ShellContext';
 import { CategoryPopup, type PopupOrigin } from './CategoryPopup';
 import styles from './InputScreen.module.css';
 
-/** Category a bare "추가!" press files under when no icon was picked. */
+/** Where a bare "추가!" press files an entry when no icon was picked. */
 const FALLBACK_CATEGORY = 'etc';
 
 const POPUP_EXIT_MS = 250;
@@ -23,21 +24,21 @@ type PopupState = PopupOrigin & { categoryId: string };
 export function InputScreen() {
   const now = useNow();
   const shell = useShell();
-  const { todayRecords, todayTotal, add } = useExpenses(now);
+  const { homeCategories, byId, payments } = useCatalog();
+  const { records, total } = useDayExpenses(now);
   const { text: toast, flash } = useToast();
 
   const [amount, setAmount] = useState('');
-  const [paymentId, setPaymentId] = useState(DEFAULT_PAYMENTS[0].id);
+  const [pickedPayment, setPickedPayment] = useState<string | null>(null);
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [closing, setClosing] = useState(false);
   const [sub, setSub] = useState<string | null>(null);
   const [memo, setMemo] = useState('');
+  const [saving, setSaving] = useState(false);
   const exitTimer = useRef<number | undefined>(undefined);
 
-  const visible = DEFAULT_VISIBLE.map((id) => CATEGORY_BY_ID.get(id)).filter(
-    (c): c is (typeof CATEGORIES)[number] => Boolean(c),
-  );
+  const paymentId = pickedPayment ?? payments[0]?.id ?? null;
 
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
@@ -56,28 +57,38 @@ export function InputScreen() {
     }, POPUP_EXIT_MS);
   }, []);
 
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
+    // Guards a double tap on the save button from writing two records.
+    if (saving) return;
     if (!amount) {
       flash('금액부터 입력해줘');
       return;
     }
-    add({
-      amount: Number(amount),
-      categoryId: popup?.categoryId ?? FALLBACK_CATEGORY,
-      sub,
-      memo: memo.trim(),
-      paymentId,
-      at: Date.now(),
-    });
-    flash(`${won(amount)}원 저장했어!`);
-    setAmount('');
-    setSub(null);
-    setMemo('');
-    setPopup(null);
-    setClosing(false);
-  }, [amount, popup, sub, memo, paymentId, add, flash]);
+    if (!paymentId) return;
 
-  const popupCategory = popup ? CATEGORY_BY_ID.get(popup.categoryId) : undefined;
+    setSaving(true);
+    try {
+      await addExpense({
+        amount: Number(amount),
+        categoryId: popup?.categoryId ?? FALLBACK_CATEGORY,
+        subLabel: sub ?? undefined,
+        memo,
+        paymentMethodId: paymentId,
+      });
+      flash(`${won(amount)}원 저장했어!`);
+      setAmount('');
+      setSub(null);
+      setMemo('');
+      setPopup(null);
+      setClosing(false);
+    } catch {
+      flash('저장하지 못했어. 다시 눌러줘');
+    } finally {
+      setSaving(false);
+    }
+  }, [saving, amount, paymentId, popup, sub, memo, flash]);
+
+  const popupCategory = popup ? byId.get(popup.categoryId) : undefined;
 
   return (
     <div className={styles.screen}>
@@ -94,9 +105,7 @@ export function InputScreen() {
       <button type="button" className={styles.amountCard} onClick={() => setKeypadOpen(true)}>
         <div className={styles.amountLabel}>얼마 썼어?</div>
         <div className={styles.amountRow}>
-          <span
-            className={`${styles.amountValue} ${amount ? '' : styles.amountEmpty} tabular`}
-          >
+          <span className={`${styles.amountValue} ${amount ? '' : styles.amountEmpty} tabular`}>
             {amount ? won(amount) : '0'}
           </span>
           <span className={styles.amountUnit}>원</span>
@@ -104,15 +113,15 @@ export function InputScreen() {
       </button>
 
       <div className={styles.grid}>
-        {visible.map((c) => (
+        {homeCategories.map((c) => (
           <button
             key={c.id}
             type="button"
             className={styles.cat}
             onClick={(e) => openPopup(c.id, e.currentTarget)}
           >
-            <span className={styles.catBadge} style={{ background: c.color }}>
-              <Icon path={c.icon} size={26} />
+            <span className={styles.catBadge} style={{ background: c.colorHex }}>
+              <Icon path={c.iconPath} size={26} />
             </span>
             <span className={styles.catName}>{c.name}</span>
           </button>
@@ -120,11 +129,11 @@ export function InputScreen() {
       </div>
 
       <div className={styles.pays}>
-        {DEFAULT_PAYMENTS.map((p) => (
+        {payments.map((p) => (
           <button
             key={p.id}
             type="button"
-            onClick={() => setPaymentId(p.id)}
+            onClick={() => setPickedPayment(p.id)}
             className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
           >
             {p.name}
@@ -135,22 +144,22 @@ export function InputScreen() {
       <section className={styles.today}>
         <div className={styles.todayHead}>
           <span className={styles.todayLabel}>오늘 기록</span>
-          <span className={`${styles.todayTotal} tabular`}>{won(todayTotal)}원</span>
+          <span className={`${styles.todayTotal} tabular`}>{won(total)}원</span>
         </div>
-        {todayRecords.length === 0 ? (
+        {records.length === 0 ? (
           <p className={styles.empty}>아직 오늘 기록이 없어</p>
         ) : (
-          todayRecords.map((r) => {
-            const cat = CATEGORY_BY_ID.get(r.categoryId);
-            const pay = DEFAULT_PAYMENTS.find((p) => p.id === r.paymentId);
+          records.map((r) => {
+            const cat = byId.get(r.categoryId);
+            const pay = payments.find((p) => p.id === r.paymentMethodId);
             return (
               <div key={r.id} className={styles.row}>
-                <span className={styles.rowBadge} style={{ background: cat?.color }}>
-                  {cat && <Icon path={cat.icon} size={15} strokeWidth={2} />}
+                <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>
+                  {cat && <Icon path={cat.iconPath} size={15} strokeWidth={2} />}
                 </span>
-                <span className={styles.rowName}>{r.sub || cat?.name}</span>
+                <span className={styles.rowName}>{r.subLabel || cat?.name}</span>
                 <span className={styles.rowMeta}>
-                  {timeText(new Date(r.at))} · {pay?.name}
+                  {r.time} · {pay?.name}
                 </span>
                 <span className={`${styles.rowAmount} tabular`}>{won(r.amount)}</span>
               </div>
@@ -159,11 +168,14 @@ export function InputScreen() {
         )}
       </section>
 
+      <AdSlot />
+
       <div className={styles.ctaWrap}>
         <button
           type="button"
           className={`${styles.cta} ${amount ? styles.ctaReady : ''}`}
           onClick={save}
+          disabled={saving}
         >
           추가!
         </button>
@@ -182,7 +194,7 @@ export function InputScreen() {
         </Sheet>
       )}
 
-      {popup && popupCategory && (
+      {popup && popupCategory && paymentId && (
         <CategoryPopup
           category={popupCategory}
           origin={popup}
@@ -190,11 +202,12 @@ export function InputScreen() {
           amount={amount}
           sub={sub}
           memo={memo}
-          payments={DEFAULT_PAYMENTS}
+          payments={payments}
           paymentId={paymentId}
+          saving={saving}
           onSelectSub={setSub}
           onMemoChange={setMemo}
-          onSelectPayment={setPaymentId}
+          onSelectPayment={setPickedPayment}
           onSave={save}
           onClose={closePopup}
         />
