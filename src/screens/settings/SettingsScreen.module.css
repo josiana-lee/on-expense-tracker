@@ -105,6 +105,20 @@
   animation: pushIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.05);
 }
 
+/* Local rather than shared: CSS Modules hashes this animation-name
+   regardless of whether a matching @keyframes exists in the same file, so a
+   name from a plain global stylesheet resolves to nothing. */
+@keyframes pushIn {
+  0% {
+    opacity: 0.4;
+    transform: translateX(26%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .subHead {
   display: flex;
   align-items: center;

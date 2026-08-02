@@ -137,3 +137,58 @@
 .cta:active {
   transform: scale(0.96);
 }
+
+/* Declared locally rather than shared from styles/animations.css: CSS
+   Modules hashes any bare animation-name it finds, matching local
+   declarations or not, so a name that only exists in a plain global
+   stylesheet resolves to nothing and the animation silently no-ops. */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The signature interaction: the popup starts as a 12%-scale speck at the
+   exact offset of the icon the user tapped (--dx/--dy, set inline per tap),
+   overshoots to 1.05 at 62%, then settles. popOut runs it backwards so the
+   panel collapses back into the same icon. */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.12);
+  }
+  62% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes popOut {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.12);
+  }
+}
+
+@keyframes chipPop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

@@ -122,7 +122,7 @@ export function AssetsScreen() {
         <CardSheet card={cardSheet} onClose={() => setCardSheet(null)} onDone={flash} />
       )}
 
-      {toast && <Toast text={toast} />}
+      {toast && <Toast key={toast} text={toast} />}
     </div>
   );
 }

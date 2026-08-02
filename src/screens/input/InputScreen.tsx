@@ -267,7 +267,7 @@ export function InputScreen() {
         />
       )}
 
-      {toast && <Toast text={toast} />}
+      {toast && <Toast key={toast} text={toast} />}
     </div>
   );
 }

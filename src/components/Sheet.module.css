@@ -29,3 +29,28 @@
   gap: 11px;
   overflow-y: auto;
 }
+
+/* Declared locally rather than shared from styles/animations.css: CSS
+   Modules hashes any bare animation-name it finds, matching local
+   declarations or not, so a name that only exists in a plain global
+   stylesheet resolves to nothing and the animation silently no-ops. */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheetUp {
+  0% {
+    transform: translateY(102%);
+  }
+  70% {
+    transform: translateY(-1.5%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}

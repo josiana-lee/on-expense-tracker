@@ -74,7 +74,7 @@ export function CategoryManageScreen({ onBack }: Props) {
         </div>
       </div>
 
-      {toast && <Toast text={toast} />}
+      {toast && <Toast key={toast} text={toast} />}
     </div>
   );
 }

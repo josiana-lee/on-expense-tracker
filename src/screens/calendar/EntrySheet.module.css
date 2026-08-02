@@ -129,6 +129,21 @@
   animation: chipPop 0.3s var(--spring-hard);
 }
 
+/* Local rather than shared: CSS Modules hashes this animation-name
+   regardless of whether a matching @keyframes exists in the same file, so a
+   name from a plain global stylesheet resolves to nothing. */
+@keyframes chipPop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .memo {
   width: 100%;
   border: 0;

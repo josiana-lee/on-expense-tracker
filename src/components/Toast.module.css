@@ -1,18 +1,68 @@
+/* Centered rather than pinned to a fixed bottom offset — a bottom offset
+   tuned for one screen's layout (e.g. clearing the input screen's CTA + ad
+   slot) collides with whatever sits there on a different screen, like the
+   tab bar behind a settings sub-screen. Centered has no layout to collide
+   with. */
 .toast {
   position: absolute;
   left: 50%;
-  bottom: 110px;
+  top: 50%;
   z-index: 30;
-  background: #15181e;
-  color: #fff;
-  padding: 13px 20px;
-  border-radius: 999px;
+  max-width: 78%;
+  /* Frosted glass over the solid dark pill the original mock used — tints
+     with whichever surface color the current theme already defines, so it
+     stays correct in dark mode without a separate override. */
+  background: color-mix(in srgb, var(--sf) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow:
+    0 10px 30px rgba(20, 25, 40, 0.16),
+    inset 0 0 0 1px color-mix(in srgb, var(--tx) 10%, transparent);
+  color: var(--tx);
+  padding: 14px 22px;
+  border-radius: 16px;
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  white-space: nowrap;
-  animation: toastPop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  animation: toastIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
   pointer-events: none;
+}
+
+/* Toast.tsx swaps this class in ~320ms before unmounting. A separate,
+   short exit animation rather than one keyframe spanning the whole visible
+   lifetime — see the comment there for why that matters under
+   prefers-reduced-motion. */
+.exiting {
+  animation: toastOut 0.32s ease forwards;
+}
+
+/* Declared locally rather than shared from styles/animations.css: CSS
+   Modules hashes any bare animation-name it finds, matching local
+   declarations or not, so a name that only exists in a plain global
+   stylesheet resolves to nothing and the animation silently no-ops. */
+@keyframes toastIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes toastOut {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
 }

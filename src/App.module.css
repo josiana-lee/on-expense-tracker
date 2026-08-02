@@ -15,6 +15,21 @@
   animation: screenIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
 
+/* Declared here rather than in the shared styles/animations.css: CSS
+   Modules hashes any bare animation-name it finds, matching local
+   declarations or not, so a name that only exists in a plain global
+   stylesheet resolves to nothing and the animation silently no-ops. */
+@keyframes screenIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .placeholder {
   height: 100%;
   display: flex;

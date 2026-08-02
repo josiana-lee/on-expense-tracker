@@ -163,7 +163,7 @@ export function BudgetScreen() {
         />
       )}
 
-      {toast && <Toast text={toast} />}
+      {toast && <Toast key={toast} text={toast} />}
     </div>
   );
 }

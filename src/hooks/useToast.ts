@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useToast(durationMs = 2400) {
+/** Total time a toast stays mounted. Toast.tsx switches to its exit
+ *  animation shortly before this elapses, so the fade finishes right as
+ *  this timer unmounts the node instead of it just vanishing mid-fade. */
+export const TOAST_DURATION_MS = 2400;
+
+export function useToast(durationMs = TOAST_DURATION_MS) {
   const [text, setText] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
 
