@@ -3,6 +3,7 @@ import { Keypad, applyKey } from '../../components/Keypad';
 import { Sheet } from '../../components/Sheet';
 import { addAccount, deleteAccount, updateAccount } from '../../db/accounts';
 import type { AccountRecord } from '../../db/types';
+import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { won } from '../../lib/format';
 import styles from './AccountSheet.module.css';
 
@@ -26,10 +27,9 @@ export function AccountSheet({ account, onClose, onDone }: Props) {
   const [name, setName] = useState(account?.name ?? '');
   const [kind, setKind] = useState<AccountRecord['kind']>(account?.kind ?? 'checking');
   const [amount, setAmount] = useState(account ? String(account.balance) : '');
-  const [busy, setBusy] = useState(false);
+  const { busy, guard } = useGuardedAction();
 
-  const submit = async () => {
-    if (busy) return;
+  const submit = () => {
     if (!name.trim()) {
       onDone('계좌 이름을 입력해줘');
       return;
@@ -38,35 +38,33 @@ export function AccountSheet({ account, onClose, onDone }: Props) {
       onDone('잔액을 입력해줘');
       return;
     }
-    setBusy(true);
-    try {
-      if (account) {
-        await updateAccount(account.id, { name: name.trim(), kind, balance: Number(amount) });
-        onDone('수정했어!');
-      } else {
-        await addAccount({ name: name.trim(), kind, balance: Number(amount) });
-        onDone('계좌를 추가했어!');
+    guard(async () => {
+      try {
+        if (account) {
+          await updateAccount(account.id, { name: name.trim(), kind, balance: Number(amount) });
+          onDone('수정했어!');
+        } else {
+          await addAccount({ name: name.trim(), kind, balance: Number(amount) });
+          onDone('계좌를 추가했어!');
+        }
+        onClose();
+      } catch {
+        onDone(editing ? '수정하지 못했어' : '추가하지 못했어');
       }
-      onClose();
-    } catch {
-      onDone(editing ? '수정하지 못했어' : '추가하지 못했어');
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
-  const remove = async () => {
-    if (busy || !account) return;
-    setBusy(true);
-    try {
-      await deleteAccount(account.id);
-      onDone('삭제했어');
-      onClose();
-    } catch {
-      onDone('삭제하지 못했어');
-    } finally {
-      setBusy(false);
-    }
+  const remove = () => {
+    if (!account) return;
+    guard(async () => {
+      try {
+        await deleteAccount(account.id);
+        onDone('삭제했어');
+        onClose();
+      } catch {
+        onDone('삭제하지 못했어');
+      }
+    });
   };
 
   return (

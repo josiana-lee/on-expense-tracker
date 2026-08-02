@@ -1,2 +1,4 @@
 - [Input screen layout risk](project_input_screen_layout_risk.md) — non-scrolling flex column; any added block pushes 추가! off-screen under ~730px viewport height
 - [QA verification setup](project_qa_verification_setup.md) — dev server on 5173, no test framework, how to read IndexedDB and fake the clock
+- [Busy-guard race condition](project_busy_guard_race_condition.md) — synchronous rapid taps beat the `busy` state guard; duplicate rows land wherever there's no DB uniqueness constraint (expenses, accounts confirmed vulnerable)
+- [Input staging payment leak](project_input_staging_payment_leak.md) — category popup's payment chip isn't staged like category/sub/memo; it survives a cancelled popup

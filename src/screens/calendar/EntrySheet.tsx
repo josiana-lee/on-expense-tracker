@@ -7,6 +7,7 @@ import { addExpense, deleteExpense, updateExpense } from '../../db/expenses';
 import type { DateStr, ExpenseRecord } from '../../db/types';
 import { toMinor } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
+import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useSettings } from '../../hooks/useSettings';
 import { won } from '../../lib/format';
 import styles from './EntrySheet.module.css';
@@ -38,7 +39,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   const [amount, setAmount] = useState(record ? String(record.amount) : '');
   const [subLabel, setSubLabel] = useState(record?.subLabel);
   const [memo, setMemo] = useState(record?.memo ?? '');
-  const [busy, setBusy] = useState(false);
+  const { busy, guard } = useGuardedAction();
 
   /* Defaults are derived, not seeded into state. The catalog and settings
      arrive a frame after mount, and a useState initialiser only ever runs on
@@ -60,8 +61,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
     setSubLabel(undefined);
   };
 
-  const submit = async () => {
-    if (busy) return;
+  const submit = () => {
     if (!amount) {
       onDone('금액부터 입력해줘');
       return;
@@ -71,50 +71,48 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       return;
     }
 
-    setBusy(true);
-    try {
-      if (record) {
-        await updateExpense(record.id, {
-          amount: toMinor(Number(amount)),
-          categoryId,
-          subLabel,
-          // Undefined rather than '' so a cleared memo leaves no empty field
-          // behind in the stored row.
-          memo: memo.trim() || undefined,
-          paymentMethodId: paymentId,
-        });
-        onDone('수정했어!');
-      } else {
-        await addExpense({
-          amount: Number(amount),
-          categoryId,
-          subLabel,
-          memo,
-          paymentMethodId: paymentId,
-          at: stampFor(date),
-        });
-        onDone(`${won(amount)}원 저장했어!`);
+    guard(async () => {
+      try {
+        if (record) {
+          await updateExpense(record.id, {
+            amount: toMinor(Number(amount)),
+            categoryId,
+            subLabel,
+            // Undefined rather than '' so a cleared memo leaves no empty field
+            // behind in the stored row.
+            memo: memo.trim() || undefined,
+            paymentMethodId: paymentId,
+          });
+          onDone('수정했어!');
+        } else {
+          await addExpense({
+            amount: Number(amount),
+            categoryId,
+            subLabel,
+            memo,
+            paymentMethodId: paymentId,
+            at: stampFor(date),
+          });
+          onDone(`${won(amount)}원 저장했어!`);
+        }
+        onClose();
+      } catch {
+        onDone(editing ? '수정하지 못했어' : '저장하지 못했어');
       }
-      onClose();
-    } catch {
-      onDone(editing ? '수정하지 못했어' : '저장하지 못했어');
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
-  const remove = async () => {
-    if (busy || !record) return;
-    setBusy(true);
-    try {
-      await deleteExpense(record.id);
-      onDone('삭제했어');
-      onClose();
-    } catch {
-      onDone('삭제하지 못했어');
-    } finally {
-      setBusy(false);
-    }
+  const remove = () => {
+    if (!record) return;
+    guard(async () => {
+      try {
+        await deleteExpense(record.id);
+        onDone('삭제했어');
+        onClose();
+      } catch {
+        onDone('삭제하지 못했어');
+      }
+    });
   };
 
   return (

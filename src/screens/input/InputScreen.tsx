@@ -7,6 +7,7 @@ import { Toast } from '../../components/Toast';
 import { addExpense } from '../../db/expenses';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
+import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useNow } from '../../hooks/useNow';
 import { useToast } from '../../hooks/useToast';
 import { dateText, timeText, won } from '../../lib/format';
@@ -28,31 +29,41 @@ export function InputScreen() {
   const { homeCategories, byId, payments, paymentById } = useCatalog();
   const { records, total } = useDayExpenses(now);
   const { text: toast, flash } = useToast();
+  const { busy: saving, guard } = useGuardedAction();
 
   const [amount, setAmount] = useState('');
-  const [pickedPayment, setPickedPayment] = useState<string | null>(null);
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [closing, setClosing] = useState(false);
-  const [saving, setSaving] = useState(false);
   const exitTimer = useRef<number | undefined>(undefined);
 
   /* Tapping an icon only opens a popup to review it — nothing is written
    *  anywhere yet. "입력 완료" inside the popup commits that pick into these
-   *  three, which is what "추가!" actually saves. Two separate actions,
-   *  on purpose: picking a category and saving the expense are not the same
-   *  step, so a cancelled popup can never leak into the next record. */
+   *  four, which is what "추가!" actually saves. Two separate actions, on
+   *  purpose: picking a category and saving the expense are not the same
+   *  step, so a cancelled popup can never leak into the next record.
+   *
+   *  Payment is here too, even though it also has its own always-visible
+   *  chips on the main screen. Those chips commit immediately — there's
+   *  nothing to cancel out there. But the popup carries a redundant copy of
+   *  the same chips for convenience, and *that* copy has to behave like the
+   *  rest of the popup: tapping it inside a popup you go on to cancel must
+   *  leave the outer selection untouched. */
   const [stagedCategoryId, setStagedCategoryId] = useState<string | null>(null);
   const [stagedSub, setStagedSub] = useState<string | null>(null);
   const [stagedMemo, setStagedMemo] = useState('');
+  const [stagedPaymentId, setStagedPaymentId] = useState<string | null>(null);
 
   /** Live only while a popup is open — what the user is currently editing,
    *  before they press "입력 완료". Reopening the already-staged category
-   *  resumes from it; opening a different one starts blank. */
+   *  resumes its sub/memo; opening a different one starts those blank. The
+   *  payment draft always starts from the current staged payment, since it
+   *  isn't tied to any one category. */
   const [draftSub, setDraftSub] = useState<string | null>(null);
   const [draftMemo, setDraftMemo] = useState('');
+  const [draftPayment, setDraftPayment] = useState<string | null>(null);
 
-  const paymentId = pickedPayment ?? payments[0]?.id ?? null;
+  const paymentId = stagedPaymentId ?? payments[0]?.id ?? null;
 
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
@@ -65,9 +76,10 @@ export function InputScreen() {
         setDraftSub(null);
         setDraftMemo('');
       }
+      setDraftPayment(paymentId);
       setPopup({ categoryId, ...offsetFromShellCentre(el, shell) });
     },
-    [shell, stagedCategoryId, stagedSub, stagedMemo],
+    [shell, stagedCategoryId, stagedSub, stagedMemo, paymentId],
   );
 
   /** Plays the popup back into the icon it grew from. Used both when the
@@ -85,12 +97,11 @@ export function InputScreen() {
     setStagedCategoryId(popup.categoryId);
     setStagedSub(draftSub);
     setStagedMemo(draftMemo);
+    setStagedPaymentId(draftPayment);
     closePopup();
-  }, [popup, draftSub, draftMemo, closePopup]);
+  }, [popup, draftSub, draftMemo, draftPayment, closePopup]);
 
-  const save = useCallback(async () => {
-    // Guards a double tap on the save button from writing two records.
-    if (saving) return;
+  const save = useCallback(() => {
     if (!amount) {
       flash('금액부터 입력해줘');
       return;
@@ -100,26 +111,25 @@ export function InputScreen() {
       return;
     }
 
-    setSaving(true);
-    try {
-      await addExpense({
-        amount: Number(amount),
-        categoryId: stagedCategoryId ?? FALLBACK_CATEGORY,
-        subLabel: stagedSub ?? undefined,
-        memo: stagedMemo,
-        paymentMethodId: paymentId,
-      });
-      flash(`${won(amount)}원 저장했어!`);
-      setAmount('');
-      setStagedCategoryId(null);
-      setStagedSub(null);
-      setStagedMemo('');
-    } catch {
-      flash('저장하지 못했어. 다시 눌러줘');
-    } finally {
-      setSaving(false);
-    }
-  }, [saving, amount, paymentId, stagedCategoryId, stagedSub, stagedMemo, flash]);
+    guard(async () => {
+      try {
+        await addExpense({
+          amount: Number(amount),
+          categoryId: stagedCategoryId ?? FALLBACK_CATEGORY,
+          subLabel: stagedSub ?? undefined,
+          memo: stagedMemo,
+          paymentMethodId: paymentId,
+        });
+        flash(`${won(amount)}원 저장했어!`);
+        setAmount('');
+        setStagedCategoryId(null);
+        setStagedSub(null);
+        setStagedMemo('');
+      } catch {
+        flash('저장하지 못했어. 다시 눌러줘');
+      }
+    });
+  }, [amount, paymentId, stagedCategoryId, stagedSub, stagedMemo, flash, guard]);
 
   const popupCategory = popup ? byId.get(popup.categoryId) : undefined;
   const stagedCategory = stagedCategoryId ? byId.get(stagedCategoryId) : undefined;
@@ -177,7 +187,7 @@ export function InputScreen() {
             <button
               key={p.id}
               type="button"
-              onClick={() => setPickedPayment(p.id)}
+              onClick={() => setStagedPaymentId(p.id)}
               className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
             >
               {p.name}
@@ -239,7 +249,7 @@ export function InputScreen() {
         </Sheet>
       )}
 
-      {popup && popupCategory && paymentId && (
+      {popup && popupCategory && draftPayment && (
         <CategoryPopup
           category={popupCategory}
           origin={popup}
@@ -248,10 +258,10 @@ export function InputScreen() {
           sub={draftSub}
           memo={draftMemo}
           payments={payments}
-          paymentId={paymentId}
+          paymentId={draftPayment}
           onSelectSub={setDraftSub}
           onMemoChange={setDraftMemo}
-          onSelectPayment={setPickedPayment}
+          onSelectPayment={setDraftPayment}
           onConfirm={confirmPopup}
           onClose={closePopup}
         />

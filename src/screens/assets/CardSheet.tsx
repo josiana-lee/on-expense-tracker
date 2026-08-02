@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sheet } from '../../components/Sheet';
 import { setCardStatement } from '../../db/paymentMethods';
 import type { PaymentMethodRecord } from '../../db/types';
+import { useGuardedAction } from '../../hooks/useGuardedAction';
 import styles from './CardSheet.module.css';
 
 type Props = {
@@ -61,20 +62,18 @@ export function CardSheet({ card, onClose, onDone }: Props) {
   const [statementStartDay, setStatementStartDay] = useState(
     card.statementStartDay ?? card.paymentDay ?? 14,
   );
-  const [busy, setBusy] = useState(false);
+  const { busy, guard } = useGuardedAction();
 
-  const save = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await setCardStatement(card.id, paymentDay, statementStartDay);
-      onDone('카드 결제 주기를 저장했어!');
-      onClose();
-    } catch {
-      onDone('저장하지 못했어');
-    } finally {
-      setBusy(false);
-    }
+  const save = () => {
+    guard(async () => {
+      try {
+        await setCardStatement(card.id, paymentDay, statementStartDay);
+        onDone('카드 결제 주기를 저장했어!');
+        onClose();
+      } catch {
+        onDone('저장하지 못했어');
+      }
+    });
   };
 
   return (

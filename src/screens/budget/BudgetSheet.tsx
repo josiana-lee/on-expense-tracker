@@ -3,6 +3,7 @@ import { Keypad, applyKey } from '../../components/Keypad';
 import { Sheet } from '../../components/Sheet';
 import { setMonthlyBudget } from '../../db/budgets';
 import type { DateStr } from '../../db/types';
+import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { won } from '../../lib/format';
 import styles from './BudgetSheet.module.css';
 
@@ -17,24 +18,22 @@ type Props = {
 
 export function BudgetSheet({ periodStart, periodEnd, periodLabel, current, onClose, onDone }: Props) {
   const [amount, setAmount] = useState(current ? String(current) : '');
-  const [busy, setBusy] = useState(false);
+  const { busy, guard } = useGuardedAction();
 
-  const save = async () => {
-    if (busy) return;
+  const save = () => {
     if (!amount) {
       onDone('금액을 입력해줘');
       return;
     }
-    setBusy(true);
-    try {
-      await setMonthlyBudget(periodStart, periodEnd, Number(amount));
-      onDone('예산을 저장했어!');
-      onClose();
-    } catch {
-      onDone('저장하지 못했어');
-    } finally {
-      setBusy(false);
-    }
+    guard(async () => {
+      try {
+        await setMonthlyBudget(periodStart, periodEnd, Number(amount));
+        onDone('예산을 저장했어!');
+        onClose();
+      } catch {
+        onDone('저장하지 못했어');
+      }
+    });
   };
 
   return (
