@@ -7,6 +7,7 @@ import { useToast } from '../../hooks/useToast';
 import styles from './SettingsScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
+const INFO_ICON = 'M12 8h.01M12 12v5';
 
 type Props = {
   onBack: () => void;
@@ -42,10 +43,15 @@ export function CategoryManageScreen({ onBack }: Props) {
       </div>
 
       <div className={styles.subBody}>
-        <p className={styles.subNote}>
-          전체 {rows.length}개 중 입력 화면에는 최대 {MAX_HOME_CATEGORIES}개까지 보여줄 수 있어.
-          탭해서 켜고 꺼줘 — 하나를 끄면 다른 걸 켤 수 있어.
-        </p>
+        <div className={styles.noteBox}>
+          <span className={styles.noteIcon}>
+            <Icon path={INFO_ICON} size={16} stroke="currentColor" strokeWidth={2.4} />
+          </span>
+          <p className={styles.noteText}>
+            전체 {rows.length}개 중 입력 화면에는 최대 {MAX_HOME_CATEGORIES}개까지 보여줄 수 있어.
+            탭해서 켜고 끄고, 하나를 끄면 다른 카테고리를 켤 수 있어.
+          </p>
+        </div>
         <div className={styles.subCard}>
           {rows.map((c) => (
             <button
