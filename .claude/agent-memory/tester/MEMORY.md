@@ -1,0 +1,2 @@
+- [Input screen layout risk](project_input_screen_layout_risk.md) — non-scrolling flex column; any added block pushes 추가! off-screen under ~730px viewport height
+- [QA verification setup](project_qa_verification_setup.md) — dev server on 5173, no test framework, how to read IndexedDB and fake the clock

@@ -1,14 +1,22 @@
-/* Everything here is sized so the whole flow fits one screen without
-   scrolling — the point of the app is finishing an entry in three taps.
-   The banner costs ~52px, so the fixed blocks below are trimmed to keep the
-   today's-records card readable rather than letting it collapse. */
+/* The flow is sized to fit one screen without scrolling — the point of the
+   app is finishing an entry in three taps. But the fixed blocks alone need
+   ~730px of viewport, which a 360x640 phone does not have, so the save
+   button lives outside the scrolling area and is always reachable. */
 .screen {
-  padding: 20px 20px 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: 100%;
-  overflow: hidden;
+  padding: 20px 20px 0;
 }
 
 /* ── header: live clock ─────────────────────────────────────── */
@@ -94,6 +102,22 @@
   font-weight: 800;
   letter-spacing: -2px;
   color: var(--tx);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* An eight-digit amount at 52px runs past the card edge on a 320px phone. */
+@media (max-width: 360px) {
+  .amountValue {
+    font-size: 40px;
+    letter-spacing: -1.5px;
+  }
+
+  .time {
+    font-size: 52px;
+    letter-spacing: -2.4px;
+  }
 }
 
 .amountEmpty {
@@ -187,15 +211,14 @@
 
 /* ── today's records ────────────────────────────────────────── */
 
-/* flex-basis holds the header plus one row so the card never collapses into
-   its own title; it still shrinks below that on very short screens rather
-   than pushing the save button off-screen. */
+/* Grows into spare space on a tall screen; never shrinks below the header
+   plus one row, since the surrounding area scrolls when space runs out. */
 .today {
   background: var(--sf);
   border-radius: 20px;
   padding: 4px 16px;
-  flex: 1 1 88px;
-  min-height: 0;
+  flex: 1 0 88px;
+  min-height: 88px;
   overflow-y: auto;
 }
 
@@ -271,9 +294,11 @@
 
 /* ── save ───────────────────────────────────────────────────── */
 
+/* Outside .scroller so it stays on screen no matter how short the viewport. */
 .ctaWrap {
   flex: none;
-  padding-bottom: 8px;
+  padding: 10px 20px 8px;
+  background: var(--bg);
 }
 
 .cta {

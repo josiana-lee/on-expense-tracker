@@ -40,22 +40,33 @@ export function InputScreen() {
 
   const paymentId = pickedPayment ?? payments[0]?.id ?? null;
 
+  /** The sub-label and memo belong to one visit to one category's popup, so
+   *  both opening and dismissing clear them. Without this a sub picked and
+   *  then cancelled rides along into whatever the next save records — the
+   *  screen shows no trace of it, but the stored row is wrong. */
+  const resetEntryDetails = useCallback(() => {
+    setSub(null);
+    setMemo('');
+  }, []);
+
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
       window.clearTimeout(exitTimer.current);
+      resetEntryDetails();
       setClosing(false);
       setPopup({ categoryId, ...offsetFromShellCentre(el, shell) });
     },
-    [shell],
+    [shell, resetEntryDetails],
   );
 
   const closePopup = useCallback(() => {
     setClosing(true);
+    resetEntryDetails();
     exitTimer.current = window.setTimeout(() => {
       setPopup(null);
       setClosing(false);
     }, POPUP_EXIT_MS);
-  }, []);
+  }, [resetEntryDetails]);
 
   const save = useCallback(async () => {
     // Guards a double tap on the save button from writing two records.
@@ -64,7 +75,10 @@ export function InputScreen() {
       flash('금액부터 입력해줘');
       return;
     }
-    if (!paymentId) return;
+    if (!paymentId) {
+      flash('결제수단을 먼저 만들어줘');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -77,98 +91,102 @@ export function InputScreen() {
       });
       flash(`${won(amount)}원 저장했어!`);
       setAmount('');
-      setSub(null);
-      setMemo('');
-      setPopup(null);
-      setClosing(false);
+      // Runs the popup back into the icon it grew from rather than cutting it.
+      if (popup) closePopup();
+      else resetEntryDetails();
     } catch {
       flash('저장하지 못했어. 다시 눌러줘');
     } finally {
       setSaving(false);
     }
-  }, [saving, amount, paymentId, popup, sub, memo, flash]);
+  }, [saving, amount, paymentId, popup, sub, memo, flash, closePopup, resetEntryDetails]);
 
   const popupCategory = popup ? byId.get(popup.categoryId) : undefined;
 
   return (
     <div className={styles.screen}>
-      <header className={styles.header}>
-        <div>
-          <div className={styles.date}>{dateText(now)}</div>
-          <div className={`${styles.time} tabular`}>{timeText(now)}</div>
-        </div>
-        <div className={styles.stamp}>
-          <span className={styles.dot} />이 시각으로 기록돼
-        </div>
-      </header>
+      {/* Everything above the save button scrolls. On a 412x892 screen it all
+          fits and nothing moves; on a 360x640 the user can still reach the
+          grid, and the button below stays pinned either way. */}
+      <div className={styles.scroller}>
+        <header className={styles.header}>
+          <div>
+            <div className={styles.date}>{dateText(now)}</div>
+            <div className={`${styles.time} tabular`}>{timeText(now)}</div>
+          </div>
+          <div className={styles.stamp}>
+            <span className={styles.dot} />이 시각으로 기록돼
+          </div>
+        </header>
 
-      <button type="button" className={styles.amountCard} onClick={() => setKeypadOpen(true)}>
-        <div className={styles.amountLabel}>얼마 썼어?</div>
-        <div className={styles.amountRow}>
-          <span className={`${styles.amountValue} ${amount ? '' : styles.amountEmpty} tabular`}>
-            {amount ? won(amount) : '0'}
-          </span>
-          <span className={styles.amountUnit}>원</span>
-        </div>
-      </button>
-
-      <div className={styles.grid}>
-        {homeCategories.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={styles.cat}
-            onClick={(e) => openPopup(c.id, e.currentTarget)}
-          >
-            <span className={styles.catBadge} style={{ background: c.colorHex }}>
-              <Icon path={c.iconPath} size={26} />
+        <button type="button" className={styles.amountCard} onClick={() => setKeypadOpen(true)}>
+          <div className={styles.amountLabel}>얼마 썼어?</div>
+          <div className={styles.amountRow}>
+            <span className={`${styles.amountValue} ${amount ? '' : styles.amountEmpty} tabular`}>
+              {amount ? won(amount) : '0'}
             </span>
-            <span className={styles.catName}>{c.name}</span>
-          </button>
-        ))}
-      </div>
+            <span className={styles.amountUnit}>원</span>
+          </div>
+        </button>
 
-      <div className={styles.pays}>
-        {payments.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setPickedPayment(p.id)}
-            className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
-          >
-            {p.name}
-          </button>
-        ))}
-      </div>
-
-      <section className={styles.today}>
-        <div className={styles.todayHead}>
-          <span className={styles.todayLabel}>오늘 기록</span>
-          <span className={`${styles.todayTotal} tabular`}>{won(total)}원</span>
+        <div className={styles.grid}>
+          {homeCategories.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={styles.cat}
+              onClick={(e) => openPopup(c.id, e.currentTarget)}
+            >
+              <span className={styles.catBadge} style={{ background: c.colorHex }}>
+                <Icon path={c.iconPath} size={26} />
+              </span>
+              <span className={styles.catName}>{c.name}</span>
+            </button>
+          ))}
         </div>
-        {records.length === 0 ? (
-          <p className={styles.empty}>아직 오늘 기록이 없어</p>
-        ) : (
-          records.map((r) => {
-            const cat = byId.get(r.categoryId);
-            const pay = payments.find((p) => p.id === r.paymentMethodId);
-            return (
-              <div key={r.id} className={styles.row}>
-                <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>
-                  {cat && <Icon path={cat.iconPath} size={15} strokeWidth={2} />}
-                </span>
-                <span className={styles.rowName}>{r.subLabel || cat?.name}</span>
-                <span className={styles.rowMeta}>
-                  {r.time} · {pay?.name}
-                </span>
-                <span className={`${styles.rowAmount} tabular`}>{won(r.amount)}</span>
-              </div>
-            );
-          })
-        )}
-      </section>
 
-      <AdSlot />
+        <div className={styles.pays}>
+          {payments.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setPickedPayment(p.id)}
+              className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+
+        <section className={styles.today}>
+          <div className={styles.todayHead}>
+            <span className={styles.todayLabel}>오늘 기록</span>
+            <span className={`${styles.todayTotal} tabular`}>{won(total)}원</span>
+          </div>
+          {records.length === 0 ? (
+            <p className={styles.empty}>아직 오늘 기록이 없어</p>
+          ) : (
+            records.map((r) => {
+              const cat = byId.get(r.categoryId);
+              const pay = payments.find((p) => p.id === r.paymentMethodId);
+              return (
+                <div key={r.id} className={styles.row}>
+                  <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>
+                    {cat && <Icon path={cat.iconPath} size={15} strokeWidth={2} />}
+                  </span>
+                  <span className={styles.rowName}>{r.subLabel || cat?.name}</span>
+                  <span className={styles.rowMeta}>
+                    {r.time} · {pay?.name}
+                  </span>
+                  <span className={`${styles.rowAmount} tabular`}>{won(r.amount)}</span>
+                </div>
+              );
+            })
+          )}
+        </section>
+
+        <AdSlot />
+      </div>
 
       <div className={styles.ctaWrap}>
         <button
