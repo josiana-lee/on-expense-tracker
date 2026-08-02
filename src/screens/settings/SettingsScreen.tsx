@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { Toast } from '../../components/Toast';
+import { exportExpensesCsv } from '../../db/exportCsv';
 import { updateSettings } from '../../db/settings';
 import { useCatalog } from '../../hooks/useCatalog';
+import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useSettings } from '../../hooks/useSettings';
+import { useToast } from '../../hooks/useToast';
 import { CategoryManageScreen } from './CategoryManageScreen';
 import { DefaultPaymentSheet } from './DefaultPaymentSheet';
 import { MonthStartDaySheet } from './MonthStartDaySheet';
@@ -19,6 +23,19 @@ export function SettingsScreen() {
   const { categories, payments, paymentById } = useCatalog();
   const [sub, setSub] = useState<'categories' | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const { text: toast, flash } = useToast();
+  const { busy: exporting, guard } = useGuardedAction();
+
+  const exportCsv = () => {
+    guard(async () => {
+      try {
+        const count = await exportExpensesCsv();
+        flash(count === 0 ? '내보낼 기록이 없어' : `${count}건을 CSV로 내보냈어`);
+      } catch {
+        flash('내보내지 못했어. 다시 시도해줘');
+      }
+    });
+  };
 
   const dark = settings?.themeMode === 'dark';
   const visibleCount = categories.filter((c) => c.visibleOnHome && !c.deprecated).length;
@@ -80,7 +97,18 @@ export function SettingsScreen() {
         </button>
       </div>
 
+      <div className={styles.card}>
+        <button type="button" className={styles.row} onClick={exportCsv} disabled={exporting}>
+          <span className={styles.rowLabel}>CSV 내보내기</span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
+      </div>
+
       <div className={styles.footer}>on-expense-tracker v0.1</div>
+
+      {toast && <Toast key={toast} text={toast} />}
 
       {sub === 'categories' && <CategoryManageScreen onBack={() => setSub(null)} />}
 

@@ -39,6 +39,11 @@
   border-bottom: 0;
 }
 
+.row:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .rowLabel {
   flex: 1;
   font-size: 14.5px;
