@@ -42,7 +42,7 @@ export function App() {
           {tab === 'calendar' && <CalendarScreen />}
           {tab === 'budget' && <BudgetScreen />}
           {tab === 'assets' && <AssetsScreen />}
-          {tab === 'settings' && <SettingsScreen />}
+          {tab === 'settings' && <SettingsScreen onManageCards={() => setTab('assets')} />}
           {!known && <Placeholder tab={tab} />}
         </main>
         <TabBar active={tab} onChange={setTab} />

@@ -19,7 +19,13 @@ const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
 
 type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | null;
 
-export function SettingsScreen() {
+type Props = {
+  /** 카드 추가·결제 주기 설정은 이미 자산 탭에 있어 — 설정에 따로 화면을 만드는 대신
+   *  자산 탭으로 보내준다. */
+  onManageCards: () => void;
+};
+
+export function SettingsScreen({ onManageCards }: Props) {
   const settings = useSettings();
   const { categories, payments, paymentById } = useCatalog();
   const [sub, setSub] = useState<'categories' | null>(null);
@@ -90,6 +96,7 @@ export function SettingsScreen() {
 
   const dark = settings?.themeMode === 'dark';
   const visibleCount = categories.filter((c) => c.visibleOnHome && !c.deprecated).length;
+  const cardCount = payments.filter((p) => p.kind !== 'cash').length;
   const monthStartDay = settings?.monthStartDay ?? 1;
   const weekStartDay = settings?.weekStartDay ?? 0;
   const defaultPaymentId = settings?.defaultPaymentMethodId ?? payments[0]?.id ?? null;
@@ -118,6 +125,14 @@ export function SettingsScreen() {
           <span className={styles.rowValue}>
             홈 표시 {visibleCount} · 전체 {categories.length}
           </span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
+
+        <button type="button" className={styles.row} onClick={onManageCards}>
+          <span className={styles.rowLabel}>카드 관리</span>
+          <span className={styles.rowValue}>{cardCount}개 · 자산 탭</span>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
