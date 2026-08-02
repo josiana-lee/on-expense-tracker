@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { TabBar, TABS, type TabId } from './components/TabBar';
+import { CalendarScreen } from './screens/calendar/CalendarScreen';
 import { InputScreen } from './screens/input/InputScreen';
 import { ShellContext } from './shell/ShellContext';
 import styles from './App.module.css';
@@ -23,7 +24,9 @@ export function App() {
       <ShellContext.Provider value={shell}>
         {/* Keyed so switching tabs replays the screen-in animation. */}
         <main className={styles.screen} key={tab}>
-          {tab === 'input' ? <InputScreen /> : <Placeholder tab={tab} />}
+          {tab === 'input' && <InputScreen />}
+          {tab === 'calendar' && <CalendarScreen />}
+          {tab !== 'input' && tab !== 'calendar' && <Placeholder tab={tab} />}
         </main>
         <TabBar active={tab} onChange={setTab} />
       </ShellContext.Provider>

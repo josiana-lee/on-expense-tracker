@@ -24,7 +24,7 @@ type PopupState = PopupOrigin & { categoryId: string };
 export function InputScreen() {
   const now = useNow();
   const shell = useShell();
-  const { homeCategories, byId, payments } = useCatalog();
+  const { homeCategories, byId, payments, paymentById } = useCatalog();
   const { records, total } = useDayExpenses(now);
   const { text: toast, flash } = useToast();
 
@@ -168,7 +168,7 @@ export function InputScreen() {
           ) : (
             records.map((r) => {
               const cat = byId.get(r.categoryId);
-              const pay = payments.find((p) => p.id === r.paymentMethodId);
+              const pay = paymentById.get(r.paymentMethodId);
               return (
                 <div key={r.id} className={styles.row}>
                   <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>

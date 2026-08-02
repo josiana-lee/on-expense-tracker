@@ -1,0 +1,206 @@
+import { useMemo, useState } from 'react';
+import { Icon } from '../../components/Icon';
+import { Toast } from '../../components/Toast';
+import { fmt, parseDateStr } from '../../db/date';
+import type { ExpenseRecord } from '../../db/types';
+import { useCatalog } from '../../hooks/useCatalog';
+import { useDateExpenses } from '../../hooks/useExpenses';
+import { useMonth } from '../../hooks/useMonth';
+import { useSettings } from '../../hooks/useSettings';
+import { useToast } from '../../hooks/useToast';
+import { dateText, won } from '../../lib/format';
+import { EditSheet } from './EditSheet';
+import styles from './CalendarScreen.module.css';
+
+const CHEVRON_LEFT = 'M15 5l-7 7 7 7';
+const CHEVRON_RIGHT = 'M9 5l7 7-7 7';
+
+const DOW_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** Tiers lifted from the mock. Tuned for a single person's daily spend, so a
+ *  heavy day stands out without the whole month turning red. */
+function heatClass(sum: number): string {
+  if (sum >= 90_000) return styles.heat3;
+  if (sum >= 50_000) return styles.heat2;
+  if (sum >= 25_000) return styles.heat1;
+  return '';
+}
+
+/** Cells are ~44px wide, so five figures get abbreviated to fit. */
+function cellAmount(sum: number): string {
+  if (!sum) return '';
+  return sum >= 10_000 ? `${Math.round(sum / 1000)}k` : won(sum);
+}
+
+export function CalendarScreen() {
+  const settings = useSettings();
+  const weekStartDay = settings?.weekStartDay ?? 0;
+
+  const today = useMemo(() => new Date(), []);
+  const [view, setView] = useState(() => ({
+    year: today.getFullYear(),
+    month: today.getMonth() + 1,
+  }));
+  const [selected, setSelected] = useState(() => fmt(today));
+
+  const { totals, monthTotal } = useMonth(view.year, view.month);
+  const { records, total: dayTotal } = useDateExpenses(selected);
+  const { byId, paymentById } = useCatalog();
+  const { text: toast, flash } = useToast();
+  const [editing, setEditing] = useState<ExpenseRecord | null>(null);
+
+  const shiftMonth = (delta: number) => {
+    const d = new Date(view.year, view.month - 1 + delta, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    setView({ year, month });
+    // Landing on the current month puts the cursor on today; anywhere else
+    // starts at the 1st, which is predictable in both directions.
+    const isThisMonth = year === today.getFullYear() && month === today.getMonth() + 1;
+    setSelected(fmt(isThisMonth ? today : d));
+  };
+
+  const dows = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => (weekStartDay + i) % 7),
+    [weekStartDay],
+  );
+
+  const cells = useMemo(() => {
+    const firstDow = new Date(view.year, view.month - 1, 1).getDay();
+    const lead = (firstDow - weekStartDay + 7) % 7;
+    const daysInMonth = new Date(view.year, view.month, 0).getDate();
+
+    const out: Array<{ key: string; date: DateCell | null }> = [];
+    for (let i = 0; i < lead; i++) out.push({ key: `blank-${i}`, date: null });
+    for (let n = 1; n <= daysInMonth; n++) {
+      const d = new Date(view.year, view.month - 1, n);
+      out.push({ key: fmt(d), date: { n, dateKey: fmt(d), dow: d.getDay() } });
+    }
+    return out;
+  }, [view, weekStartDay]);
+
+  const todayKey = fmt(today);
+
+  return (
+    <div className={styles.screen}>
+      <div className={styles.head}>
+        <div className={styles.title}>
+          <button
+            type="button"
+            className={styles.nav}
+            onClick={() => shiftMonth(-1)}
+            aria-label="이전 달"
+          >
+            <Icon path={CHEVRON_LEFT} size={19} stroke="currentColor" strokeWidth={2.2} />
+          </button>
+          <span className={styles.monthName}>
+            {view.year}년 {view.month}월
+          </span>
+          <button
+            type="button"
+            className={styles.nav}
+            onClick={() => shiftMonth(1)}
+            aria-label="다음 달"
+          >
+            <Icon path={CHEVRON_RIGHT} size={19} stroke="currentColor" strokeWidth={2.2} />
+          </button>
+        </div>
+        <div className={styles.headTotal}>
+          <div className={styles.headTotalLabel}>이번 달 지출</div>
+          <div className={`${styles.headTotalValue} tabular`}>{won(monthTotal)}원</div>
+        </div>
+      </div>
+
+      <div className={styles.card}>
+        <div className={styles.dows}>
+          {dows.map((d) => (
+            <div key={d} className={`${styles.dow} ${d === 0 ? styles.sunday : ''}`}>
+              {DOW_NAMES[d]}
+            </div>
+          ))}
+        </div>
+        <div className={styles.days}>
+          {cells.map(({ key, date }) =>
+            date === null ? (
+              <div key={key} className={styles.blank} />
+            ) : (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelected(date.dateKey)}
+                aria-label={`${view.month}월 ${date.n}일`}
+                aria-pressed={selected === date.dateKey}
+                className={[
+                  styles.day,
+                  selected === date.dateKey ? styles.selected : heatClass(totals.get(date.dateKey)?.expense ?? 0),
+                  date.dateKey === todayKey ? styles.today : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span
+                  className={`${styles.dayNum} ${
+                    date.dow === 0 && selected !== date.dateKey ? styles.sundayNum : ''
+                  }`}
+                >
+                  {date.n}
+                </span>
+                <span className={`${styles.daySum} tabular`}>
+                  {cellAmount(totals.get(date.dateKey)?.expense ?? 0)}
+                </span>
+              </button>
+            ),
+          )}
+        </div>
+      </div>
+
+      <div className={styles.dayHead}>
+        <span className={styles.dayHeadLabel}>{dateText(parseDateStr(selected))}</span>
+        <span className={`${styles.dayHeadTotal} tabular`}>{won(dayTotal)}원</span>
+      </div>
+
+      <div className={styles.list}>
+        <div className={styles.listCard}>
+          {records.length === 0 ? (
+            <p className={styles.empty}>이 날은 기록이 없어</p>
+          ) : (
+            records.map((r) => {
+              const cat = byId.get(r.categoryId);
+              const pay = paymentById.get(r.paymentMethodId);
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={styles.row}
+                  onClick={() => setEditing(r)}
+                >
+                  <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>
+                    {cat && <Icon path={cat.iconPath} size={19} strokeWidth={1.8} />}
+                  </span>
+                  <div className={styles.rowMain}>
+                    <div className={styles.rowName}>{r.subLabel || cat?.name}</div>
+                    <div className={styles.rowSub}>
+                      {[r.memo, cat?.name, pay?.name].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <div className={styles.rowRight}>
+                    <div className={`${styles.rowAmount} tabular`}>{won(r.amount)}원</div>
+                    <div className={styles.rowTime}>{r.time}</div>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {editing && (
+        <EditSheet record={editing} onClose={() => setEditing(null)} onDone={flash} />
+      )}
+
+      {toast && <Toast text={toast} />}
+    </div>
+  );
+}
+
+type DateCell = { n: number; dateKey: string; dow: number };

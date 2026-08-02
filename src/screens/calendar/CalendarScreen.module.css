@@ -1,0 +1,295 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── month header ───────────────────────────────────────────── */
+
+.head {
+  padding: 18px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: none;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.monthName {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--tx);
+  letter-spacing: -0.8px;
+  white-space: nowrap;
+}
+
+.nav {
+  border: 0;
+  background: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--tx2);
+  flex: none;
+  transition: transform 0.14s var(--spring-hard);
+}
+
+.nav:active {
+  transform: scale(0.85);
+}
+
+.headTotal {
+  text-align: right;
+  flex: none;
+}
+
+.headTotalLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+.headTotalValue {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+/* ── grid ───────────────────────────────────────────────────── */
+
+.card {
+  background: var(--sf);
+  margin: 0 14px;
+  border-radius: 22px;
+  padding: 14px 10px 12px;
+  box-shadow: 0 2px 14px rgba(20, 25, 40, 0.05);
+  flex: none;
+}
+
+.dows {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+}
+
+.dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+.sunday {
+  color: #e48a8a;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.day {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 13px;
+  transition: transform 0.12s var(--spring-hard);
+}
+
+.day:active {
+  transform: scale(0.88);
+}
+
+.blank {
+  height: 50px;
+}
+
+.dayNum {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.daySum {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--tx2);
+}
+
+.selected {
+  background: var(--brandSoft);
+}
+
+.selected .dayNum {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+/* Heat tints come from the mock and read as "spent more here" at a glance.
+   The inset ring keeps the lightest tier visible against the white card. */
+.heat1 {
+  background: #ffeae4;
+  box-shadow: inset 0 0 0 1px rgba(224, 110, 90, 0.16);
+}
+
+.heat2 {
+  background: #ffdcd3;
+  box-shadow: inset 0 0 0 1px rgba(224, 110, 90, 0.16);
+}
+
+.heat3 {
+  background: #ffc9be;
+  box-shadow: inset 0 0 0 1px rgba(224, 110, 90, 0.16);
+}
+
+.heat1 .dayNum,
+.heat2 .dayNum,
+.heat3 .dayNum {
+  color: #8e3b2b;
+}
+
+.heat1 .daySum,
+.heat2 .daySum,
+.heat3 .daySum {
+  color: #b4503c;
+}
+
+.sundayNum {
+  color: #e48a8a;
+}
+
+.today .dayNum {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
+
+/* ── selected day ───────────────────────────────────────────── */
+
+.dayHead {
+  padding: 16px 20px 6px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex: none;
+}
+
+.dayHeadLabel {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.dayHeadTotal {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 14px 14px;
+}
+
+.listCard {
+  background: var(--sf);
+  border-radius: 20px;
+  padding: 2px 16px;
+}
+
+.row {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowBadge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowSub {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowRight {
+  text-align: right;
+  flex: none;
+}
+
+.rowAmount {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.rowTime {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.empty {
+  margin: 0;
+  padding: 26px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx2);
+}
