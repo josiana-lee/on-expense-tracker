@@ -4,6 +4,7 @@ import { updateSettings } from '../../db/settings';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useSettings } from '../../hooks/useSettings';
 import { CategoryManageScreen } from './CategoryManageScreen';
+import { DefaultPaymentSheet } from './DefaultPaymentSheet';
 import { MonthStartDaySheet } from './MonthStartDaySheet';
 import { WeekStartDaySheet } from './WeekStartDaySheet';
 import styles from './SettingsScreen.module.css';
@@ -11,11 +12,11 @@ import styles from './SettingsScreen.module.css';
 const CHEVRON = 'M9 5l7 7-7 7';
 const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
 
-type Sheet = 'monthStart' | 'weekStart' | null;
+type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | null;
 
 export function SettingsScreen() {
   const settings = useSettings();
-  const { categories } = useCatalog();
+  const { categories, payments, paymentById } = useCatalog();
   const [sub, setSub] = useState<'categories' | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
 
@@ -23,6 +24,8 @@ export function SettingsScreen() {
   const visibleCount = categories.filter((c) => c.visibleOnHome && !c.deprecated).length;
   const monthStartDay = settings?.monthStartDay ?? 1;
   const weekStartDay = settings?.weekStartDay ?? 0;
+  const defaultPaymentId = settings?.defaultPaymentMethodId ?? payments[0]?.id ?? null;
+  const defaultPaymentName = defaultPaymentId ? paymentById.get(defaultPaymentId)?.name : undefined;
 
   return (
     <div className={styles.screen}>
@@ -67,6 +70,14 @@ export function SettingsScreen() {
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
         </button>
+
+        <button type="button" className={styles.row} onClick={() => setSheet('defaultPayment')}>
+          <span className={styles.rowLabel}>기본 결제수단</span>
+          <span className={styles.rowValue}>{defaultPaymentName ?? '없음'}</span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
       </div>
 
       <div className={styles.footer}>on-expense-tracker v0.1</div>
@@ -78,6 +89,12 @@ export function SettingsScreen() {
       )}
       {sheet === 'weekStart' && (
         <WeekStartDaySheet value={weekStartDay} onClose={() => setSheet(null)} />
+      )}
+      {sheet === 'defaultPayment' && (
+        <DefaultPaymentSheet
+          value={settings?.defaultPaymentMethodId ?? null}
+          onClose={() => setSheet(null)}
+        />
       )}
     </div>
   );

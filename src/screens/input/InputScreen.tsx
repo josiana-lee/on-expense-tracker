@@ -9,6 +9,7 @@ import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useNow } from '../../hooks/useNow';
+import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { dateText, timeText, won } from '../../lib/format';
 import { offsetFromShellCentre, useShell } from '../../shell/ShellContext';
@@ -27,6 +28,7 @@ export function InputScreen() {
   const now = useNow();
   const shell = useShell();
   const { homeCategories, byId, payments, paymentById } = useCatalog();
+  const settings = useSettings();
   const { records, total } = useDayExpenses(now);
   const { text: toast, flash } = useToast();
   const { busy: saving, guard } = useGuardedAction();
@@ -63,7 +65,8 @@ export function InputScreen() {
   const [draftMemo, setDraftMemo] = useState('');
   const [draftPayment, setDraftPayment] = useState<string | null>(null);
 
-  const paymentId = stagedPaymentId ?? payments[0]?.id ?? null;
+  const paymentId =
+    stagedPaymentId ?? settings?.defaultPaymentMethodId ?? payments[0]?.id ?? null;
 
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
