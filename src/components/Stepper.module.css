@@ -1,0 +1,47 @@
+.field {
+  background: var(--sf2);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--sf);
+  color: var(--tx);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn:active {
+  transform: scale(0.92);
+}
+
+.value {
+  min-width: 44px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--tx);
+}

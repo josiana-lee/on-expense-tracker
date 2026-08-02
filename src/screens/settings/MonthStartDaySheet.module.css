@@ -12,23 +12,14 @@
   margin-top: -6px;
 }
 
-.save {
+.done {
   width: 100%;
   height: 54px;
   border: 0;
   border-radius: 18px;
-  background: var(--brand);
-  color: #fff;
-  font-size: 17px;
+  background: var(--brandSoft);
+  color: var(--brand);
+  font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.15s var(--spring-hard);
-}
-
-.save:active {
-  transform: scale(0.97);
-}
-
-.save:disabled {
-  opacity: 0.55;
 }
