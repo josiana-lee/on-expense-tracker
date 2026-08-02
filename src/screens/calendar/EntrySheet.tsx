@@ -37,6 +37,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
   const [amount, setAmount] = useState(record ? String(record.amount) : '');
   const [subLabel, setSubLabel] = useState(record?.subLabel);
+  const [memo, setMemo] = useState(record?.memo ?? '');
   const [busy, setBusy] = useState(false);
 
   /* Defaults are derived, not seeded into state. The catalog and settings
@@ -77,6 +78,9 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           amount: toMinor(Number(amount)),
           categoryId,
           subLabel,
+          // Undefined rather than '' so a cleared memo leaves no empty field
+          // behind in the stored row.
+          memo: memo.trim() || undefined,
           paymentMethodId: paymentId,
         });
         onDone('수정했어!');
@@ -85,6 +89,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           amount: Number(amount),
           categoryId,
           subLabel,
+          memo,
           paymentMethodId: paymentId,
           at: stampFor(date),
         });
@@ -143,6 +148,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           </button>
         ))}
       </div>
+
+      <input
+        className={styles.memo}
+        value={memo}
+        onChange={(e) => setMemo(e.target.value)}
+        placeholder="메모 (선택)"
+        enterKeyHint="done"
+      />
 
       <div className={styles.pays}>
         {payments.map((p) => (

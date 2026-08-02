@@ -80,6 +80,21 @@
   outline-offset: 2px;
 }
 
+.memo {
+  width: 100%;
+  border: 0;
+  background: var(--sf2);
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--tx);
+  outline: none;
+}
+
+.memo::placeholder {
+  color: var(--tx2);
+}
+
 .pays {
   display: flex;
   gap: 7px;

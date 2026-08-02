@@ -123,6 +123,15 @@
   height: 50px;
 }
 
+/* The month grid is fixed height, so on a short phone it squeezes the day's
+   record list down to a single row. Trimming the cells buys back a row. */
+@media (max-height: 700px) {
+  .day,
+  .blank {
+    height: 44px;
+  }
+}
+
 .dayNum {
   font-size: 13.5px;
   font-weight: 600;

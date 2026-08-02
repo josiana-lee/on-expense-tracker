@@ -27,8 +27,14 @@
   color: var(--tx2);
 }
 
+/* Used inside the entry sheet, where the memo field and the category row also
+   need room. Still clears the 44px touch-target floor. */
 .compact {
-  height: 50px;
-  border-radius: 15px;
-  font-size: 21px;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 19px;
+}
+
+.compactGrid {
+  gap: 6px;
 }

@@ -9,7 +9,7 @@ type Props = {
 
 export function Keypad({ onPress, compact }: Props) {
   return (
-    <div className={styles.grid}>
+    <div className={`${styles.grid} ${compact ? styles.compactGrid : ''}`}>
       {KEYS.map((k) => (
         <button
           key={k}
