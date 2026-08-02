@@ -151,6 +151,23 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         ))}
       </div>
 
+      {/* Appears once a category is picked — the list depends on which one,
+          and showing an empty row before that just wastes a beat. */}
+      {category && category.subs.length > 0 && (
+        <div className={styles.subs}>
+          {category.subs.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSubLabel((cur) => (cur === s ? undefined : s))}
+              className={`${styles.sub} ${subLabel === s ? styles.subOn : ''}`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
       <input
         className={styles.memo}
         value={memo}
