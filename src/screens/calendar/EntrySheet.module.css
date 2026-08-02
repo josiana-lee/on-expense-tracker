@@ -57,17 +57,19 @@
   margin: -4px -8px;
 }
 
+/* The whole column is the tap target, so the circle itself can sit under
+   44px without shrinking what the finger has to hit. */
 .cat {
   border: 0;
+  background: none;
   padding: 0;
   cursor: pointer;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: 56px;
   flex: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 5px;
   transition: transform 0.12s var(--spring-hard);
 }
 
@@ -75,9 +77,33 @@
   transform: scale(0.9);
 }
 
-.catOn {
+.catCircle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.catOn .catCircle {
   outline: 3px solid var(--brand);
   outline-offset: 2px;
+}
+
+.catName {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx2);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catOn .catName {
+  color: var(--brand);
+  font-weight: 800;
 }
 
 .memo {

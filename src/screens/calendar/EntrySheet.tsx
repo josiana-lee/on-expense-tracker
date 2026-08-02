@@ -142,9 +142,11 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             aria-label={c.name}
             aria-pressed={categoryId === c.id}
             className={`${styles.cat} ${categoryId === c.id ? styles.catOn : ''}`}
-            style={{ background: c.colorHex }}
           >
-            <Icon path={c.iconPath} size={21} strokeWidth={1.8} />
+            <span className={styles.catCircle} style={{ background: c.colorHex }}>
+              <Icon path={c.iconPath} size={20} strokeWidth={1.8} />
+            </span>
+            <span className={styles.catName}>{c.name}</span>
           </button>
         ))}
       </div>
