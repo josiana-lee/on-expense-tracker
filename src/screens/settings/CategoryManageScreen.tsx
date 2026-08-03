@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
-import { setCategoryVisible } from '../../db/categories';
 import { MAX_HOME_CATEGORIES } from '../../data/categories';
+import type { CategoryRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useToast } from '../../hooks/useToast';
+import { CategorySheet } from './CategorySheet';
 import styles from './SettingsScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
@@ -20,15 +22,8 @@ export function CategoryManageScreen({ onBack }: Props) {
   // records, but there's nothing to toggle for them here.
   const rows = categories.filter((c) => !c.deprecated);
   const visibleCount = rows.filter((c) => c.visibleOnHome).length;
-  const atCap = visibleCount >= MAX_HOME_CATEGORIES;
 
-  const toggle = (id: string, current: boolean) => {
-    if (!current && atCap) {
-      flash(`입력 화면엔 최대 ${MAX_HOME_CATEGORIES}개까지만 표시할 수 있어. 다른 카테고리를 먼저 꺼줘.`);
-      return;
-    }
-    setCategoryVisible(id, !current);
-  };
+  const [editing, setEditing] = useState<CategoryRecord | 'new' | null>(null);
 
   return (
     <div className={styles.sub}>
@@ -43,13 +38,17 @@ export function CategoryManageScreen({ onBack }: Props) {
       </div>
 
       <div className={styles.subBody}>
+        <button type="button" className={styles.addBtn} onClick={() => setEditing('new')}>
+          + 카테고리 추가
+        </button>
+
         <div className={styles.noteBox}>
           <span className={styles.noteIcon}>
             <Icon path={INFO_ICON} size={16} stroke="currentColor" strokeWidth={2.4} />
           </span>
           <p className={styles.noteText}>
             전체 {rows.length}개 중 입력 화면에는 최대 {MAX_HOME_CATEGORIES}개까지 보여줄 수 있어.
-            탭해서 켜고 끄고, 하나를 끄면 다른 카테고리를 켤 수 있어.
+            눌러서 이름·아이콘·표시 여부를 바꾸거나 삭제할 수 있어.
           </p>
         </div>
         <div className={styles.subCard}>
@@ -57,8 +56,7 @@ export function CategoryManageScreen({ onBack }: Props) {
             <button
               key={c.id}
               type="button"
-              onClick={() => toggle(c.id, c.visibleOnHome)}
-              aria-pressed={c.visibleOnHome}
+              onClick={() => setEditing(c)}
               className={`${styles.catRow} ${c.visibleOnHome ? '' : styles.catRowDim}`}
             >
               <span className={styles.catBadge} style={{ background: c.colorHex }}>
@@ -81,6 +79,17 @@ export function CategoryManageScreen({ onBack }: Props) {
       </div>
 
       {toast && <Toast key={toast} text={toast} />}
+
+      {editing && (
+        <CategorySheet
+          category={editing === 'new' ? null : editing}
+          otherVisibleCount={
+            editing === 'new' ? visibleCount : visibleCount - (editing.visibleOnHome ? 1 : 0)
+          }
+          onClose={() => setEditing(null)}
+          onDone={flash}
+        />
+      )}
     </div>
   );
 }
