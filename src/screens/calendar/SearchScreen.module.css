@@ -5,20 +5,21 @@
   z-index: 8;
   display: flex;
   flex-direction: column;
-  animation: pushIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+  animation: pushIn 0.32s var(--spring);
 }
 
 /* Declared locally rather than shared from styles/animations.css: CSS
    Modules hashes any bare animation-name it finds, matching local
    declarations or not, so a name that only exists in a plain global
-   stylesheet resolves to nothing and the animation silently no-ops. */
+   stylesheet resolves to nothing and the animation silently no-ops.
+   Starts fully off-screen (100%, not a partial nudge) and skips the
+   opacity fade — a full-width solid panel crossing the whole screen reads
+   as a slide; a partial offset with a cross-fade read as a pop-in-place. */
 @keyframes pushIn {
   0% {
-    opacity: 0.4;
-    transform: translateX(26%);
+    transform: translateX(100%);
   }
   100% {
-    opacity: 1;
     transform: translateX(0);
   }
 }
