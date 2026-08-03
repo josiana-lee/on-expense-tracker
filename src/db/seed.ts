@@ -2,6 +2,7 @@ import { PRESET_CATEGORIES, PRESET_VERSION } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
 import { db } from './db';
 import { now, uuidv7 } from './id';
+import { materializeDueRules } from './recurring';
 import type { CategoryRecord } from './types';
 
 /** Folds catalogue changes into the user's copy without clobbering their edits.
@@ -138,5 +139,6 @@ export async function bootstrap(): Promise<void> {
   await ensureSettings();
   await seedPaymentMethods();
   await reconcileCategories();
+  await materializeDueRules();
   void requestPersistence();
 }

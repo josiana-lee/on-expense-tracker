@@ -1,0 +1,305 @@
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.delete {
+  border: 0;
+  background: var(--warnSoft);
+  color: var(--warn);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.name {
+  width: 100%;
+  border: 0;
+  background: var(--sf2);
+  border-radius: 14px;
+  padding: 13px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--tx);
+  outline: none;
+}
+
+.name::placeholder {
+  color: var(--tx2);
+  font-weight: 600;
+}
+
+.logNow {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: var(--warnSoft);
+  color: var(--warn);
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.amountRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 4px 0 2px;
+}
+
+.amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+/* See EntrySheet.module.css — same horizontal-scroller clipping fix. */
+.cats {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 8px;
+  margin: -4px -8px;
+}
+
+.cat {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  width: 56px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transition: transform 0.12s var(--spring-hard);
+}
+
+.cat:active {
+  transform: scale(0.9);
+}
+
+.catCircle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.catOn .catCircle {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.catName {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx2);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catOn .catName {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.subs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sub {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--sf2);
+  color: var(--tx2);
+}
+
+.subOn {
+  background: var(--brand);
+  color: #fff;
+  animation: chipPop 0.3s var(--spring-hard);
+}
+
+/* Local rather than shared — see EntrySheet.module.css for why. */
+@keyframes chipPop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.memo {
+  width: 100%;
+  border: 0;
+  background: var(--sf2);
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--tx);
+  outline: none;
+}
+
+.memo::placeholder {
+  color: var(--tx2);
+}
+
+.pays {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+}
+
+.pay {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 15px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--sf2);
+  color: var(--tx2);
+}
+
+.payOn {
+  background: var(--brand);
+  color: #fff;
+}
+
+.segmented {
+  display: flex;
+  gap: 7px;
+}
+
+.segBtn {
+  flex: 1;
+  border: 0;
+  border-radius: 14px;
+  padding: 11px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--sf2);
+  color: var(--tx2);
+}
+
+.segBtnOn {
+  background: var(--brand);
+  color: #fff;
+}
+
+.dateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px;
+}
+
+.dateLabel {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.dateInput {
+  border: 0;
+  background: var(--sf2);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tx);
+  font-family: inherit;
+  flex: none;
+}
+
+.hint {
+  margin: -4px 2px 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.switch {
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  border: 0;
+  padding: 3px;
+  cursor: pointer;
+  display: flex;
+  justify-content: flex-start;
+  background: var(--line);
+  transition: background 0.2s ease;
+  flex: none;
+}
+
+.switchOn {
+  justify-content: flex-end;
+  background: var(--brand);
+}
+
+.knob {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s var(--spring-hard);
+}
+
+.save {
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s var(--spring-hard);
+}
+
+.save:active {
+  transform: scale(0.97);
+}
+
+.save:disabled {
+  opacity: 0.55;
+}

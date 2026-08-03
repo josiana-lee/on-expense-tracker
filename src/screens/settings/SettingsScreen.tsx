@@ -9,11 +9,13 @@ import { updateSettings } from '../../db/settings';
 import { useBackupOverdue } from '../../hooks/useBackupOverdue';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
+import { useRecurringRules } from '../../hooks/useRecurringRules';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { CategoryManageScreen } from './CategoryManageScreen';
 import { DefaultPaymentSheet } from './DefaultPaymentSheet';
 import { MonthStartDaySheet } from './MonthStartDaySheet';
+import { RecurringManageScreen } from './RecurringManageScreen';
 import { RestoreSheet } from './RestoreSheet';
 import { WeekStartDaySheet } from './WeekStartDaySheet';
 import styles from './SettingsScreen.module.css';
@@ -22,6 +24,7 @@ const CHEVRON = 'M9 5l7 7-7 7';
 const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
 
 type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | null;
+type Sub = 'categories' | 'recurring' | null;
 
 type Props = {
   /** 카드 추가·결제 주기 설정은 이미 자산 탭에 있어 — 설정에 따로 화면을 만드는 대신
@@ -32,7 +35,8 @@ type Props = {
 export function SettingsScreen({ onManageCards }: Props) {
   const settings = useSettings();
   const { categories, payments, paymentById } = useCatalog();
-  const [sub, setSub] = useState<'categories' | null>(null);
+  const recurringRules = useRecurringRules();
+  const [sub, setSub] = useState<Sub>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const { text: toast, flash } = useToast();
   const csvExport = useGuardedAction();
@@ -157,6 +161,16 @@ export function SettingsScreen({ onManageCards }: Props) {
         <button type="button" className={styles.row} onClick={onManageCards}>
           <span className={styles.rowLabel}>카드 관리</span>
           <span className={styles.rowValue}>{cardCount}개 · 자산 탭</span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
+
+        <button type="button" className={styles.row} onClick={() => setSub('recurring')}>
+          <span className={styles.rowLabel}>반복 지출</span>
+          <span className={styles.rowValue}>
+            {recurringRules.filter((r) => r.active).length}개
+          </span>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
@@ -297,6 +311,7 @@ export function SettingsScreen({ onManageCards }: Props) {
       {toast && <Toast key={toast} text={toast} />}
 
       {sub === 'categories' && <CategoryManageScreen onBack={() => setSub(null)} />}
+      {sub === 'recurring' && <RecurringManageScreen onBack={() => setSub(null)} />}
 
       {sheet === 'monthStart' && (
         <MonthStartDaySheet value={monthStartDay} onClose={() => setSheet(null)} />
