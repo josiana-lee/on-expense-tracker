@@ -1,33 +1,33 @@
 ---
 name: input-screen-layout-risk
-description: The input screen is a fixed non-scrolling flex column — any block added to it pushes the 추가! CTA off-screen on short viewports; always hit-test the CTA after layout changes
+description: RESOLVED (commit 21d42e8, "Fix unreachable save button") — the input screen now has a dedicated inner scroller so the CTA stays pinned regardless of viewport height. Still worth hit-testing after big layout changes.
 metadata:
   type: project
 ---
 
-`src/screens/input/InputScreen.module.css` `.screen` is `height: 100%; overflow: hidden` with a
-column of `flex: none` blocks. Only `.today` (오늘 기록) can shrink, and it shrinks to 0 — so once
-the fixed blocks exceed the viewport, the `추가!` CTA silently leaves the screen entirely. It is
-not clipped-but-scrollable; it is unreachable.
+**Status as of 2026-08-04 (commit 4a23eff): FIXED, confirmed by direct re-test.** The original
+finding (2026-08-02, commit 2bb3e57) was that `.screen` was a single non-scrolling flex column, so
+any block added past a ~730px content budget pushed the `추가!` CTA off-screen entirely on phones
+under 730px tall (360x640, 375x667, 320x568 all broken). Commit
+`21d42e8 "Fix unreachable save button and cancelled-popup state leak"` restructured the layout:
+`.screen` is now `display:flex; flex-direction:column` with a `.scroller` (`flex:1; min-height:0;
+overflow-y:auto`) holding everything above the CTA, and the CTA itself lives outside `.scroller` in
+its own `.ctaWrap` — so it's structurally always visible, and the scrollable content area absorbs
+any overflow instead of the CTA being pushed out.
 
-Measured 2026-08-02 at commit 2bb3e57: minimum viewport height for a hittable CTA is ~730 CSS px
-(fixed blocks 587 + top padding 20 + 6 gaps 60 + tab bar 63). Broken at 360x640, 375x667, 320x568.
-Fine at the 412x892 design target. Adding the 52px ad slot cost ~17px of that budget on top of an
-already-broken baseline (~713px at ea982c9).
+Re-confirmed 2026-08-04 via hit-testing at 320x568, 360x640, and 375x812 — CTA reachable at all
+three (previously only 412x892 passed). Also confirmed the "오늘 기록" list correctly scrolls
+within `.scroller` when it grows past the viewport, without ever displacing the CTA.
 
-**Why:** the whole screen is deliberately non-scrolling ("3 taps, no scroll"), so there is no
-scroll escape hatch when the budget is blown — the failure mode is invisible in a desktop browser
-and only shows on short phones.
-
-**How to apply:** any change that adds or grows a block on the input screen is a CTA-reachability
-regression until proven otherwise. Verify by hit-testing, not by eyeballing a screenshot:
+**How to re-verify if this ever regresses** (e.g. someone reverts to a single non-scrolling
+column, or adds a block outside `.scroller`): hit-test, not eyeball:
 
 ```js
-const cta = [...document.querySelectorAll('main button')].find(b => b.textContent === '추가!');
+const cta = [...document.querySelectorAll('main button')].find(b => b.textContent.includes('추가!'));
 const r = cta.getBoundingClientRect();
 const hit = document.elementFromPoint(r.x + r.width/2, r.y + r.height/2);
 hit === cta || cta.contains(hit); // false === regression
 ```
 
-Run it at 320x568, 360x640, 375x667 and the 412x892 design target.
+Run it at 320x568, 360x640, 375x812, and the 412x892 design target.
 See [[qa-verification-setup]] for how to drive the app.

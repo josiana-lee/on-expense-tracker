@@ -1,4 +1,5 @@
-- [Input screen layout risk](project_input_screen_layout_risk.md) — non-scrolling flex column; any added block pushes 추가! off-screen under ~730px viewport height
-- [QA verification setup](project_qa_verification_setup.md) — dev server on 5173, no test framework, how to read IndexedDB and fake the clock
-- [Busy-guard race condition](project_busy_guard_race_condition.md) — synchronous rapid taps beat the `busy` state guard; duplicate rows land wherever there's no DB uniqueness constraint (expenses, accounts confirmed vulnerable)
-- [Input staging payment leak](project_input_staging_payment_leak.md) — category popup's payment chip isn't staged like category/sub/memo; it survives a cancelled popup
+- [Input screen layout risk](project_input_screen_layout_risk.md) — RESOLVED (commit 21d42e8): dedicated inner scroller keeps 추가! CTA always reachable; re-verify via hit-test if regression suspected
+- [QA verification setup](project_qa_verification_setup.md) — dev server on 5173, no test framework, how to read/clean up IndexedDB and fake the clock
+- [Busy-guard race condition](project_busy_guard_race_condition.md) — RESOLVED (commit 554433d): useGuardedAction's ref-based lock blocks rapid double-tap duplicates everywhere; re-verify via sync triple-click if regression suspected
+- [Input staging payment leak](project_input_staging_payment_leak.md) — RESOLVED (commit 554433d): category popup's payment chip is now staged/discarded on cancel like sub/memo
+- [Verify scripted-click bugs with trusted clicks](feedback_verify_scripted_click_bugs_with_trusted_clicks.md) — a "bug" found only via scripted element.click() across multiple exec calls can be a stale-DOM-ref false positive; sanity-check with a real click before reporting

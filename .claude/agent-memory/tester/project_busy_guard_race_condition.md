@@ -1,45 +1,32 @@
 ---
 name: busy-guard-race-condition
-description: Every save/submit button uses `if (busy) return` + `setBusy(true)` — this does not stop truly synchronous rapid taps, so duplicate rows land wherever there is no DB uniqueness constraint
+description: RESOLVED 2026-08-02 (commit 554433d) — useGuardedAction's ref-based lock correctly blocks rapid double-tap duplicate saves everywhere it's used. Re-verify with this method if regression suspected.
 metadata:
   type: project
 ---
 
-Confirmed 2026-08-02 by dispatching 3 synchronous `.click()` calls on the same button (no
-`await`/render gap between them — the realistic worst case for an impatient double-tap on a
-slow device).
+**Status as of 2026-08-04 (commit 4a23eff): FIXED, confirmed by direct re-test.** An earlier
+session (2026-08-02, before commit 554433d) found that a plain `if (busy) return` React-state
+guard didn't stop synchronous rapid taps on InputScreen/EntrySheet/AccountSheet, producing
+duplicate rows (because `setBusy` doesn't take effect until React commits, so two synchronous
+clicks in the same tick both read stale `busy === false`). Commit
+`554433d "Fix duplicate saves on rapid clicks and a payment-staging leak"` rewrote
+`useGuardedAction` to use a `lockRef` checked and set synchronously before anything async happens,
+which closes the race.
 
-**Root cause:** `if (busy) return; ...; setBusy(true)` is a React-state guard. `setBusy` does not
-take effect in the DOM until React re-renders and commits. If two click handlers fire before that
-commit, both read the same stale `busy === false` closure and both proceed. This is not a timing
-edge case — it reproduces on every attempt, not intermittently.
+Re-confirmed 2026-08-04 by dispatching 3 synchronous `.click()` calls in one `browser_evaluate` on
+each of: Input screen "추가!", EntrySheet "추가!" (create mode), AccountSheet "추가!" (create
+mode). All three produced exactly 1 row, not 3. `useGuardedAction` is now used consistently across
+every save/delete action in the app (grep confirms: InputScreen, EntrySheet, AccountSheet,
+CardSheet, BudgetSheet, CategoryBudgetSheet, CategorySheet, RecurringRuleSheet, RestoreSheet,
+SettingsScreen's export buttons).
 
-**Confirmed duplicate-row creation (real bug, no protection):**
-- `src/screens/input/InputScreen.tsx` "추가!" — 3 clicks → 3 `expenses` rows.
-- `src/screens/calendar/EntrySheet.tsx` "추가!" (create mode) — 3 clicks → 3 `expenses` rows.
-- `src/screens/assets/AccountSheet.tsx` "추가!" (create mode) — 3 clicks → 3 `accounts` rows,
-  which directly triples the "총 자산" figure on the 자산 tab. `expenses` and `accounts` have no
-  uniqueness constraint on their Dexie schema, so nothing stops the duplicate `.add()`s.
-
-**Not reproducible as duplicate rows (accidental protection, not real protection):**
-- `src/screens/budget/BudgetSheet.tsx` "저장" — 3 clicks still only produced 1 `budgets` row,
-  because `budgets` has `&[period+scope+categoryId+periodStart]` as a unique index
-  (`src/db/budgets.ts`). The busy-guard race still happens at the UI layer; the DB schema is what
-  saves it. `CardSheet.tsx` writes with `db.paymentMethods.update(id, ...)` (same target id every
-  time) so a race there just re-applies the same values, not a true duplicate-row risk.
-
-**Why:** the design brief's own checklist (`docs/data-model.md` "동시성 / 멱등성") explicitly
-calls for "추가! 버튼 연타 시 중복 저장 방지 — UI 디바운스 + 저장 중 disable" — the `disabled`
-attribute alone (driven by the same `busy` state) doesn't cover this because disabling only takes
-effect after the render the race already escaped.
-
-**How to apply:** any new save/submit flow that writes rows without a DB-level uniqueness
-constraint is a duplicate-row regression until proven otherwise. Test by dispatching multiple
-synchronous `.click()` calls in one `browser_evaluate` call (not sequential tool-call clicks,
-which have a render gap between them and won't reproduce this):
-
+**How to re-verify if this ever regresses:** dispatch 3 synchronous `.click()` calls on a save
+button in one script (not sequential tool calls, which have a render gap and won't reproduce a
+real race):
 ```js
 () => { const btn = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === '추가!'); btn.click(); btn.click(); btn.click(); }
 ```
-
-Then read the IndexedDB row count via the technique in [[qa-verification-setup]].
+Then count rows in the relevant table via the raw IndexedDB read technique in
+[[qa-verification-setup]]. Only trust a "duplicate" finding if the count is off after this —
+not from eyeballing the UI.
