@@ -1,4 +1,5 @@
 import { Icon } from './Icon';
+import { useBackupOverdue } from '../hooks/useBackupOverdue';
 import styles from './TabBar.module.css';
 
 export const TABS = [
@@ -29,6 +30,8 @@ type Props = {
 };
 
 export function TabBar({ active, onChange }: Props) {
+  const backupOverdue = useBackupOverdue();
+
   return (
     <nav className={styles.bar}>
       {TABS.map((t) => (
@@ -39,7 +42,12 @@ export function TabBar({ active, onChange }: Props) {
           aria-current={active === t.id ? 'page' : undefined}
           className={`${styles.tab} ${active === t.id ? styles.active : ''}`}
         >
-          <Icon path={t.icon} size={21} stroke="currentColor" strokeWidth={1.8} />
+          <span className={styles.iconWrap}>
+            <Icon path={t.icon} size={21} stroke="currentColor" strokeWidth={1.8} />
+            {t.id === 'settings' && backupOverdue && (
+              <span className={styles.badge} aria-label="백업이 필요해" />
+            )}
+          </span>
           <span className={styles.label}>{t.name}</span>
         </button>
       ))}

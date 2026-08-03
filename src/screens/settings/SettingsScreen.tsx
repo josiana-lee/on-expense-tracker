@@ -6,6 +6,7 @@ import { exportExpensesCsv } from '../../db/exportCsv';
 import type { ParsedRestore } from '../../db/restore';
 import { parseBackupFile, RestoreFormatError } from '../../db/restore';
 import { updateSettings } from '../../db/settings';
+import { useBackupOverdue } from '../../hooks/useBackupOverdue';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useSettings } from '../../hooks/useSettings';
@@ -39,6 +40,7 @@ export function SettingsScreen({ onManageCards }: Props) {
   const icloudExport = useGuardedAction();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restoreData, setRestoreData] = useState<ParsedRestore | null>(null);
+  const backupOverdue = useBackupOverdue();
 
   const exportCsv = () => {
     csvExport.guard(async () => {
@@ -224,6 +226,19 @@ export function SettingsScreen({ onManageCards }: Props) {
       )}
 
       <div className={styles.sectionTitle}>백업 및 복구</div>
+
+      {backupOverdue && (
+        <div className={styles.warnBox}>
+          <span className={styles.warnIcon}>
+            <Icon path="M12 8h.01M12 12v5" size={16} stroke="currentColor" strokeWidth={2.4} />
+          </span>
+          <p className={styles.warnText}>
+            백업한 지 14일이 넘었어. 기기를 바꾸거나 잃어버리면 그동안 기록이 사라질 수 있으니
+            지금 백업해두자.
+          </p>
+        </div>
+      )}
+
       <div className={styles.card}>
         <button
           type="button"

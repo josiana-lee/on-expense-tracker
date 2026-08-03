@@ -1,5 +1,6 @@
 import { db } from './db';
 import { fmt } from './date';
+import { now } from './id';
 import { openMailto, shareOrDownload } from '../lib/download';
 
 export const APP_VERSION = '0.1.0';
@@ -58,6 +59,14 @@ export function totalBackupRows(counts: BackupFile['counts']): number {
   return Object.values(counts).reduce((sum, n) => sum + n, 0);
 }
 
+/** Feeds the 설정 탭 백업 리마인더 배지 (docs/data-model.md §7-1 B) — only the
+ *  two channels that actually produce a restorable file touch this. CSV is
+ *  export-only and can't restore anything, so exporting one shouldn't quiet
+ *  the reminder. */
+async function markBackedUp(): Promise<void> {
+  await db.meta.put({ key: 'lastBackupAt', value: now(), updatedAt: now() });
+}
+
 export interface ICloudBackupResult {
   rows: number;
   shared: boolean;
@@ -82,6 +91,7 @@ export async function icloudBackup(): Promise<ICloudBackupResult> {
     '가계부 백업 파일이야. "파일에 저장"을 골라서 iCloud Drive에 저장해줘.',
   );
 
+  if (rows > 0) await markBackedUp();
   return { rows, shared };
 }
 
@@ -113,5 +123,6 @@ export async function emailBackup(): Promise<number> {
     );
   }
 
+  if (rows > 0) await markBackedUp();
   return rows;
 }
