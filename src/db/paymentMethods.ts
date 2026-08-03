@@ -1,6 +1,6 @@
 import { db } from './db';
-import { now } from './id';
-import type { ID } from './types';
+import { now, uuidv7 } from './id';
+import type { ID, PaymentMethodRecord } from './types';
 
 /** statementEndDay is deliberately never written here. For a repeating
  *  monthly cycle the end is always the day before the next cycle's start —
@@ -13,4 +13,66 @@ export async function setCardStatement(
   statementStartDay: number,
 ): Promise<void> {
   await db.paymentMethods.update(id, { paymentDay, statementStartDay, updatedAt: now() });
+}
+
+// Rotates independently of the preset cards' own colors, so a user-added
+// card doesn't have to collide with — or be coordinated against — whichever
+// presets happen to still be active.
+const CARD_COLORS = [
+  '#C0B6F4',
+  '#FFB9AC',
+  '#A8C9F7',
+  '#F7BEDA',
+  '#9BDCD6',
+  '#FFD9A0',
+  '#B3DCC3',
+  '#D9C2F0',
+];
+
+export type NewPaymentMethod = {
+  name: string;
+  kind: 'credit' | 'debit';
+};
+
+export async function addPaymentMethod(input: NewPaymentMethod): Promise<ID> {
+  const id = uuidv7();
+  const stamp = now();
+  const name = input.name.trim();
+  const all = await db.paymentMethods.toArray();
+  const cardCount = all.filter((p) => p.kind !== 'cash').length;
+
+  await db.paymentMethods.add({
+    id,
+    kind: input.kind,
+    name,
+    tag: name.slice(0, 1),
+    colorHex: CARD_COLORS[cardCount % CARD_COLORS.length],
+    sortOrder: stamp,
+    archived: false,
+    createdAt: stamp,
+    updatedAt: stamp,
+  });
+
+  return id;
+}
+
+export async function updatePaymentMethod(
+  id: ID,
+  patch: Partial<Pick<PaymentMethodRecord, 'name' | 'kind'>>,
+): Promise<void> {
+  const next: Partial<PaymentMethodRecord> = { ...patch, updatedAt: now() };
+  if (patch.name !== undefined) {
+    next.name = patch.name.trim();
+    next.tag = next.name.slice(0, 1);
+  }
+  await db.paymentMethods.update(id, next);
+}
+
+/** Archived rather than hard-deleted, same reasoning as categories: every
+ *  expense stores its paymentMethodId directly, so removing the row would
+ *  turn old records into references to nothing. useCatalog()'s paymentById
+ *  map stays unfiltered specifically so archived cards still render
+ *  correctly on historical expenses; only the picker chips drop them. */
+export async function archivePaymentMethod(id: ID): Promise<void> {
+  await db.paymentMethods.update(id, { archived: true, updatedAt: now() });
 }

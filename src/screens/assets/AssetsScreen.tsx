@@ -35,7 +35,7 @@ export function AssetsScreen() {
   const [accountSheet, setAccountSheet] = useState<{ account: AccountRecord | null } | null>(
     null,
   );
-  const [cardSheet, setCardSheet] = useState<PaymentMethodRecord | null>(null);
+  const [cardSheet, setCardSheet] = useState<{ card: PaymentMethodRecord | null } | null>(null);
 
   const cards = payments.filter((p) => p.kind !== 'cash');
   const netWorth = accounts.reduce((sum, a) => sum + a.balance, 0);
@@ -97,13 +97,20 @@ export function AssetsScreen() {
 
       <div className={styles.sectionHead}>
         <span className={styles.sectionTitle}>내 카드</span>
+        <button
+          type="button"
+          className={styles.addBtn}
+          onClick={() => setCardSheet({ card: null })}
+        >
+          + 카드 추가
+        </button>
       </div>
       <div className={styles.card}>
         {cards.length === 0 ? (
           <p className={styles.empty}>등록된 카드가 없어</p>
         ) : (
           cards.map((c) => (
-            <CardRow key={c.id} card={c} today={today} onTap={() => setCardSheet(c)} />
+            <CardRow key={c.id} card={c} today={today} onTap={() => setCardSheet({ card: c })} />
           ))
         )}
       </div>
@@ -119,7 +126,7 @@ export function AssetsScreen() {
       )}
 
       {cardSheet && (
-        <CardSheet card={cardSheet} onClose={() => setCardSheet(null)} onDone={flash} />
+        <CardSheet card={cardSheet.card} onClose={() => setCardSheet(null)} onDone={flash} />
       )}
 
       {toast && <Toast key={toast} text={toast} />}
