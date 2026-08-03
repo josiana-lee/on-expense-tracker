@@ -1,0 +1,100 @@
+import { downloadBlob } from '../lib/download';
+import { BACKUP_TABLES, buildBackupFile } from './backup';
+import { db } from './db';
+import { fmt } from './date';
+import { BackupEnvelopeSchema, TABLE_SCHEMAS } from './restoreSchema';
+
+const SUPPORTED_FORMAT_VERSION = 1;
+
+export class RestoreFormatError extends Error {}
+
+export interface ParsedRestore {
+  exportedAt: string;
+  appVersion: string;
+  validCounts: Record<(typeof BACKUP_TABLES)[number], number>;
+  skippedCounts: Record<(typeof BACKUP_TABLES)[number], number>;
+  tables: Record<(typeof BACKUP_TABLES)[number], unknown[]>;
+}
+
+/** Parses and validates a chosen backup file without touching the DB.
+ *  Malformed individual rows are dropped rather than failing the whole
+ *  restore — docs/data-model.md §7-1 rule 4 ("Zod로 파싱 후 통과분만 쓴다"). */
+export async function parseBackupFile(file: File): Promise<ParsedRestore> {
+  const text = await file.text();
+
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new RestoreFormatError('이 파일은 올바른 백업 파일이 아니야');
+  }
+
+  const envelope = BackupEnvelopeSchema.safeParse(json);
+  if (!envelope.success) {
+    throw new RestoreFormatError('이 파일은 올바른 백업 파일이 아니야');
+  }
+
+  if (envelope.data.formatVersion > SUPPORTED_FORMAT_VERSION) {
+    throw new RestoreFormatError(
+      '이 백업은 더 최신 앱에서 만들어졌어. 앱을 업데이트한 뒤 다시 시도해줘',
+    );
+  }
+
+  const tables = {} as ParsedRestore['tables'];
+  const validCounts = {} as ParsedRestore['validCounts'];
+  const skippedCounts = {} as ParsedRestore['skippedCounts'];
+
+  for (const name of BACKUP_TABLES) {
+    const schema = TABLE_SCHEMAS[name];
+    const rawRows = envelope.data.data[name];
+    const rows = Array.isArray(rawRows) ? rawRows : [];
+
+    const valid: unknown[] = [];
+    let skipped = 0;
+    for (const row of rows) {
+      const parsed = schema.safeParse(row);
+      if (parsed.success) valid.push(parsed.data);
+      else skipped += 1;
+    }
+
+    tables[name] = valid;
+    validCounts[name] = valid.length;
+    skippedCounts[name] = skipped;
+  }
+
+  return {
+    exportedAt: envelope.data.exportedAt,
+    appVersion: envelope.data.appVersion,
+    validCounts,
+    skippedCounts,
+    tables,
+  };
+}
+
+/** 복원 전 현재 데이터를 자동으로 한 번 내보낸다 — 잘못된 백업 파일을 골랐을 때의
+ *  마지막 방어선(docs/data-model.md §7-1 rule 2). 공유 시트는 띄우지 않고 조용히
+ *  다운로드만 한다: 사용자가 방금 고른 건 "복원할 파일"이지 "저장할 파일"이 아니라서
+ *  또 저장 위치를 물으면 헷갈린다. */
+async function safetyExportBeforeRestore(): Promise<void> {
+  const current = await buildBackupFile();
+  const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `가계부_복원전백업_${fmt(new Date())}.json`);
+}
+
+/** 전체 교체(replace) — 단일 트랜잭션에서 clear → bulkPut (docs/data-model.md
+ *  §7-1 rule 5). MVP는 병합을 지원하지 않는다: 두 기기의 기록을 합치려면 ID
+ *  충돌·중복 판정 규칙이 필요한데, 지금은 "기기를 바꿔도 살아남는다"는 요구사항만
+ *  충족하면 되므로 그 복잡도를 들일 이유가 없다. */
+export async function restoreBackupFile(parsed: ParsedRestore): Promise<number> {
+  await safetyExportBeforeRestore();
+
+  await db.transaction('rw', BACKUP_TABLES, async () => {
+    for (const name of BACKUP_TABLES) {
+      await db.table(name).clear();
+      const rows = parsed.tables[name];
+      if (rows.length > 0) await db.table(name).bulkPut(rows);
+    }
+  });
+
+  return BACKUP_TABLES.reduce((sum, name) => sum + parsed.validCounts[name], 0);
+}

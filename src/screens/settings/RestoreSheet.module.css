@@ -1,0 +1,94 @@
+.title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.hint {
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.card {
+  margin-top: 14px;
+  background: var(--sf2);
+  border-radius: 16px;
+  padding: 2px 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowLabel {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.rowValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+.warnBox {
+  margin-top: 12px;
+  background: var(--warnSoft);
+  color: var(--warn);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cancel {
+  flex: 1;
+  height: 50px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--sf2);
+  color: var(--tx);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.confirm {
+  flex: 1.4;
+  height: 50px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--warn);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s var(--spring-hard);
+}
+
+.confirm:active {
+  transform: scale(0.97);
+}
+
+.cancel:disabled,
+.confirm:disabled {
+  opacity: 0.55;
+}

@@ -9,7 +9,7 @@ export const APP_VERSION = '0.1.0';
  *  docs/data-model.md §7-1: it's a fire-once idempotency guard (blocks a
  *  budget-exceeded alert from firing twice for the same threshold), not
  *  user data, and restoring it would resurrect stale locks. */
-const BACKUP_TABLES = [
+export const BACKUP_TABLES = [
   'expenses',
   'categories',
   'paymentMethods',

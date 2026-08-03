@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
 import { emailBackup, icloudBackup } from '../../db/backup';
 import { exportExpensesCsv } from '../../db/exportCsv';
+import type { ParsedRestore } from '../../db/restore';
+import { parseBackupFile, RestoreFormatError } from '../../db/restore';
 import { updateSettings } from '../../db/settings';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
@@ -11,6 +13,7 @@ import { useToast } from '../../hooks/useToast';
 import { CategoryManageScreen } from './CategoryManageScreen';
 import { DefaultPaymentSheet } from './DefaultPaymentSheet';
 import { MonthStartDaySheet } from './MonthStartDaySheet';
+import { RestoreSheet } from './RestoreSheet';
 import { WeekStartDaySheet } from './WeekStartDaySheet';
 import styles from './SettingsScreen.module.css';
 
@@ -34,6 +37,8 @@ export function SettingsScreen({ onManageCards }: Props) {
   const csvExport = useGuardedAction();
   const emailExport = useGuardedAction();
   const icloudExport = useGuardedAction();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [restoreData, setRestoreData] = useState<ParsedRestore | null>(null);
 
   const exportCsv = () => {
     csvExport.guard(async () => {
@@ -72,6 +77,23 @@ export function SettingsScreen({ onManageCards }: Props) {
         flash('백업 파일을 만들지 못했어. 다시 시도해줘');
       }
     });
+  };
+
+  const pickRestoreFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onRestoreFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    try {
+      const parsed = await parseBackupFile(file);
+      setRestoreData(parsed);
+    } catch (err) {
+      flash(err instanceof RestoreFormatError ? err.message : '백업 파일을 읽지 못했어');
+    }
   };
 
   const toggleReminder = async () => {
@@ -238,6 +260,20 @@ export function SettingsScreen({ onManageCards }: Props) {
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
         </button>
+
+        <button type="button" className={styles.row} onClick={pickRestoreFile}>
+          <span className={styles.rowLabel}>백업 파일 복원하기</span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          style={{ display: 'none' }}
+          onChange={onRestoreFileChosen}
+        />
       </div>
 
       <div className={styles.footer}>on-expense-tracker v0.1</div>
@@ -256,6 +292,14 @@ export function SettingsScreen({ onManageCards }: Props) {
         <DefaultPaymentSheet
           value={settings?.defaultPaymentMethodId ?? null}
           onClose={() => setSheet(null)}
+        />
+      )}
+
+      {restoreData && (
+        <RestoreSheet
+          parsed={restoreData}
+          onClose={() => setRestoreData(null)}
+          onDone={flash}
         />
       )}
     </div>
