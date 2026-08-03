@@ -3,12 +3,15 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
 import { currentAccountingMonth, daySpan, fmt, monthRange, parseDateStr, splitWeeks } from '../../db/date';
+import type { BudgetRecord } from '../../db/types';
 import { loadRange, sumExpenses } from '../../db/expenses';
-import { useMonthlyBudget } from '../../hooks/useBudget';
+import { useCatalog } from '../../hooks/useCatalog';
+import { useCategoryBudgets, useMonthlyBudget } from '../../hooks/useBudget';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { shortDate, won } from '../../lib/format';
 import { BudgetSheet } from './BudgetSheet';
+import { CategoryBudgetSheet } from './CategoryBudgetSheet';
 import styles from './BudgetScreen.module.css';
 
 const WARN_ICON = 'M12 4v10M12 19h.01';
@@ -19,6 +22,10 @@ export function BudgetScreen() {
   const weekStartDay = settings?.weekStartDay ?? 0;
   const { text: toast, flash } = useToast();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [catBudgetSheet, setCatBudgetSheet] = useState<{ existing: BudgetRecord | null } | null>(
+    null,
+  );
+  const { byId } = useCatalog();
 
   const today = useMemo(() => new Date(), []);
   const { year, month } = currentAccountingMonth(monthStartDay, today);
@@ -27,6 +34,20 @@ export function BudgetScreen() {
   const rows = useLiveQuery(() => loadRange(from, to), [from, to]);
   const monthTotal = useMemo(() => (rows ? sumExpenses(rows) : 0), [rows]);
   const budget = useMonthlyBudget(from);
+  const categoryBudgets = useCategoryBudgets(from);
+
+  const categoryBudgetData = useMemo(
+    () =>
+      categoryBudgets
+        .map((b) => {
+          const spend = rows
+            ? sumExpenses(rows.filter((r) => r.categoryId === b.categoryId))
+            : 0;
+          return { budget: b, category: byId.get(b.categoryId), spend };
+        })
+        .sort((a, b) => b.spend / (b.budget.amount || 1) - a.spend / (a.budget.amount || 1)),
+    [categoryBudgets, rows, byId],
+  );
 
   const periodLabel =
     monthStartDay === 1
@@ -150,6 +171,66 @@ export function BudgetScreen() {
         })}
       </div>
 
+      <div className={styles.sectionHead}>
+        <span className={styles.sectionTitle}>카테고리별 예산</span>
+        <button
+          type="button"
+          className={styles.addBtn}
+          onClick={() => setCatBudgetSheet({ existing: null })}
+        >
+          + 카테고리 예산 추가
+        </button>
+      </div>
+      {categoryBudgetData.length === 0 ? (
+        <div className={styles.weekCard}>
+          <p className={styles.catEmpty}>
+            식비처럼 자주 쓰는 카테고리에 따로 한도를 정해두면 여기서 따로 보여줄게.
+          </p>
+        </div>
+      ) : (
+        <div className={styles.weekCard}>
+          {categoryBudgetData.map(({ budget: b, category, spend }) => {
+            const catOver = spend > b.amount;
+            const catPct = b.amount > 0 ? Math.min(100, Math.round((spend / b.amount) * 100)) : 0;
+            return (
+              <button
+                key={b.id}
+                type="button"
+                className={styles.catBudgetRow}
+                onClick={() => setCatBudgetSheet({ existing: b })}
+              >
+                <span
+                  className={styles.catBudgetBadge}
+                  style={{ background: category?.colorHex ?? '#CFD5DE' }}
+                >
+                  {category && <Icon path={category.iconPath} size={16} strokeWidth={1.8} />}
+                </span>
+                <div className={styles.catBudgetMain}>
+                  <div className={styles.weekTop}>
+                    <span className={styles.weekName}>{category?.name ?? '알 수 없음'}</span>
+                    <span
+                      className={`${styles.weekAmt} ${catOver ? styles.weekAmtOver : ''} tabular`}
+                    >
+                      {won(spend)}원
+                    </span>
+                  </div>
+                  <div className={styles.weekBar}>
+                    <div
+                      className={`${styles.weekBarFill} ${catOver ? styles.weekBarFillOver : ''}`}
+                      style={{ width: `${catPct}%` }}
+                    />
+                  </div>
+                  <div className={styles.weekNote}>
+                    예산 {won(b.amount)}원
+                    {catOver ? ` · ${won(spend - b.amount)}원 초과` : ''}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className={styles.spacer} />
 
       {sheetOpen && (
@@ -159,6 +240,18 @@ export function BudgetScreen() {
           periodLabel={periodLabel}
           current={budget?.amount}
           onClose={() => setSheetOpen(false)}
+          onDone={flash}
+        />
+      )}
+
+      {catBudgetSheet && (
+        <CategoryBudgetSheet
+          periodStart={from}
+          periodEnd={to}
+          periodLabel={periodLabel}
+          existing={catBudgetSheet.existing}
+          excludeCategoryIds={categoryBudgets.map((b) => b.categoryId)}
+          onClose={() => setCatBudgetSheet(null)}
           onDone={flash}
         />
       )}
