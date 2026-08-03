@@ -76,3 +76,25 @@ export async function updatePaymentMethod(
 export async function archivePaymentMethod(id: ID): Promise<void> {
   await db.paymentMethods.update(id, { archived: true, updatedAt: now() });
 }
+
+/** Swaps sortOrder with whichever card sits adjacent in the *displayed*
+ *  order (active cards, cash excluded) — cheaper than renumbering the whole
+ *  list, and sortOrder values only ever need to sort correctly relative to
+ *  each other, not hold any particular magnitude. */
+export async function moveCard(id: ID, direction: 'up' | 'down'): Promise<void> {
+  const all = await db.paymentMethods.toArray();
+  const cards = all
+    .filter((p) => p.kind !== 'cash' && !p.archived)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const idx = cards.findIndex((c) => c.id === id);
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (idx === -1 || swapIdx < 0 || swapIdx >= cards.length) return;
+
+  const a = cards[idx];
+  const b = cards[swapIdx];
+  await db.transaction('rw', db.paymentMethods, async () => {
+    await db.paymentMethods.update(a.id, { sortOrder: b.sortOrder, updatedAt: now() });
+    await db.paymentMethods.update(b.id, { sortOrder: a.sortOrder, updatedAt: now() });
+  });
+}

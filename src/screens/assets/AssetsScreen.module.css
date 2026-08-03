@@ -159,6 +159,48 @@
   color: var(--warn);
 }
 
+/* Card rows nest a button (tap → edit) plus reorder arrows inside .row,
+   which stays a plain flex container for that case — accounts still use
+   .row directly as the button itself, so its own styles are untouched. */
+.rowBtn {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  text-align: left;
+}
+
+.reorder {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reorderBtn {
+  width: 26px;
+  height: 22px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--sf2);
+  color: var(--tx2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.reorderBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .empty {
   padding: 16px 0;
   text-align: center;

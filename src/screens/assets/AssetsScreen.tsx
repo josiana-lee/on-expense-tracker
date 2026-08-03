@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Toast } from '../../components/Toast';
+import { moveCard } from '../../db/paymentMethods';
 import type { AccountRecord, PaymentMethodRecord } from '../../db/types';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -109,8 +110,17 @@ export function AssetsScreen() {
         {cards.length === 0 ? (
           <p className={styles.empty}>등록된 카드가 없어</p>
         ) : (
-          cards.map((c) => (
-            <CardRow key={c.id} card={c} today={today} onTap={() => setCardSheet({ card: c })} />
+          cards.map((c, i) => (
+            <CardRow
+              key={c.id}
+              card={c}
+              today={today}
+              onTap={() => setCardSheet({ card: c })}
+              onMoveUp={() => moveCard(c.id, 'up')}
+              onMoveDown={() => moveCard(c.id, 'down')}
+              isFirst={i === 0}
+              isLast={i === cards.length - 1}
+            />
           ))
         )}
       </div>
