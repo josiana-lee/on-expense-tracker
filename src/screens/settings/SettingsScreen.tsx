@@ -282,14 +282,15 @@ export function SettingsScreen({ onManageCards }: Props) {
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
         </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          style={{ display: 'none' }}
-          onChange={onRestoreFileChosen}
-        />
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        style={{ display: 'none' }}
+        onChange={onRestoreFileChosen}
+      />
 
       <div className={styles.footer}>on-expense-tracker v0.1</div>
 
