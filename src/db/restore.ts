@@ -93,6 +93,18 @@ export async function parseBackupFile(file: File): Promise<ParsedRestore> {
     );
   }
 
+  /* buildBackupFile has always recorded the Dexie schema version and nothing
+     ever read it. The two version numbers move independently: adding a table
+     or an index bumps this without touching formatVersion, so a backup from a
+     newer build would otherwise sail past the check above and then fail
+     halfway through bulkPut — safe, since the transaction rolls back, but the
+     user only sees "복원하지 못했어". Refusing up front says why. */
+  if (envelope.data.schemaVersion > db.verno) {
+    throw new RestoreFormatError(
+      '이 백업은 더 최신 버전의 앱에서 만들어졌어. 앱을 업데이트한 뒤 다시 시도해줘',
+    );
+  }
+
   const tables = {} as ParsedRestore['tables'];
   const validCounts = {} as ParsedRestore['validCounts'];
   const skippedCounts = {} as ParsedRestore['skippedCounts'];

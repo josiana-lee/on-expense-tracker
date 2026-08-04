@@ -4,7 +4,15 @@ import { BACKUP_TABLES } from './backup';
 /** A backup file is user-editable external input (docs/data-model.md §7-1
  *  rule 4), so every row is parsed rather than trusted. Shapes mirror
  *  db/types.ts; ID/DateStr/TimeStr/Epoch/Minor are TS-only brands with no
- *  runtime distinction, so they collapse to plain string/number checks here. */
+ *  runtime distinction, so they collapse to plain string/number checks here.
+ *
+ *  Every shape is `looseObject`, never `object`: zod strips unknown keys by
+ *  default, and this file is a mirror of types.ts maintained by hand. Under
+ *  `object`, adding a column to types.ts and forgetting to add it here would
+ *  delete that column from every row on the next restore, with no error and
+ *  nothing in the UI to notice. Keeping unknown keys makes the mirror falling
+ *  behind lossless instead of destructive — validation still rejects rows
+ *  that get the known fields wrong. */
 
 const id = z.string().min(1);
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -13,7 +21,7 @@ const epoch = z.number();
 const minor = z.number();
 const txType = z.enum(['expense', 'income']);
 
-const expenseSchema = z.object({
+const expenseSchema = z.looseObject({
   id,
   date: dateStr,
   time: timeStr,
@@ -29,7 +37,7 @@ const expenseSchema = z.object({
   updatedAt: epoch,
 });
 
-const categorySchema = z.object({
+const categorySchema = z.looseObject({
   id,
   presetKey: z.string().optional(),
   type: txType,
@@ -46,7 +54,7 @@ const categorySchema = z.object({
   updatedAt: epoch,
 });
 
-const paymentMethodSchema = z.object({
+const paymentMethodSchema = z.looseObject({
   id,
   presetKey: z.string().optional(),
   kind: z.enum(['cash', 'credit', 'debit']),
@@ -64,7 +72,7 @@ const paymentMethodSchema = z.object({
   updatedAt: epoch,
 });
 
-const accountSchema = z.object({
+const accountSchema = z.looseObject({
   id,
   name: z.string(),
   kind: z.enum(['cash', 'checking', 'savings', 'investment', 'other']),
@@ -76,7 +84,7 @@ const accountSchema = z.object({
   updatedAt: epoch,
 });
 
-const budgetSchema = z.object({
+const budgetSchema = z.looseObject({
   id,
   period: z.enum(['month', 'week']),
   scope: z.enum(['total', 'category']),
@@ -88,7 +96,7 @@ const budgetSchema = z.object({
   updatedAt: epoch,
 });
 
-const recurringRuleSchema = z.object({
+const recurringRuleSchema = z.looseObject({
   id,
   name: z.string(),
   amount: minor,
@@ -111,7 +119,7 @@ const recurringRuleSchema = z.object({
   updatedAt: epoch,
 });
 
-const settingsSchema = z.object({
+const settingsSchema = z.looseObject({
   id: z.literal('app'),
   monthStartDay: z.number(),
   weekStartDay: z.number(),
@@ -124,14 +132,14 @@ const settingsSchema = z.object({
   updatedAt: epoch,
 });
 
-const tombstoneSchema = z.object({
+const tombstoneSchema = z.looseObject({
   id,
   table: z.string(),
   deletedAt: epoch,
   payload: z.unknown().optional(),
 });
 
-const metaSchema = z.object({
+const metaSchema = z.looseObject({
   key: z.enum(['deviceId', 'presetVersion', 'installedAt', 'lastBackupAt', 'lastBackupReminderAt']),
   value: z.unknown(),
   updatedAt: epoch,
@@ -149,7 +157,7 @@ export const TABLE_SCHEMAS = {
   meta: metaSchema,
 } satisfies Record<(typeof BACKUP_TABLES)[number], z.ZodType>;
 
-export const BackupEnvelopeSchema = z.object({
+export const BackupEnvelopeSchema = z.looseObject({
   formatVersion: z.number(),
   schemaVersion: z.number(),
   appVersion: z.string(),
