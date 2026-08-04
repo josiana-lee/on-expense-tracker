@@ -1,0 +1,96 @@
+.intro {
+  margin: 0 0 12px;
+  padding: 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--tx2);
+}
+
+.pkg {
+  border-bottom: 1px solid var(--line);
+}
+
+.pkg:last-child {
+  border-bottom: 0;
+}
+
+.pkgHead {
+  width: 100%;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+}
+
+.pkgMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.pkgName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.pkgVersion {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.pkgMeta {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx2);
+  line-height: 1.5;
+}
+
+.caret {
+  flex: none;
+  color: var(--tx2);
+  display: flex;
+  transition: transform 0.2s var(--spring-hard);
+}
+
+.caretOpen {
+  transform: rotate(180deg);
+}
+
+/* Licence text is normative — it wraps rather than scrolling sideways so no
+   clause can end up off-screen, and keeps its own line breaks. */
+.licenseText {
+  margin: 0 0 10px;
+  padding: 12px 13px;
+  background: var(--sf2);
+  border-radius: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  line-height: 1.65;
+  color: var(--tx2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.homepage {
+  display: block;
+  padding: 0 2px 13px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand);
+  word-break: break-all;
+}
+
+.noticeTitle {
+  padding: 16px 6px 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--tx2);
+}

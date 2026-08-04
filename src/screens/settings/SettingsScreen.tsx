@@ -14,6 +14,7 @@ import { useRecurringRules } from '../../hooks/useRecurringRules';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { CategoryManageScreen } from './CategoryManageScreen';
+import { LicenseScreen } from './LicenseScreen';
 import { DefaultPaymentSheet } from './DefaultPaymentSheet';
 import { MonthStartDaySheet } from './MonthStartDaySheet';
 import { RecurringManageScreen } from './RecurringManageScreen';
@@ -25,7 +26,7 @@ const CHEVRON = 'M9 5l7 7-7 7';
 const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
 
 type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | null;
-type Sub = 'categories' | 'recurring' | null;
+type Sub = 'categories' | 'recurring' | 'licenses' | null;
 
 type Props = {
   /** 카드 추가·결제 주기 설정은 이미 자산 탭에 있어 — 설정에 따로 화면을 만드는 대신
@@ -307,60 +308,69 @@ export function SettingsScreen({ onManageCards }: Props) {
         onChange={onRestoreFileChosen}
       />
 
-      {/* Only the rows that have a value in data/appInfo.ts render, so an
-          unfilled field shows nothing rather than a dead link. */}
-      {(APP_INFO.privacyPolicyUrl || APP_INFO.termsUrl || APP_INFO.supportEmail) && (
-        <>
-          <div className={styles.sectionTitle}>정보</div>
-          <div className={styles.card}>
-            {APP_INFO.privacyPolicyUrl && (
-              <a
-                className={`${styles.row} ${styles.rowLink}`}
-                href={APP_INFO.privacyPolicyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className={styles.rowLabel}>개인정보처리방침</span>
-                <span className={styles.chevron}>
-                  <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
-                </span>
-              </a>
-            )}
+      {/* The licence and version rows are always here, so the section always
+          shows. The three above them come from data/appInfo.ts and render
+          only once their field has a value — an unfilled one is absent
+          rather than a dead link. */}
+      <div className={styles.sectionTitle}>정보</div>
+      <div className={styles.card}>
+        {APP_INFO.privacyPolicyUrl && (
+          <a
+            className={`${styles.row} ${styles.rowLink}`}
+            href={APP_INFO.privacyPolicyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className={styles.rowLabel}>개인정보처리방침</span>
+            <span className={styles.chevron}>
+              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+            </span>
+          </a>
+        )}
 
-            {APP_INFO.termsUrl && (
-              <a
-                className={`${styles.row} ${styles.rowLink}`}
-                href={APP_INFO.termsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className={styles.rowLabel}>이용약관</span>
-                <span className={styles.chevron}>
-                  <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
-                </span>
-              </a>
-            )}
+        {APP_INFO.termsUrl && (
+          <a
+            className={`${styles.row} ${styles.rowLink}`}
+            href={APP_INFO.termsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className={styles.rowLabel}>이용약관</span>
+            <span className={styles.chevron}>
+              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+            </span>
+          </a>
+        )}
 
-            {APP_INFO.supportEmail && (
-              <a
-                className={`${styles.row} ${styles.rowLink}`}
-                href={`mailto:${APP_INFO.supportEmail}`}
-              >
-                <span className={styles.rowLabel}>문의하기</span>
-                <span className={styles.rowValue}>{APP_INFO.supportEmail}</span>
-                <span className={styles.chevron}>
-                  <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
-                </span>
-              </a>
-            )}
+        {APP_INFO.supportEmail && (
+          <a
+            className={`${styles.row} ${styles.rowLink}`}
+            href={`mailto:${APP_INFO.supportEmail}`}
+          >
+            <span className={styles.rowLabel}>문의하기</span>
+            <span className={styles.rowValue}>{APP_INFO.supportEmail}</span>
+            <span className={styles.chevron}>
+              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+            </span>
+          </a>
+        )}
 
-            <div className={styles.row} style={{ cursor: 'default' }}>
-              <span className={styles.rowLabel}>버전</span>
-              <span className={styles.rowValue}>{APP_INFO.version}</span>
-            </div>
-          </div>
-        </>
-      )}
+        <button
+          type="button"
+          className={styles.row}
+          onClick={() => setSub('licenses')}
+        >
+          <span className={styles.rowLabel}>오픈소스 라이선스</span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
+
+        <div className={styles.row} style={{ cursor: 'default' }}>
+          <span className={styles.rowLabel}>버전</span>
+          <span className={styles.rowValue}>{APP_INFO.version}</span>
+        </div>
+      </div>
 
       <div className={styles.footer}>
         <div>
@@ -377,6 +387,7 @@ export function SettingsScreen({ onManageCards }: Props) {
 
       {sub === 'categories' && <CategoryManageScreen onBack={() => setSub(null)} />}
       {sub === 'recurring' && <RecurringManageScreen onBack={() => setSub(null)} />}
+      {sub === 'licenses' && <LicenseScreen onBack={() => setSub(null)} />}
 
       {sheet === 'monthStart' && (
         <MonthStartDaySheet value={monthStartDay} onClose={() => setSheet(null)} />
