@@ -63,6 +63,13 @@ export function RestoreSheet({ parsed, onClose, onDone }: Props) {
         </div>
       )}
 
+      {parsed.dangling.total > 0 && (
+        <div className={styles.warnBox}>
+          {parsed.dangling.total}건은 카테고리나 결제수단 정보가 백업에 없어. 금액과 날짜는
+          그대로 복원되지만 분류가 비어 보일 수 있어.
+        </div>
+      )}
+
       <div className={styles.warnBox}>
         복원하면 지금 기기에 있는 모든 데이터가 이 백업 내용으로 완전히 바뀌어. 혹시 몰라 지금
         데이터는 파일로 먼저 저장해줄게.

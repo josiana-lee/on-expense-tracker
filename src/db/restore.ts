@@ -1,3 +1,5 @@
+import { PRESET_CATEGORIES } from '../data/categories';
+import { PRESET_PAYMENTS } from '../data/payments';
 import { downloadBlob } from '../lib/download';
 import { BACKUP_TABLES, buildBackupFile } from './backup';
 import { db } from './db';
@@ -10,12 +12,61 @@ const SUPPORTED_FORMAT_VERSION = 1;
 
 export class RestoreFormatError extends Error {}
 
+/** Rows that survive validation but point at a category or payment method
+ *  that won't exist after the restore. */
+export interface DanglingCounts {
+  expenses: number;
+  budgets: number;
+  recurringRules: number;
+  total: number;
+}
+
 export interface ParsedRestore {
   exportedAt: string;
   appVersion: string;
   validCounts: Record<(typeof BACKUP_TABLES)[number], number>;
   skippedCounts: Record<(typeof BACKUP_TABLES)[number], number>;
+  dangling: DanglingCounts;
   tables: Record<(typeof BACKUP_TABLES)[number], unknown[]>;
+}
+
+type Ref = { categoryId?: string; paymentMethodId?: string };
+
+/** Row-level validation checks each row on its own, so an expense pointing at
+ *  a category the same file lost still passes. Nothing was reporting that, and
+ *  "지출 3,200건 복원" reads like a clean import either way.
+ *
+ *  What counts as dangling depends on what bootstrap will put back afterwards:
+ *  reconcileCategories re-adds any individual preset category that's missing,
+ *  so a reference to one is fine. seedPaymentMethods only fires on a
+ *  completely empty table, so preset payment methods are only coming back if
+ *  the backup had none at all. */
+function countDangling(tables: ParsedRestore['tables']): DanglingCounts {
+  const categoryIds = new Set(
+    (tables.categories as Array<{ id: string }>).map((c) => c.id),
+  );
+  for (const p of PRESET_CATEGORIES) categoryIds.add(p.key);
+
+  const paymentRows = tables.paymentMethods as Array<{ id: string }>;
+  const paymentIds = new Set(paymentRows.map((p) => p.id));
+  if (paymentRows.length === 0) {
+    for (const p of PRESET_PAYMENTS) paymentIds.add(p.key);
+  }
+
+  const broken = (row: Ref) =>
+    (row.categoryId !== undefined &&
+      row.categoryId !== '*' &&
+      !categoryIds.has(row.categoryId)) ||
+    (row.paymentMethodId !== undefined && !paymentIds.has(row.paymentMethodId));
+
+  const count = (name: 'expenses' | 'budgets' | 'recurringRules') =>
+    (tables[name] as Ref[]).filter(broken).length;
+
+  const expenses = count('expenses');
+  const budgets = count('budgets');
+  const recurringRules = count('recurringRules');
+
+  return { expenses, budgets, recurringRules, total: expenses + budgets + recurringRules };
 }
 
 /** Parses and validates a chosen backup file without touching the DB.
@@ -69,6 +120,7 @@ export async function parseBackupFile(file: File): Promise<ParsedRestore> {
     appVersion: envelope.data.appVersion,
     validCounts,
     skippedCounts,
+    dangling: countDangling(tables),
     tables,
   };
 }
