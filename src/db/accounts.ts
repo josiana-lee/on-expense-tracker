@@ -27,19 +27,28 @@ export async function addAccount(input: NewAccount): Promise<ID> {
   return id;
 }
 
+/** Keys are attached one at a time rather than spread, because Dexie treats an
+ *  `undefined` value in an update patch as "delete this field", not "leave it
+ *  alone". This used to hand `balance: undefined` to every call that didn't
+ *  set a balance, which would have wiped the stored balance off the record —
+ *  invisible so far only because the one caller always sends all three
+ *  fields. Anything omitted here simply isn't written. */
 export async function updateAccount(
   id: ID,
   patch: Partial<{ name: string; kind: AccountRecord['kind']; balance: number }>,
 ): Promise<void> {
-  const next: Partial<AccountRecord> = {
-    ...patch,
-    balance: patch.balance !== undefined ? toMinor(patch.balance) : undefined,
-    updatedAt: now(),
-  };
-  // Editing the balance is the user re-asserting "this is true right now" —
-  // the snapshot date has to move with it, or a derived "이번 달 입출금"
-  // display on top of it would silently start lying.
-  if (patch.balance !== undefined) next.balanceAsOf = fmt(new Date());
+  const next: Partial<AccountRecord> = { updatedAt: now() };
+
+  if (patch.name !== undefined) next.name = patch.name;
+  if (patch.kind !== undefined) next.kind = patch.kind;
+  if (patch.balance !== undefined) {
+    next.balance = toMinor(patch.balance);
+    // Editing the balance is the user re-asserting "this is true right now" —
+    // the snapshot date has to move with it, or a derived "이번 달 입출금"
+    // display on top of it would silently start lying.
+    next.balanceAsOf = fmt(new Date());
+  }
+
   await db.accounts.update(id, next);
 }
 
