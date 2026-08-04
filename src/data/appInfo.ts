@@ -32,7 +32,9 @@ export const APP_INFO = {
   /** Shown as the copyright line, e.g. "© 2026 <name>". */
   companyName: 'JDB Labs',
 
-  /** Credited under the copyright line. */
+  /** For the privacy policy and terms documents, which name a responsible
+   *  person — deliberately not in the footer, where the company alone is the
+   *  publisher. */
   author: 'KENTO.LEE',
 
   /** Play Store requires this to be live before the listing is approved. */

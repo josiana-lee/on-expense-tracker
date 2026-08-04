@@ -369,7 +369,6 @@ export function SettingsScreen({ onManageCards }: Props) {
         {APP_INFO.companyName && (
           <div className={styles.footerBrand}>
             © {new Date().getFullYear()} {APP_INFO.companyName}
-            {APP_INFO.author && ` · ${APP_INFO.author}`}
           </div>
         )}
       </div>
