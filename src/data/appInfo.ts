@@ -42,8 +42,10 @@ export const APP_INFO = {
 
   termsUrl: '',
 
-  /** Rendered as a mailto: row so a user can reach support from inside the app. */
-  supportEmail: '',
+  /** Rendered as a mailto: row so a user can reach support from inside the
+   *  app. Shared across JDB Labs apps rather than per-app, so a user who has
+   *  more than one of ours writes to the same place. */
+  supportEmail: 'jdblabskento@gmail.com',
 
   /** Bumped by hand at release; also stamped into backup files by
    *  db/backup.ts's APP_VERSION, which should move with it. */
