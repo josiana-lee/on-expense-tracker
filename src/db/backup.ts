@@ -1,3 +1,4 @@
+import { APP_INFO } from '../data/appInfo';
 import { db } from './db';
 import { fmt } from './date';
 import { now } from './id';
@@ -82,13 +83,13 @@ export interface ICloudBackupResult {
 export async function icloudBackup(): Promise<ICloudBackupResult> {
   const backup = await buildBackupFile();
   const rows = totalBackupRows(backup.counts);
-  const filename = `가계부_백업_${fmt(new Date())}.json`;
+  const filename = `${APP_INFO.fileName}_백업_${fmt(new Date())}.json`;
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
 
   const shared = await shareOrDownload(
     blob,
     filename,
-    '가계부 백업 파일이야. "파일에 저장"을 골라서 iCloud Drive에 저장해줘.',
+    `${APP_INFO.appName} 백업 파일이야. "파일에 저장"을 골라서 iCloud Drive에 저장해줘.`,
   );
 
   if (rows > 0) await markBackedUp();
@@ -107,18 +108,18 @@ export async function icloudBackup(): Promise<ICloudBackupResult> {
 export async function emailBackup(): Promise<number> {
   const backup = await buildBackupFile();
   const rows = totalBackupRows(backup.counts);
-  const filename = `가계부_백업_${fmt(new Date())}.json`;
+  const filename = `${APP_INFO.fileName}_백업_${fmt(new Date())}.json`;
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
 
   const shared = await shareOrDownload(
     blob,
     filename,
-    '가계부 백업 파일이야. 이메일 앱을 골라서 나에게 보내줘.',
+    `${APP_INFO.appName} 백업 파일이야. 이메일 앱을 골라서 나에게 보내줘.`,
   );
 
   if (!shared) {
     openMailto(
-      `가계부 백업 (${fmt(new Date())})`,
+      `${APP_INFO.appName} 백업 (${fmt(new Date())})`,
       `${filename} 파일을 다운로드했어. 이 메일에 그 파일을 첨부해서 보내줘.`,
     );
   }

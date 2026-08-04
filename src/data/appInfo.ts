@@ -1,9 +1,10 @@
-/* Publisher details and legal links shown in the settings footer.
+/* The app's identity: its name, publisher, and the legal links shown in the
+ * settings footer. Single source of truth — vite.config.ts reads the names
+ * for the PWA manifest too, so the launcher and the UI can't drift apart.
  *
- * Everything here is a real-world fact this repo can't invent, so each field
- * starts empty and the footer skips whatever is still blank — better a
- * missing row than a link that 404s in production or a company name that
- * isn't the one on the listing.
+ * The URLs are real-world facts this repo can't invent, so they start empty
+ * and the footer skips whatever is still blank — better a missing row than a
+ * link that 404s in production.
  *
  * privacyPolicyUrl is not optional in practice: Google Play requires a
  * reachable privacy policy URL for any app that touches personal or
@@ -15,6 +16,19 @@
  * Dexie (Apache-2.0), React (MIT) and Zod (MIT) all ask for attribution. */
 
 export const APP_INFO = {
+  /** Display name, for UI copy and the store listing. */
+  appName: '온:On 지출 가계부',
+
+  /** Launcher label. Android truncates a home-screen caption at roughly a
+   *  dozen characters, so the full name would be cut mid-word. */
+  shortName: '온:On 가계부',
+
+  /** Filename-safe form of the name, for backup and CSV exports. The colon
+   *  is dropped deliberately: Windows forbids it outright and Finder reads it
+   *  as a path separator, and these files get shared out to Drive, email and
+   *  desktops rather than staying on the phone. */
+  fileName: '온On',
+
   /** Shown as the copyright line, e.g. "© 2026 <name>". */
   companyName: 'JDB Labs',
 

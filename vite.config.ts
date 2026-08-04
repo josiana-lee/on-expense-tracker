@@ -2,14 +2,18 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Read from the same place the UI does, so the launcher caption and the
+// in-app name can't drift apart.
+import { APP_INFO } from './src/data/appInfo';
+
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: '가계부',
-        short_name: '가계부',
+        name: APP_INFO.appName,
+        short_name: APP_INFO.shortName,
         description: '열자마자 바로 기록하는 지출 가계부',
         lang: 'ko',
         start_url: '/',

@@ -1,5 +1,6 @@
 import { PRESET_CATEGORIES } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
+import { APP_INFO } from '../data/appInfo';
 import { shareOrDownload } from '../lib/download';
 import { BACKUP_TABLES, buildBackupFile } from './backup';
 import { db } from './db';
@@ -161,7 +162,7 @@ export async function parseBackupFile(file: File): Promise<ParsedRestore> {
 async function safetyExportBeforeRestore(): Promise<void> {
   const current = await buildBackupFile();
   const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
-  const filename = `가계부_복원전백업_${fmt(new Date())}.json`;
+  const filename = `${APP_INFO.fileName}_복원전백업_${fmt(new Date())}.json`;
 
   const file = new File([blob], filename, { type: blob.type });
   const canConfirm = Boolean(

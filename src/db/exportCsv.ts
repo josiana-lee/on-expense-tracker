@@ -1,3 +1,4 @@
+import { APP_INFO } from '../data/appInfo';
 import { db } from './db';
 import { fmt } from './date';
 import { listAllExpenses } from './expenses';
@@ -22,7 +23,7 @@ export async function exportExpensesCsv(): Promise<number> {
   // spreadsheet reads better oldest-to-newest top-to-bottom.
   const rows = [...records].reverse().map((r) => expenseToCsvRow(r, byId, paymentById));
   const blob = buildExpensesCsv(rows);
-  await shareOrDownload(blob, `가계부_${fmt(new Date())}.csv`);
+  await shareOrDownload(blob, `${APP_INFO.fileName}_${fmt(new Date())}.csv`);
 
   return records.length;
 }
