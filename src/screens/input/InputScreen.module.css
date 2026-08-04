@@ -9,52 +9,56 @@
   overflow: hidden;
 }
 
+/* The gap does the breathing now that 오늘 기록 can't swallow the slack.
+   `justify-content: space-between` spreads whatever is still left over across
+   the column instead of dropping it in one hole above the save button. */
 .scroller {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px 20px 0;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 0;
 }
 
-/* ── header: live clock ─────────────────────────────────────── */
+/* ── header: today's date, with the clock folded into the stamp ─ */
 
 .header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
   flex: none;
+  padding: 2px 0 2px 2px;
 }
 
+/* Sized like the other tabs' screen titles — the day being filed to is this
+   screen's subject, the same way 설정/예산/자산 name theirs. */
 .date {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--tx2);
-  letter-spacing: -0.2px;
-}
-
-.time {
-  font-size: 60px;
+  font-size: 26px;
   font-weight: 800;
   color: var(--tx);
-  letter-spacing: -3px;
-  line-height: 1.02;
+  letter-spacing: -0.8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stamp {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: var(--brandSoft);
   color: var(--brand);
   padding: 7px 11px;
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 700;
-  margin-bottom: 8px;
   white-space: nowrap;
+  flex: none;
 }
 
 .dot {
@@ -98,8 +102,8 @@
 }
 
 /* Digits have no descenders, so `normal` leading is ~10px of dead space at
-   this size. Pinned like .time above for the same reason — the ad slot left
-   the column tight enough that the whole flow was overflowing by a few px. */
+   this size — the ad slot left the column tight enough that the whole flow
+   was overflowing by a few px without this. */
 .amountValue {
   font-size: 52px;
   font-weight: 800;
@@ -118,9 +122,8 @@
     letter-spacing: -1.5px;
   }
 
-  .time {
-    font-size: 52px;
-    letter-spacing: -2.4px;
+  .date {
+    font-size: 22px;
   }
 }
 
@@ -239,12 +242,19 @@
 
 /* Grows into spare space on a tall screen; never shrinks below the header
    plus one row, since the surrounding area scrolls when space runs out. */
+/* Still the item that takes up the slack, but capped. Uncapped it was the
+   only thing that could grow, so every pixel saved higher up the column just
+   made this empty box taller instead of giving the controls above any room.
+   Past the cap the list scrolls inside itself. */
 .today {
   background: var(--sf);
   border-radius: 20px;
   padding: 4px 16px;
-  flex: 1 0 88px;
+  flex: 1 1 auto;
+  /* Floor keeps one whole record visible where the column has to shrink;
+     ceiling is what stops it eating the slack on a tall screen. */
   min-height: 88px;
+  max-height: 150px;
   overflow-y: auto;
 }
 

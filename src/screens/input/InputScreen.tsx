@@ -146,13 +146,19 @@ export function InputScreen() {
           fits and nothing moves; on a 360x640 the user can still reach the
           grid, and the button below stays pinned either way. */}
       <div className={styles.scroller}>
+        {/* The date is what you're filing this expense under, so it leads.
+            The clock moved inside the stamp, which was already explaining
+            what that time was for — two elements saying one thing. */}
         <header className={styles.header}>
-          <div>
-            <div className={styles.date}>{dateText(now)}</div>
-            <div className={`${styles.time} tabular`}>{timeText(now)}</div>
-          </div>
+          <div className={styles.date}>{dateText(now)}</div>
           <div className={styles.stamp}>
-            <span className={styles.dot} />이 시각으로 기록돼
+            <span className={styles.dot} />
+            {/* One flex item, not two — a bare text node beside the span
+                would pick up the container's gap and read as a stray space
+                before the particle. */}
+            <span>
+              <span className="tabular">{timeText(now)}</span>에 기록돼
+            </span>
           </div>
         </header>
 
