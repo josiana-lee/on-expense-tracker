@@ -1,6 +1,6 @@
 import { Sheet } from '../../components/Sheet';
 import type { ParsedRestore } from '../../db/restore';
-import { restoreBackupFile } from '../../db/restore';
+import { RestoreAbortedError, restoreBackupFile } from '../../db/restore';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import styles from './RestoreSheet.module.css';
 
@@ -37,8 +37,12 @@ export function RestoreSheet({ parsed, onClose, onDone }: Props) {
         const rows = await restoreBackupFile(parsed);
         onDone(`${rows}건 복원했어!`);
         onClose();
-      } catch {
-        onDone('복원하지 못했어. 다시 시도해줘');
+      } catch (err) {
+        // Stopping before the safety copy exists isn't a failure to explain
+        // away — it already says what happened and that the data is intact.
+        onDone(
+          err instanceof RestoreAbortedError ? err.message : '복원하지 못했어. 다시 시도해줘',
+        );
       }
     });
   };

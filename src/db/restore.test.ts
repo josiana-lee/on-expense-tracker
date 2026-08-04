@@ -1,11 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PRESET_CATEGORIES } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
 import { buildBackupFile } from './backup';
 import { db } from './db';
 import { addExpense } from './expenses';
-import { parseBackupFile, restoreBackupFile, RestoreFormatError } from './restore';
+import {
+  parseBackupFile,
+  RestoreAbortedError,
+  restoreBackupFile,
+  RestoreFormatError,
+} from './restore';
 import { bootstrap } from './seed';
 
 type BackupShape = Record<string, unknown>;
@@ -152,6 +157,65 @@ describe('restore validation', () => {
 
   it('accepts a backup from the current schema version', async () => {
     await expect(parseBackupFile(backupFile({ schemaVersion: db.verno }))).resolves.toBeDefined();
+  });
+});
+
+describe('pre-restore safety copy', () => {
+  /** jsdom has no Web Share, which is the plain-web case. These install one so
+   *  the Capacitor-style path can be exercised. */
+  function stubShare(accepts: boolean) {
+    Object.assign(navigator, {
+      canShare: () => true,
+      share: accepts
+        ? () => Promise.resolve()
+        : () => Promise.reject(new Error('cancelled')),
+    });
+  }
+
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'canShare');
+    Reflect.deleteProperty(navigator, 'share');
+    vi.restoreAllMocks();
+  });
+
+  it('refuses to restore when a confirmable hand-off was declined', async () => {
+    await bootstrap();
+    await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
+    silenceSafetyDownload();
+    stubShare(false);
+
+    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
+
+    await expect(restoreBackupFile(parsed)).rejects.toBeInstanceOf(RestoreAbortedError);
+    // The point of stopping: the data the copy was meant to protect is intact.
+    const rows = await db.expenses.toArray();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].amount).toBe(9900);
+  });
+
+  it('restores once the hand-off is confirmed', async () => {
+    await bootstrap();
+    await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
+    silenceSafetyDownload();
+    stubShare(true);
+
+    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
+    await restoreBackupFile(parsed);
+
+    const rows = await db.expenses.toArray();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].amount).toBe(1000);
+  });
+
+  it('still restores on platforms that cannot confirm at all', async () => {
+    await bootstrap();
+    silenceSafetyDownload();
+
+    // No canShare — the web path, where <a download> is reliable and there is
+    // nothing to confirm.
+    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
+    await expect(restoreBackupFile(parsed)).resolves.toBeGreaterThan(0);
+    expect(await db.expenses.count()).toBe(1);
   });
 });
 

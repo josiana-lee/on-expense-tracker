@@ -1,6 +1,6 @@
 import { PRESET_CATEGORIES } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
-import { downloadBlob } from '../lib/download';
+import { shareOrDownload } from '../lib/download';
 import { BACKUP_TABLES, buildBackupFile } from './backup';
 import { db } from './db';
 import { fmt } from './date';
@@ -11,6 +11,10 @@ import { bootstrap } from './seed';
 const SUPPORTED_FORMAT_VERSION = 1;
 
 export class RestoreFormatError extends Error {}
+
+/** Thrown when the pre-restore safety copy couldn't be secured, so nothing
+ *  was overwritten. */
+export class RestoreAbortedError extends Error {}
 
 /** Rows that survive validation but point at a category or payment method
  *  that won't exist after the restore. */
@@ -138,13 +142,49 @@ export async function parseBackupFile(file: File): Promise<ParsedRestore> {
 }
 
 /** 복원 전 현재 데이터를 자동으로 한 번 내보낸다 — 잘못된 백업 파일을 골랐을 때의
- *  마지막 방어선(docs/data-model.md §7-1 rule 2). 공유 시트는 띄우지 않고 조용히
- *  다운로드만 한다: 사용자가 방금 고른 건 "복원할 파일"이지 "저장할 파일"이 아니라서
- *  또 저장 위치를 물으면 헷갈린다. */
+ *  마지막 방어선(docs/data-model.md §7-1 rule 2).
+ *
+ *  This used to call downloadBlob directly and ignore the outcome, on the
+ *  reasoning that the user had just picked a file to *restore from* and asking
+ *  where to *save* one would confuse them. That holds on the web, where an
+ *  `<a download>` click reliably works — but it silently doesn't in a
+ *  Capacitor WebView, which is where this app is headed. downloadBlob can't
+ *  report that: it never throws and returns nothing, so the one safeguard
+ *  standing between a mistaken tap and years of records was unverified
+ *  exactly where it was most likely to be absent.
+ *
+ *  shareOrDownload confirms the hand-off on precisely those platforms — its
+ *  `true` means the OS share sheet took the file. Where sharing isn't offered
+ *  at all it falls back to the same plain download as before, which is the
+ *  web case that already worked. So the extra prompt only appears where it
+ *  buys something. */
 async function safetyExportBeforeRestore(): Promise<void> {
   const current = await buildBackupFile();
   const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
-  downloadBlob(blob, `가계부_복원전백업_${fmt(new Date())}.json`);
+  const filename = `가계부_복원전백업_${fmt(new Date())}.json`;
+
+  const file = new File([blob], filename, { type: blob.type });
+  const canConfirm = Boolean(
+    (navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean }).canShare?.({
+      files: [file],
+    }),
+  );
+
+  const handedOff = await shareOrDownload(
+    blob,
+    filename,
+    '복원하기 전에 지금 데이터를 백업해 둘게. 저장해줘.',
+  );
+
+  /* Only meaningful where the platform could have confirmed it: there,
+     `false` means the sheet was dismissed, so the copy very likely doesn't
+     exist. Restoring anyway would destroy the data it was meant to protect,
+     so stop instead — nothing has been written at this point. */
+  if (canConfirm && !handedOff) {
+    throw new RestoreAbortedError(
+      '복원 전 백업을 저장하지 않아서 멈췄어. 데이터는 그대로야. 다시 시도해줘',
+    );
+  }
 }
 
 /** 전체 교체(replace) — 단일 트랜잭션에서 clear → bulkPut (docs/data-model.md

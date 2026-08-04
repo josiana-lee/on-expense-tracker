@@ -154,7 +154,7 @@ export class AppDB extends Dexie {
       // 'id'에 ++ 없음 = 앱이 PK를 직접 만든다 (UUIDv7)
       expenses:       'id, date, updatedAt, &[recurringRuleId+occurrenceDate]',
       categories:     'id, &presetKey, updatedAt',
-      paymentMethods: 'id, updatedAt',
+      paymentMethods: 'id, &presetKey, updatedAt',
       accounts:       'id, updatedAt',
       budgets:        'id, &[period+scope+categoryId+periodStart], periodStart, updatedAt',
       budgetAlerts:   'id, &[budgetId+threshold]',
