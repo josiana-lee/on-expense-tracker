@@ -145,8 +145,11 @@ export function RecurringRuleSheet({ rule, onClose, onDone }: Props) {
     if (!rule) return;
     guard(async () => {
       try {
-        await logRecurringOccurrence(rule);
-        onDone('기록했어!');
+        const created = await logRecurringOccurrence(rule);
+        // The schedule advances either way, so this isn't a failure — but
+        // saying "기록했어!" when nothing was written would have the user
+        // looking for an expense that doesn't exist.
+        onDone(created ? '기록했어!' : '이미 기록된 회차야. 다음 회차로 넘길게');
         onClose();
       } catch {
         onDone('기록하지 못했어');

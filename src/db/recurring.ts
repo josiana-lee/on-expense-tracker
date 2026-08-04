@@ -124,10 +124,12 @@ export async function deleteRecurringRule(id: ID): Promise<void> {
   await db.recurringRules.delete(id);
 }
 
+/** Resolves true when a record was actually created, false when the unique
+ *  index turned it into a no-op because that occurrence already exists. */
 async function materializeOccurrence(
   rule: RecurringRuleRecord,
   occurrenceDate: DateStr,
-): Promise<void> {
+): Promise<boolean> {
   try {
     await db.expenses.add({
       id: uuidv7(),
@@ -144,10 +146,12 @@ async function materializeOccurrence(
       createdAt: now(),
       updatedAt: now(),
     });
+    return true;
   } catch (e) {
     // Already generated on a previous boot's catch-up — the unique index
     // caught it. Expected, not an error.
     if ((e as Error).name !== 'ConstraintError') throw e;
+    return false;
   }
 }
 
@@ -192,17 +196,29 @@ export async function materializeDueRules(): Promise<void> {
  *  single mode:'remind' occurrence. Logs the one currently due date and
  *  advances the schedule by exactly one step, so a rule with several missed
  *  occurrences surfaces them one at a time rather than dumping them all at
- *  once. */
-export async function logRecurringOccurrence(rule: RecurringRuleRecord): Promise<void> {
+ *  once.
+ *
+ *  Returns whether a record was actually written. The schedule moves either
+ *  way — advancing past an occurrence that already exists is what un-sticks
+ *  the rule — but the caller has to be able to tell the difference, because
+ *  reporting "기록했어!" for a tap that created nothing is a lie the user can
+ *  act on. That is reachable in normal use: editing a rule resets
+ *  nextRunDate to its start date, so occurrences already logged show up as
+ *  pending again. */
+export async function logRecurringOccurrence(rule: RecurringRuleRecord): Promise<boolean> {
   const occurrenceDate = rule.nextRunDate;
-  await materializeOccurrence(rule, occurrenceDate);
+  const created = await materializeOccurrence(rule, occurrenceDate);
 
   const nextRunDate = advanceOnce(rule, occurrenceDate);
   const pastEnd = rule.endDate !== undefined && nextRunDate > rule.endDate;
   await db.recurringRules.update(rule.id, {
     nextRunDate,
-    lastRunDate: fmt(new Date()),
+    // Only moved when something was written — otherwise this would claim the
+    // rule ran today on a tap that produced nothing.
+    ...(created ? { lastRunDate: fmt(new Date()) } : {}),
     updatedAt: now(),
     ...(pastEnd ? { active: false } : {}),
   });
+
+  return created;
 }
