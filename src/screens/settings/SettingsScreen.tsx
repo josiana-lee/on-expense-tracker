@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
+import { APP_INFO } from '../../data/appInfo';
 import { emailBackup, icloudBackup } from '../../db/backup';
 import { exportExpensesCsv } from '../../db/exportCsv';
 import type { ParsedRestore } from '../../db/restore';
@@ -306,7 +307,70 @@ export function SettingsScreen({ onManageCards }: Props) {
         onChange={onRestoreFileChosen}
       />
 
-      <div className={styles.footer}>on-expense-tracker v0.1</div>
+      {/* Only the rows that have a value in data/appInfo.ts render, so an
+          unfilled field shows nothing rather than a dead link. */}
+      {(APP_INFO.privacyPolicyUrl || APP_INFO.termsUrl || APP_INFO.supportEmail) && (
+        <>
+          <div className={styles.sectionTitle}>정보</div>
+          <div className={styles.card}>
+            {APP_INFO.privacyPolicyUrl && (
+              <a
+                className={`${styles.row} ${styles.rowLink}`}
+                href={APP_INFO.privacyPolicyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className={styles.rowLabel}>개인정보처리방침</span>
+                <span className={styles.chevron}>
+                  <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+                </span>
+              </a>
+            )}
+
+            {APP_INFO.termsUrl && (
+              <a
+                className={`${styles.row} ${styles.rowLink}`}
+                href={APP_INFO.termsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className={styles.rowLabel}>이용약관</span>
+                <span className={styles.chevron}>
+                  <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+                </span>
+              </a>
+            )}
+
+            {APP_INFO.supportEmail && (
+              <a
+                className={`${styles.row} ${styles.rowLink}`}
+                href={`mailto:${APP_INFO.supportEmail}`}
+              >
+                <span className={styles.rowLabel}>문의하기</span>
+                <span className={styles.rowValue}>{APP_INFO.supportEmail}</span>
+                <span className={styles.chevron}>
+                  <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+                </span>
+              </a>
+            )}
+
+            <div className={styles.row} style={{ cursor: 'default' }}>
+              <span className={styles.rowLabel}>버전</span>
+              <span className={styles.rowValue}>{APP_INFO.version}</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className={styles.footer}>
+        <div>가계부 v{APP_INFO.version}</div>
+        {APP_INFO.companyName && (
+          <div className={styles.footerBrand}>
+            © {new Date().getFullYear()} {APP_INFO.companyName}
+            {APP_INFO.author && ` · ${APP_INFO.author}`}
+          </div>
+        )}
+      </div>
 
       {toast && <Toast key={toast} text={toast} />}
 

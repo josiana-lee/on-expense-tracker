@@ -110,10 +110,21 @@
   flex: none;
 }
 
+/* Same shape as .row, for the footer's outbound links. */
+.rowLink {
+  text-decoration: none;
+  color: inherit;
+}
+
 .footer {
   padding: 4px 8px 16px;
   font-size: 11.5px;
   font-weight: 600;
+  color: var(--tx2);
+  line-height: 1.7;
+}
+
+.footerBrand {
   color: var(--tx2);
 }
 
