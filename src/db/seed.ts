@@ -48,8 +48,11 @@ export async function reconcileCategories(): Promise<void> {
       if (!edited.has('name')) patch.name = p.name;
       if (!edited.has('colorHex')) patch.colorHex = p.colorHex;
       if (!edited.has('type')) patch.type = p.type;
-      // Icon retouches are ours, never the user's intent, so they always land.
-      patch.iconPath = p.iconPath;
+      // Icons used to land unconditionally, on the grounds that a retouch was
+      // always ours and never the user's intent. The category sheet's swatch
+      // picker changed that — picking a swatch is a deliberate icon choice —
+      // so it's now honoured like any other claimed field.
+      if (!edited.has('iconPath')) patch.iconPath = p.iconPath;
 
       // Append only. Resurrecting a sub the user deleted is obviously annoying.
       if (!edited.has('subs')) {

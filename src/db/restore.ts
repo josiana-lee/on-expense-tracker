@@ -2,7 +2,9 @@ import { downloadBlob } from '../lib/download';
 import { BACKUP_TABLES, buildBackupFile } from './backup';
 import { db } from './db';
 import { fmt } from './date';
+import { now } from './id';
 import { BackupEnvelopeSchema, TABLE_SCHEMAS } from './restoreSchema';
+import { bootstrap } from './seed';
 
 const SUPPORTED_FORMAT_VERSION = 1;
 
@@ -88,13 +90,40 @@ async function safetyExportBeforeRestore(): Promise<void> {
 export async function restoreBackupFile(parsed: ParsedRestore): Promise<number> {
   await safetyExportBeforeRestore();
 
+  // Belongs to *this install*, not to the backup: it identifies this device,
+  // and two devices restored from one file must not end up sharing it.
+  const localDeviceId = (await db.meta.get('deviceId'))?.value;
+
   await db.transaction('rw', BACKUP_TABLES, async () => {
     for (const name of BACKUP_TABLES) {
       await db.table(name).clear();
       const rows = parsed.tables[name];
       if (rows.length > 0) await db.table(name).bulkPut(rows);
     }
+
+    /* presetVersion records how far *this device's code* has reconciled, so
+       restoring the backup's copy is actively harmful: reconcileCategories()
+       would see applied >= PRESET_VERSION and return immediately. Any preset
+       category the backup was missing — or that row-level validation had to
+       drop — would then be gone permanently, with every expense pointing at
+       it orphaned. Zeroing it makes the reconcile below actually run. */
+    await db.meta.put({ key: 'presetVersion', value: 0, updatedAt: now() });
+    if (localDeviceId !== undefined) {
+      await db.meta.put({ key: 'deviceId', value: localDeviceId, updatedAt: now() });
+    }
   });
+
+  /* Restore just replaced settings, categories and paymentMethods wholesale,
+     and parseBackupFile drops individual malformed rows by design — so any of
+     those tables can legitimately come out short or empty. Nothing re-ran the
+     invariants that bootstrap normally guarantees, which left three ways to
+     end up quietly broken: no settings row (updateSettings uses Dexie's
+     update, which reports success on a missing row, so every settings change
+     would silently do nothing), no preset categories, and restored recurring
+     rules that wouldn't fire until the next launch. Re-running bootstrap
+     restores all of it in place; every step is already idempotent, and
+     liveQuery pushes the results to the open screens without a reload. */
+  await bootstrap();
 
   return BACKUP_TABLES.reduce((sum, name) => sum + parsed.validCounts[name], 0);
 }

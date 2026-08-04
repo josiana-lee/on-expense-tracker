@@ -35,12 +35,37 @@ export async function addCategory(input: NewCategory): Promise<ID> {
   return id;
 }
 
+/** Preset fields a user edit can claim ownership of. `subs` and `type` are
+ *  absent because no screen edits them — add them here if that changes. */
+const OWNABLE_FIELDS = ['name', 'colorHex', 'iconPath'] as const;
+
 export async function updateCategory(
   id: ID,
   patch: Partial<Pick<CategoryRecord, 'name' | 'colorHex' | 'iconPath'>>,
 ): Promise<void> {
+  const cur = await db.categories.get(id);
+  if (!cur) return;
+
   const next: Partial<CategoryRecord> = { ...patch, updatedAt: now() };
   if (patch.name !== undefined) next.name = patch.name.trim();
+
+  /* Record which preset fields the user has taken over, so the next preset
+     catalogue bump leaves them alone — reconcileCategories() reads exactly
+     this set (docs/data-model.md §6-3). Nothing wrote it before, so `edited`
+     was always empty there and the first PRESET_VERSION bump would have
+     silently reverted every rename and recolour the user had made.
+
+     Only presets need this. A user-created category has no preset to be
+     reconciled against, so tracking it would just be noise. */
+  if (cur.presetKey) {
+    const edited = new Set(cur.customizedFields);
+    for (const field of OWNABLE_FIELDS) {
+      const value = next[field];
+      if (value !== undefined && value !== cur[field]) edited.add(field);
+    }
+    if (edited.size !== cur.customizedFields.length) next.customizedFields = [...edited];
+  }
+
   await db.categories.update(id, next);
 }
 
