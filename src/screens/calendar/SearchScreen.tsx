@@ -65,7 +65,11 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
 
       <div className={styles.body}>
         {!query.trim() ? (
-          <p className={styles.hint}>메모, 세부항목, 카테고리 이름으로 지난 기록을 찾아볼 수 있어.</p>
+          <p className={styles.hint}>
+            메모, 세부항목, 카테고리 이름으로
+            <br />
+            지난 기록을 찾아볼 수 있어
+          </p>
         ) : results.length === 0 ? (
           <p className={styles.hint}>검색 결과가 없어.</p>
         ) : (
