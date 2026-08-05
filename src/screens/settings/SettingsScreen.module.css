@@ -116,12 +116,41 @@
   color: inherit;
 }
 
+/* The one place the logo appears inside the app: a sign-off at the end of the
+   last scrollable screen. Centred, because a mark hung off the left of a
+   left-aligned caption reads as a stray icon rather than a lockup. */
 .footer {
-  padding: 4px 8px 16px;
+  padding: 14px 8px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   font-size: 11.5px;
   font-weight: 600;
   color: var(--tx2);
   line-height: 1.7;
+}
+
+/* Both variants ship; CSS picks one so the swap costs no JS and no flash on
+   a theme change. The tile is already the right surface colour for its
+   theme, so it needs no border — only the corner rounding. */
+.footerMark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+}
+
+.footerMarkDark {
+  display: none;
+}
+
+:global(:root[data-theme='dark']) .footerMark {
+  display: none;
+}
+
+:global(:root[data-theme='dark']) .footerMarkDark {
+  display: block;
 }
 
 .footerBrand {

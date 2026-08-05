@@ -373,6 +373,12 @@ export function SettingsScreen({ onManageCards }: Props) {
       </div>
 
       <div className={styles.footer}>
+        <img src="/logo-light.svg" alt="" className={styles.footerMark} />
+        <img
+          src="/logo-dark.svg"
+          alt=""
+          className={`${styles.footerMark} ${styles.footerMarkDark}`}
+        />
         <div>
           {APP_INFO.appName} v{APP_INFO.version}
         </div>
