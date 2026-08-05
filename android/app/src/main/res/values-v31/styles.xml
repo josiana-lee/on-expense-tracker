@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12 replaced the launch-theme splash with a system-drawn one. From
+  API 31 up, `android:background` on the launch theme is ignored entirely, so
+  without this file the generated splash.png only ever appears on Android 11
+  and below and newer devices fall back to a default the app never chose.
+
+  The system splash draws the launcher icon on a solid colour, so it uses the
+  same two resources the launcher icon does rather than a separate bitmap —
+  the icon it shows is the icon the user just tapped.
+-->
+<resources>
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>
+</resources>

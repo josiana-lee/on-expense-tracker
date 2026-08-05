@@ -14,9 +14,12 @@
     "typecheck": "tsc -b --noEmit",
     "brand": "node scripts/build-brand.mjs",
     "brand:png": "node scripts/build-brand.mjs --png",
-    "policy": "node scripts/build-policy.mjs"
+    "policy": "node scripts/build-policy.mjs",
+    "android:icons": "npx @capacitor/assets generate --android && node scripts/build-android-icons.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "dexie": "^4.0.11",
     "dexie-react-hooks": "^4.4.0",
     "react": "^19.1.0",
@@ -24,11 +27,14 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.4.1",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^30.0.1",
+    "sharp": "^0.35.3",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-pwa": "^1.0.0",

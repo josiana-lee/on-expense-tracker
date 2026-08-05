@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  app_name is the launcher caption, so it carries APP_INFO.shortName rather
+  than the full name: a home-screen label is cut after roughly a dozen
+  characters and "온:On 지출 가계부" would break mid-word. The full name still
+  shows as the task title, in the store listing, and inside the app.
+
+  `npx cap init` wrote this file once and nothing regenerates it, so these are
+  hand-maintained — keep them in step with src/data/appInfo.ts.
+-->
+<resources>
+    <string name="app_name">온:On 가계부</string>
+    <string name="title_activity_main">온:On 지출 가계부</string>
+    <string name="package_name">com.jdblabs.onexpense</string>
+    <string name="custom_url_scheme">com.jdblabs.onexpense</string>
+</resources>
