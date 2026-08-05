@@ -13,7 +13,8 @@
     "test": "vitest run",
     "typecheck": "tsc -b --noEmit",
     "brand": "node scripts/build-brand.mjs",
-    "brand:png": "node scripts/build-brand.mjs --png"
+    "brand:png": "node scripts/build-brand.mjs --png",
+    "policy": "node scripts/build-policy.mjs"
   },
   "dependencies": {
     "dexie": "^4.0.11",

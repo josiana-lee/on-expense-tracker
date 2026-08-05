@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개인정보처리방침 — 온:On 지출 가계부</title>
+<meta name="description" content="온:On 지출 가계부 개인정보처리방침. JDB Labs">
+<meta name="robots" content="index, follow">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
+<style>
+  :root {
+    --bg: #f0f2f6; --sf: #ffffff; --tx: #15181e; --tx2: #8b9199;
+    --line: #eceff4; --brand: #7b87f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111318; --sf: #1b1e25; --tx: #f1f3f7; --tx2: #878e99;
+      --line: #2a2f39; --brand: #8e98ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px 72px; background: var(--bg); color: var(--tx);
+    font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 15px; line-height: 1.8; word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 25px; font-weight: 800; letter-spacing: -0.8px; margin: 0 0 28px; line-height: 1.35; }
+  h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; margin: 40px 0 14px; }
+  p { margin: 0 0 14px; }
+  strong { font-weight: 800; }
+  ul { margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  a { color: var(--brand); }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 34px 0; }
+  /* Tables carry the substance here — what is stored, which permissions, who
+     to contact — so they get a card of their own and scroll rather than
+     squeeze on a phone. */
+  .scroll { overflow-x: auto; margin: 0 0 18px; }
+  table {
+    width: 100%; border-collapse: collapse; background: var(--sf);
+    border-radius: 14px; overflow: hidden; font-size: 14px;
+  }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  th { font-weight: 800; font-size: 12.5px; color: var(--tx2); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  footer {
+    margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--tx2);
+  }
+</style>
+</head>
+<body>
+<main>
+<h1>개인정보처리방침 — 온:On 지출 가계부</h1>
+<p><strong>시행일: 2026년 8월 5일</strong></p>
+<p>JDB Labs(이하 "회사")는 이용자의 개인정보를 소중히 여기며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 방침은 회사가 제공하는 모바일 애플리케이션 <strong>온:On 지출 가계부</strong>(이하 "앱")에 적용됩니다.</p>
+<hr>
+<h2>1. 핵심 요약</h2>
+<p><strong>앱은 이용자의 가계부 데이터를 수집하거나 서버로 전송하지 않습니다.</strong></p>
+<p>이용자가 입력한 지출 내역, 카테고리, 결제수단, 예산, 계좌 정보는 <strong>전부 이용자의 기기 안에만 저장</strong>됩니다. 회사는 이 데이터를 보관하는 서버를 운영하지 않으며, 열람할 수단도 없습니다. 회원가입이나 로그인 절차도 없습니다.</p>
+<hr>
+<h2>2. 기기에 저장되는 정보</h2>
+<p>앱은 아래 정보를 이용자 기기의 저장소(IndexedDB)에만 기록합니다.</p>
+<div class="scroll"><table><thead><tr><th>구분</th><th>내용</th></tr></thead><tbody><tr><td>지출·수입 기록</td><td>금액, 날짜·시각, 카테고리, 세부항목, 결제수단, 메모</td></tr><tr><td>설정</td><td>카테고리 구성, 결제수단·카드 정보(카드명, 결제일 등), 예산, 반복 지출 규칙, 화면 설정</td></tr><tr><td>자산 정보</td><td>이용자가 직접 입력한 계좌명과 잔액</td></tr><tr><td>앱 내부 값</td><td>기기 식별용 임의 ID, 설치 시각, 마지막 백업 시각</td></tr></tbody></table></div>
+<p>이 정보는 <strong>외부로 전송되지 않습니다.</strong> 카드 정보는 이용자가 직접 입력한 카드 별칭과 결제 주기일 뿐이며, 앱은 카드번호·비밀번호·계좌 비밀번호·금융인증서 등 실제 금융 인증 정보를 요구하지도, 저장하지도 않습니다.</p>
+<hr>
+<h2>3. 백업과 내보내기</h2>
+<p>앱은 이용자가 <strong>직접 실행할 때만</strong> 백업 파일(JSON) 또는 CSV 파일을 생성합니다.</p>
+<ul>
+<li>생성된 파일은 이용자가 선택한 위치(기기 저장소, iCloud Drive, 이메일, 클라우드 드라이브 등)로 전달됩니다.</li>
+<li>이 과정은 <strong>기기 운영체제의 공유·저장 기능</strong>을 통해 이루어지며, <strong>회사의 서버를 거치지 않습니다.</strong></li>
+<li>파일이 전달된 이후의 보관·관리 책임은 이용자와 해당 서비스 제공자에게 있습니다.</li>
+</ul>
+<hr>
+<h2>4. 권한</h2>
+<div class="scroll"><table><thead><tr><th>권한</th><th>목적</th><th>필수 여부</th></tr></thead><tbody><tr><td>알림</td><td>이용자가 설정한 시각에 기록 알림 표시</td><td>선택</td></tr><tr><td>저장소 접근</td><td>백업·CSV 파일 저장 및 복원</td><td>선택(해당 기능 사용 시)</td></tr></tbody></table></div>
+<p>권한을 허용하지 않아도 앱의 기록 기능은 정상 이용할 수 있습니다. 알림 권한은 기기 설정에서 언제든 철회할 수 있습니다.</p>
+<hr>
+<h2>5. 보유 및 파기</h2>
+<ul>
+<li>앱이 기기에 저장한 데이터는 <strong>이용자가 앱을 삭제하면 함께 삭제</strong>됩니다.</li>
+<li>앱 내 각 화면에서 개별 기록·카테고리·계좌 등을 직접 삭제할 수 있습니다.</li>
+<li><strong>회사가 별도로 보유하는 이용자 데이터는 없으므로</strong>, 회사에 대한 삭제 요청 대상이 되는 정보도 존재하지 않습니다.</li>
+</ul>
+<p><strong>삭제한 기록의 잔여 보관에 대해</strong></p>
+<p>앱은 삭제 기능의 복구 여지를 남기기 위해, 삭제된 기록의 원본을 <strong>기기 안에서 최대 30일간</strong> 보관한 뒤 자동으로 지웁니다. 삭제 사실 자체의 기록(어떤 항목이 언제 삭제되었는지, 내용은 제외)은 <strong>최대 180일간</strong> 남았다가 자동으로 지워집니다. 이 정보 역시 기기를 벗어나지 않습니다.</p>
+<p>이 기간 중에 백업 파일을 만들면 해당 파일에 삭제된 기록의 원본이 포함될 수 있습니다. 백업 파일을 외부에 공유할 때 참고하시기 바랍니다.</p>
+<p><strong>내보낸 파일에 대해</strong></p>
+<p>이용자가 직접 내보낸 백업·CSV 파일은 이용자가 보관 중인 위치에 남아 있으므로, 필요 시 해당 위치에서 직접 삭제해야 합니다.</p>
+<hr>
+<h2>6. 제3자 제공 및 처리위탁</h2>
+<p>회사는 이용자의 가계부 데이터를 제3자에게 제공하거나 처리를 위탁하지 않습니다. 앱에는 광고가 포함되어 있지 않으며, 외부 광고·분석 도구를 통한 정보 수집도 이루어지지 않습니다.</p>
+<hr>
+<h2>7. 이용자의 권리</h2>
+<p>이용자는 기기에 저장된 자신의 데이터를 언제든지 앱 내에서 열람·수정·삭제할 수 있으며, 백업 기능을 통해 전체 데이터를 파일로 내려받을 수 있습니다. 회사가 보관하는 정보가 없으므로 별도의 열람·정정·삭제 청구 절차는 필요하지 않습니다.</p>
+<hr>
+<h2>8. 아동의 개인정보</h2>
+<p>앱은 만 14세 미만 아동을 대상으로 하지 않으며, 아동의 개인정보를 고의로 수집하지 않습니다.</p>
+<hr>
+<h2>9. 안전성 확보 조치</h2>
+<p>앱은 데이터를 외부로 전송하지 않고 기기 내부 저장소에만 보관합니다. 기기 자체의 잠금 설정과 최신 보안 업데이트 유지를 권장합니다. 기기 분실·초기화 시 데이터가 함께 사라질 수 있으므로 정기적인 백업을 권장합니다.</p>
+<hr>
+<h2>10. 개인정보 보호책임자 및 문의처</h2>
+<div class="scroll"><table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody><tr><td>회사명</td><td>JDB Labs</td></tr><tr><td>책임자</td><td>KENTO.LEE</td></tr><tr><td>이메일</td><td>jdblabskento@gmail.com</td></tr></tbody></table></div>
+<p>개인정보 처리에 관한 문의, 불만, 피해 구제는 위 이메일로 접수해 주시기 바랍니다.</p>
+<p>기타 개인정보 침해에 대한 신고·상담이 필요한 경우 아래 기관에 문의할 수 있습니다.</p>
+<ul>
+<li>개인정보침해신고센터 (privacy.kisa.or.kr / 국번없이 118)</li>
+<li>개인정보 분쟁조정위원회 (kopico.go.kr / 1833-6972)</li>
+<li>대검찰청 사이버수사과 (spo.go.kr / 1301)</li>
+<li>경찰청 사이버수사국 (ecrm.police.go.kr / 182)</li>
+</ul>
+<hr>
+<h2>11. 변경 고지</h2>
+<p>본 방침의 내용이 추가·삭제·수정될 경우 시행 최소 7일 전부터 앱 또는 본 페이지를 통해 고지합니다. 다만 이용자 권리에 중대한 변경이 발생하는 경우에는 최소 30일 전에 고지합니다.</p>
+<footer>© 2026 JDB Labs</footer>
+</main>
+</body>
+</html>
