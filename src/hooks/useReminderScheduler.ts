@@ -1,4 +1,10 @@
 import { useEffect } from 'react';
+import {
+  cancelDailyReminder,
+  scheduleDailyReminder,
+  showReminderNow,
+} from '../lib/notifications';
+import { isNative } from '../lib/platform';
 import { useSettings } from './useSettings';
 
 function msUntil(timeStr: string): number {
@@ -9,32 +15,42 @@ function msUntil(timeStr: string): number {
   return target.getTime() - now.getTime();
 }
 
-/** Best-effort only: this fires from a setTimeout living in the page, so it
- *  can only go off while the app process is actually running (a foreground
- *  or backgrounded tab, or an installed PWA Chrome hasn't fully killed) —
- *  not once the app is truly closed. A reminder that reliably survives that
- *  needs either Web Push (which needs a server we don't have) or, once this
- *  ships wrapped in Capacitor, a native local-notifications plugin. The
- *  settings screen says as much so "켰는데 왜 안 울렸지" has an answer.
+/** Keeps the daily reminder in step with the settings.
  *
- *  Recomputes the delay to the next occurrence each time rather than a
- *  fixed 24h setInterval, so it can't drift and isn't thrown off by DST. */
+ *  Native hands the schedule to the OS, which fires it whether or not the app
+ *  is running — the only arrangement under which a daily reminder is worth
+ *  switching on. Re-registering on every settings change is cheap and the
+ *  plugin replaces the previous one by id, so there is no drift between what
+ *  the toggle says and what is actually scheduled.
+ *
+ *  The browser has no such facility, so it falls back to a timer living in
+ *  the page: it can only fire while the app is open. Kept because the dev
+ *  server is where this is built and checked.
+ *
+ *  The web timer recomputes the delay to the next occurrence each time rather
+ *  than using a fixed 24h interval, so it can't drift and isn't thrown off
+ *  by DST. */
 export function useReminderScheduler(): void {
   const settings = useSettings();
   const enabled = settings?.reminderEnabled ?? false;
   const time = settings?.reminderTime;
 
   useEffect(() => {
+    if (isNative) {
+      if (enabled && time) void scheduleDailyReminder(time);
+      else void cancelDailyReminder();
+      return undefined;
+    }
+
     if (!enabled || !time) return undefined;
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return undefined;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+      return undefined;
+    }
 
     let timer: number;
     const schedule = () => {
       timer = window.setTimeout(() => {
-        new Notification('오늘 지출 기록했어?', {
-          body: '아직이면 잊기 전에 적어두자.',
-          tag: 'daily-reminder',
-        });
+        showReminderNow();
         schedule();
       }, msUntil(time));
     };

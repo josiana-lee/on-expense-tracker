@@ -49,15 +49,22 @@ node scripts/build-policy.mjs --date=2026-08-05 --out=../jdb-labs-policies/on-ex
 Android SDK는 `~/Library/Android/sdk`에 이미 있다. Android Studio는 없지만
 커맨드라인 빌드에는 필요 없다.
 
-## 3. 네이티브 기능 교체 — 아직 안 함
+## 3. 네이티브 기능 교체 — 코드는 끝, 기기 확인만 남음
 
-지금 앱은 WebView 안에서 브라우저 API를 그대로 쓴다. 세 곳이 네이티브
-플러그인으로 바뀌어야 제대로 동작한다.
+브라우저 API 세 개는 안드로이드 WebView에 아예 없어서 **조용히 아무 일도 안
+일어난다.** `navigator.share`가 없고, `<a download>` 클릭은 호스트 앱이
+다운로드 리스너를 달아야 동작하는데 Capacitor는 달지 않는다. 웹 `Notification`도
+없다. 전부 `isNative` 분기로 교체했고, 브라우저 경로는 그대로 살려뒀다(개발
+서버가 실제로 화면을 보는 곳이라서).
 
-- [ ] `lib/download.ts` — `<a download>` / `navigator.share` → Filesystem + Share
-- [ ] `hooks/useReminderScheduler.ts` — `Notification` → LocalNotifications
-- [ ] 알림이 네이티브로 바뀌면 설정 화면의 "앱이 완전히 꺼져 있으면 알림이 안 울릴 수 있어" 안내문 삭제
-- [ ] `db/seed.ts`의 `navigator.storage.persist()`는 WebView에서 의미가 없어졌는지 확인
+- [x] `lib/download.ts` — Filesystem(캐시에 쓰기) + Share(시트에 넘기기)
+- [x] `lib/notifications.ts` — LocalNotifications로 OS에 일일 알림 등록
+- [x] 알림 안내문("앱이 완전히 꺼져 있으면…")을 브라우저 빌드에서만 표시
+- [ ] `db/seed.ts`의 `navigator.storage.persist()`가 WebView에서 의미가 있는지 확인
+      (앱 전용 저장소라 무의미할 가능성이 높다 — 실패해도 무해하므로 급하진 않음)
+
+플러그인이 매니페스트에 합쳐 넣는 권한: `POST_NOTIFICATIONS`(안드로이드 13+),
+`RECEIVE_BOOT_COMPLETED`(재부팅 후에도 알림 유지), `WAKE_LOCK`.
 
 ## 4. 실기기 검증 — 아직 안 함
 

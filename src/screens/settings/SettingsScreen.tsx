@@ -13,6 +13,7 @@ import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useRecurringRules } from '../../hooks/useRecurringRules';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
+import { remindersAreReliable, requestReminderPermission } from '../../lib/notifications';
 import { CategoryManageScreen } from './CategoryManageScreen';
 import { LicenseScreen } from './LicenseScreen';
 import { DefaultPaymentSheet } from './DefaultPaymentSheet';
@@ -106,17 +107,9 @@ export function SettingsScreen({ onManageCards }: Props) {
 
   const toggleReminder = async () => {
     const turningOn = !settings?.reminderEnabled;
-    if (turningOn) {
-      if (typeof Notification === 'undefined') {
-        flash('이 브라우저는 알림을 지원하지 않아');
-        return;
-      }
-      let permission = Notification.permission;
-      if (permission === 'default') permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        flash('알림 권한을 허용해야 알람을 켤 수 있어');
-        return;
-      }
+    if (turningOn && !(await requestReminderPermission())) {
+      flash('알림 권한을 허용해야 알람을 켤 수 있어');
+      return;
     }
     await updateSettings({
       reminderEnabled: turningOn,
@@ -229,7 +222,11 @@ export function SettingsScreen({ onManageCards }: Props) {
         )}
       </div>
 
-      {settings?.reminderEnabled && (
+      {/* Only the browser build owes this apology. In the packaged app the
+          reminder is registered with the OS and fires whether or not the app
+          is running, so the caveat would be a lie that makes a working
+          feature look unreliable. */}
+      {settings?.reminderEnabled && !remindersAreReliable && (
         <div className={styles.noteBox}>
           <span className={styles.noteIcon}>
             <Icon path="M12 8h.01M12 12v5" size={16} stroke="currentColor" strokeWidth={2.4} />

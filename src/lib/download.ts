@@ -1,3 +1,42 @@
+import { isNative } from './platform';
+
+/** Hands a file to the OS through the native share sheet.
+ *
+ *  The web APIs below do not exist in an Android WebView: `navigator.share`
+ *  is not implemented there, and an `<a download>` click does nothing unless
+ *  the host app wires up a download listener, which Capacitor does not. Both
+ *  fail silently, which for the only feature that gets a user's ledger off
+ *  their phone is the worst way to fail.
+ *
+ *  The file is written to the cache directory first because the share sheet
+ *  passes a URI, not bytes. Cache needs no storage permission on any API
+ *  level and Android reclaims it on its own; the copy the user keeps is
+ *  whatever the app they picked saved for itself. */
+async function shareNative(blob: Blob, filename: string, text?: string): Promise<boolean> {
+  const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+  const { Share } = await import('@capacitor/share');
+
+  /* Everything this app exports is UTF-8 text (JSON, CSV), so it goes out as
+     a string. Writing base64 would work too but would mangle the Korean in a
+     CSV opened straight from the share target. */
+  const { uri } = await Filesystem.writeFile({
+    path: filename,
+    data: await blob.text(),
+    directory: Directory.Cache,
+    encoding: Encoding.UTF8,
+  });
+
+  try {
+    await Share.share({ title: filename, text, url: uri });
+    return true;
+  } catch {
+    /* Cancelling the sheet throws. Nothing was handed off, and unlike the web
+       path there is no second-best action to fall back to — the file is still
+       in the cache and the user can simply try again. */
+    return false;
+  }
+}
+
 /** Saves a Blob to disk. `showSaveFilePicker` isn't an option — it's
  *  unsupported on Chrome for Android, which this app targets first — so this
  *  is the classic object-URL-and-click trick, universally supported. */
@@ -26,6 +65,8 @@ export async function shareOrDownload(
   filename: string,
   text?: string,
 ): Promise<boolean> {
+  if (isNative) return shareNative(blob, filename, text);
+
   const file = new File([blob], filename, { type: blob.type });
   const nav = navigator as Navigator & {
     canShare?: (data: { files: File[] }) => boolean;
