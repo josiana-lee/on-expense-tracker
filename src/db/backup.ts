@@ -4,7 +4,7 @@ import { fmt } from './date';
 import { now } from './id';
 import { openMailto, shareOrDownload } from '../lib/download';
 
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '1.0.0';
 
 /** Explicit allowlist rather than `db.tables` — a table added later has to
  *  be added here on purpose. budgetAlerts is left out per

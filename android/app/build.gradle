@@ -14,7 +14,7 @@ android {
         // three move together or a backup ends up claiming a version that was
         // never released.
         versionCode 1
-        versionName "0.1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
