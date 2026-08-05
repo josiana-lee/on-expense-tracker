@@ -37,8 +37,12 @@ export const APP_INFO = {
    *  publisher. */
   author: 'KENTO.LEE',
 
-  /** Play Store requires this to be live before the listing is approved. */
-  privacyPolicyUrl: '',
+  /** Play Store requires this to be live before the listing is approved.
+   *
+   *  Generated from docs/privacy-policy.md and served out of the separate
+   *  public jdb-labs-policies repo — this repo is private, and Pages will not
+   *  serve a private one. See docs/release-checklist.md. */
+  privacyPolicyUrl: 'https://josiana-lee.github.io/jdb-labs-policies/on-expense/',
 
   termsUrl: '',
 

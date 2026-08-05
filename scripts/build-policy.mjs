@@ -1,6 +1,7 @@
 /** Renders docs/privacy-policy.md into a standalone page to publish.
  *
  *    node scripts/build-policy.mjs
+ *    node scripts/build-policy.mjs --date=2026-08-05 --out=../policies/on-expense/index.html
  *
  *  The markdown stays the source of truth — the store listing and the app's
  *  설정 screen both have to point at whatever is published, and a policy that
@@ -11,7 +12,7 @@
  *  a general markdown implementation: a dependency here would be a dependency
  *  in the one artefact that has to be reproducible years from now.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 /* Node 24 strips the types, so the page's app name and company come from the
@@ -20,11 +21,17 @@ import { APP_INFO } from '../src/data/appInfo.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = resolve(ROOT, 'docs/privacy-policy.md');
-const OUT = resolve(ROOT, 'docs/privacy-policy.html');
+
+const arg = (name) =>
+  process.argv.slice(2).find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+
+/** Where the page lands. Defaults to a copy next to its source for review;
+ *  point it into the published repo to regenerate what is actually live. */
+const OUT = resolve(ROOT, arg('out') ?? 'docs/privacy-policy.html');
 
 /** The effective date. Passed in so a re-render months later doesn't silently
  *  restamp a policy that has been live all along. */
-const effective = process.argv[2] ?? new Date().toISOString().slice(0, 10);
+const effective = arg('date') ?? new Date().toISOString().slice(0, 10);
 const [y, m, d] = effective.split('-').map(Number);
 const effectiveText = `${y}년 ${m}월 ${d}일`;
 
@@ -195,5 +202,6 @@ ${body}
 </html>
 `;
 
+mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, html);
-console.log(`wrote docs/privacy-policy.html · 시행일 ${effectiveText}`);
+console.log(`wrote ${OUT} · 시행일 ${effectiveText}`);
