@@ -36,3 +36,7 @@ captures/
 *.apk
 *.hprof
 google-services.json
+
+# Upload-key password file. The keystore itself is already covered by *.jks
+# above; this holds the passwords that open it and must never be committed.
+android/keystore.properties

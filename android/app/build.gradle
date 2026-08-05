@@ -1,5 +1,16 @@
 apply plugin: 'com.android.application'
 
+// Upload-key passwords live in android/keystore.properties, which is
+// gitignored and never leaves this machine. Absent — on a fresh clone, or for
+// anyone only building debug — the release signing config is simply not
+// registered, so debug builds still work and a release build fails loudly
+// rather than quietly producing an unsigned bundle Play would reject.
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
 android {
     namespace = "com.jdblabs.onexpense"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -22,8 +33,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (keystorePropsFile.exists()) {
+            release {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
