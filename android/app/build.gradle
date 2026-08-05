@@ -7,8 +7,14 @@ android {
         applicationId "com.jdblabs.onexpense"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        // versionCode is what Play orders releases by — an integer that must
+        // increase with every upload and never repeat, independent of the
+        // name users see. versionName mirrors APP_INFO.version in
+        // src/data/appInfo.ts, which is also stamped into backup files; the
+        // three move together or a backup ends up claiming a version that was
+        // never released.
         versionCode 1
-        versionName "1.0"
+        versionName "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

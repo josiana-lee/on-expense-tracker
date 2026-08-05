@@ -34,20 +34,25 @@ node scripts/build-policy.mjs --date=2026-08-05 --out=../jdb-labs-policies/on-ex
 `--date`는 **처음 게시한 날**을 그대로 유지한다. 실제로 내용을 바꿔 새로
 시행하는 경우에만 올리고, 그때는 방침 제11조대로 최소 7일 전에 고지한다.
 
-## 2. 빌드 환경 — **직접 해야 함**
+## 2. 빌드 환경 — 완료
 
-이 기계에 **JDK가 없다.** 안드로이드 프로젝트 생성까지는 끝났지만 컴파일은
-아직 한 번도 못 했다.
+- [x] OpenJDK 21 (`brew install openjdk@21` — cask가 아니라 formula라서
+      비밀번호가 필요 없다. 대신 keg-only라 PATH에 안 올라간다)
+- [x] Android SDK에 `platforms;android-36` + `build-tools;36.0.0` 추가
+      (프로젝트가 compileSdk 36을 쓰는데 android-34만 있었다)
+- [x] `assembleDebug` 통과 — 첫 빌드 10분 29초, 184 tasks
 
-- [ ] JDK 21 설치 (예: `brew install --cask temurin@21`)
-- [ ] `./gradlew assembleDebug`가 통과하는지 확인
+```bash
+pnpm android:apk   # 디버그 APK (사이드로드용)
+pnpm android:aab   # 릴리스 번들 (Play Console 업로드용)
+```
 
-  ```bash
-  cd android && ./gradlew assembleDebug
-  ```
+`./gradlew`를 직접 부르지 말 것. JDK가 keg-only라 PATH에 없어서 "Java를 찾을
+수 없다"고 나온다. 위 스크립트가 JDK를 찾아주고, **`pnpm build && npx cap sync`를
+먼저 돌려준다** — 이걸 빼먹으면 직전 웹 빌드가 그대로 패키징되는데, APK가 폰에
+올라가야만 보이는 종류의 실수다.
 
-Android SDK는 `~/Library/Android/sdk`에 이미 있다. Android Studio는 없지만
-커맨드라인 빌드에는 필요 없다.
+Android Studio는 없지만 커맨드라인 빌드에는 필요 없다.
 
 ## 3. 네이티브 기능 교체 — 코드는 끝, 기기 확인만 남음
 
@@ -97,11 +102,16 @@ Android SDK는 `~/Library/Android/sdk`에 이미 있다. Android Studio는 없�
 
 ## 매 릴리스마다
 
+세 곳의 버전이 같이 움직여야 한다. 어긋나면 백업 파일이 출시된 적 없는 버전을
+주장하게 된다.
+
 - [ ] `src/data/appInfo.ts`의 `version`
-- [ ] `db/backup.ts`의 `APP_VERSION` (백업 파일에 찍힌다 — 위와 같이 움직여야 함)
-- [ ] `android/app/build.gradle`의 `versionCode`(정수, 매번 증가) / `versionName`
-- [ ] `pnpm build && npx cap sync android`
+- [ ] `db/backup.ts`의 `APP_VERSION`
+- [ ] `android/app/build.gradle`의 `versionName` (위 둘과 동일하게)
+- [ ] `android/app/build.gradle`의 `versionCode` — **정수, 매번 증가, 재사용 불가.**
+      Play가 릴리스 순서를 이걸로 판단한다
 - [ ] 브랜드 자산을 건드렸다면 `pnpm android:icons`
+- [ ] `pnpm android:aab` (내부적으로 build + cap sync까지 한다)
 
 ## 출시 이후 — 광고
 

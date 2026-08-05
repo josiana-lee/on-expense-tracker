@@ -15,7 +15,9 @@
     "brand": "node scripts/build-brand.mjs",
     "brand:png": "node scripts/build-brand.mjs --png",
     "policy": "node scripts/build-policy.mjs",
-    "android:icons": "npx @capacitor/assets generate --android && node scripts/build-android-icons.mjs"
+    "android:icons": "npx @capacitor/assets generate --android && node scripts/build-android-icons.mjs",
+    "android:apk": "scripts/android-build.sh assembleDebug",
+    "android:aab": "scripts/android-build.sh bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

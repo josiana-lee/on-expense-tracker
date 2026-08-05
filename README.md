@@ -24,7 +24,7 @@
 | 영역 | 상태 |
 |---|---|
 | 앱 기능 | 구현 완료. 브라우저에서 검증됨 |
-| 안드로이드 패키징 | Capacitor 프로젝트 생성·아이콘·스플래시까지. **아직 컴파일해본 적 없음** (JDK 필요) |
+| 안드로이드 패키징 | 디버그 APK 빌드 통과. 아이콘·스플래시·권한 모두 패키징 확인 |
 | 네이티브 기능 | 백업 저장·공유·알림을 Capacitor 플러그인으로 교체 완료. **기기에서 확인 안 함** |
 | 실기기 | **한 번도 안 돌려봄.** 지금까지 전부 브라우저 에뮬레이션 |
 | 광고 | 첫 출시에는 없음. 애드핏이 실제 스토어 URL을 요구해서 등록이 안 됨 |
@@ -50,7 +50,12 @@ pnpm install && pnpm dev
 | `pnpm policy` | 개인정보처리방침 HTML 생성 |
 | `pnpm android:icons` | 안드로이드 아이콘·스플래시 재생성 |
 
-안드로이드는 `pnpm build && npx cap sync android` 후 `android/`를 연다.
+| `pnpm android:apk` | 디버그 APK (사이드로드용) |
+| `pnpm android:aab` | 릴리스 번들 (Play Console 업로드용) |
+
+안드로이드 빌드는 `./gradlew`를 직접 부르지 말고 위 스크립트를 쓴다. JDK가
+keg-only로 설치돼 PATH에 없고, 스크립트가 `pnpm build && npx cap sync`까지
+해줘서 직전 웹 빌드가 패키징되는 사고를 막아준다.
 
 ## 구조
 
