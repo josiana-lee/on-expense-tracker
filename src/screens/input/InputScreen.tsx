@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react';
-import { AdSlot } from '../../components/AdSlot';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { Sheet } from '../../components/Sheet';
@@ -225,7 +224,13 @@ export function InputScreen() {
           )}
         </section>
 
-        <AdSlot />
+        {/* The ad slot is out for the first release. AdFit only registers an
+            Android placement against a live Play Store URL, so there is no ad
+            unit to show until after launch — and a "광고 영역" placeholder with
+            nothing in it just reads as unfinished. Restore <AdSlot /> here,
+            below 오늘 기록 per design-brief §6, once a real unit exists; its
+            height should then match AdFit's banner rather than the 52px
+            AdMob-standard guess it reserves today. */}
       </div>
 
       <div className={styles.ctaWrap}>

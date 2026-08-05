@@ -332,58 +332,37 @@
 }
 
 /* ── wide-but-short screens (folded book-style foldables) ────────
-   Galaxy Z Fold 8 and, presumably, the iPhone Fold: a 10:16 cover screen
-   is far stubbier than a normal 9:19.5 phone, so the column runs ~150px
+   Galaxy Z Fold 8 and, presumably, the iPhone Fold: a 10:16 cover screen is
+   far stubbier than a normal 9:19.5 phone, so the column comes up ~100px
    short even though the width is generous.
 
    Matched by shape rather than by device, so a future foldable inherits it:
    400px+ wide rules out ordinary phones (375x812) and older 360x640 sets,
-   where six columns wouldn't even fit a 50px badge; 760px tall rules out
+   where six columns wouldn't fit a 50px badge; 760px tall rules out
    full-height phones, tablets and the unfolded inner screen.
 
-   The extra width is what pays for the missing height — twelve categories
-   in six columns is two rows instead of three, which is most of the deficit
-   on its own. 오늘 기록 then keeps just its total line: the running figure
-   is the useful part right after saving, and the list itself is what the
-   calendar tab is for. Measured: 153px over -> fits, with the ad still in
-   view where the ad placement decision in design-brief §6 wants it. */
+   The extra width pays for the missing height — twelve categories in six
+   columns is two rows instead of three, and the labels still fit at the
+   resulting column width. That leaves about 22px, taken in small amounts
+   from the gap, the top padding and the amount card rather than out of any
+   one block.
+
+   This used to also shrink the clock and fold 오늘 기록 down to its total
+   line. Dropping the ad slot for the first release gave back enough height
+   that neither is needed; if the slot returns, they are the first things to
+   reach for again. */
 @media (min-width: 400px) and (max-height: 760px) {
   .grid {
     grid-template-columns: repeat(6, 1fr);
   }
 
-  /* Six columns and the collapsed list cover most of the gap but not all of
-     it. The rest is taken in small amounts from each block rather than
-     gutting one — the clock can afford it most, since a cover screen is
-     glanced at rather than read. */
   .scroller {
     gap: 8px;
-    padding-top: 12px;
-  }
-
-  .time {
-    font-size: 42px;
-    letter-spacing: -2px;
+    padding-top: 14px;
   }
 
   .amountCard {
     padding: 17px 22px;
-  }
-
-  .today {
-    flex: none;
-    min-height: 0;
-    max-height: none;
-    overflow: visible;
-  }
-
-  .today .row,
-  .today .empty {
-    display: none;
-  }
-
-  .todayHead {
-    padding: 8px 0;
   }
 }
 
