@@ -6,7 +6,7 @@ import { emailBackup, icloudBackup } from '../../db/backup';
 import { exportExpensesCsv } from '../../db/exportCsv';
 import type { ParsedRestore } from '../../db/restore';
 import { parseBackupFile, RestoreFormatError } from '../../db/restore';
-import { updateSettings } from '../../db/settings';
+import { DEFAULT_REMINDER_TIME, setReminder, updateSettings } from '../../db/settings';
 import { useBackupOverdue } from '../../hooks/useBackupOverdue';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
@@ -111,10 +111,7 @@ export function SettingsScreen({ onManageCards }: Props) {
       flash('알림 권한을 허용해야 알람을 켤 수 있어');
       return;
     }
-    await updateSettings({
-      reminderEnabled: turningOn,
-      reminderTime: settings?.reminderTime ?? '21:00',
-    });
+    await setReminder(turningOn, settings?.reminderTime);
   };
 
   const dark = settings?.themeMode === 'dark';
@@ -214,8 +211,13 @@ export function SettingsScreen({ onManageCards }: Props) {
             <input
               type="time"
               className={styles.timeInput}
-              value={settings.reminderTime ?? '21:00'}
-              onChange={(e) => updateSettings({ reminderTime: e.target.value })}
+              value={settings.reminderTime ?? DEFAULT_REMINDER_TIME}
+              /* Clearing the field snaps back to the default rather than
+                 storing nothing. setReminder writes updatedAt either way, so
+                 the live query re-renders and the input follows — a
+                 controlled input left holding a value the state rejected
+                 would drift out of sync until something else re-rendered. */
+              onChange={(e) => setReminder(true, e.target.value)}
               aria-label="알림 시간"
             />
           </div>
