@@ -1,0 +1,87 @@
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2px 0 16px;
+}
+
+.year {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--tx);
+  letter-spacing: -0.6px;
+  min-width: 84px;
+  text-align: center;
+}
+
+.nav {
+  border: 0;
+  background: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--tx2);
+  flex: none;
+  transition: transform 0.14s var(--spring-hard);
+}
+
+.nav:active {
+  transform: scale(0.85);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.month {
+  border: 0;
+  border-radius: 14px;
+  height: 48px;
+  background: var(--sf2);
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s var(--spring-hard);
+}
+
+.month:active {
+  transform: scale(0.92);
+}
+
+.selected {
+  background: var(--brand);
+  color: #fff;
+  font-weight: 800;
+}
+
+/* The month the user is actually living in, when they are looking at some
+   other one — otherwise paging back a year loses any sense of where "now" is. */
+.current {
+  color: var(--brand);
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px var(--brand);
+  background: var(--brandSoft);
+}
+
+.today {
+  width: 100%;
+  margin-top: 14px;
+  height: 50px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--brandSoft);
+  color: var(--brand);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+}

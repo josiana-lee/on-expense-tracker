@@ -10,6 +10,7 @@ import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { dateText, won } from '../../lib/format';
 import { EntrySheet } from './EntrySheet';
+import { MonthPickerSheet } from './MonthPickerSheet';
 import { SearchScreen } from './SearchScreen';
 import styles from './CalendarScreen.module.css';
 
@@ -59,6 +60,7 @@ export function CalendarScreen() {
   /** null = closed. `{ record: null }` opens the sheet in create mode. */
   const [sheet, setSheet] = useState<{ record: ExpenseRecord | null } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
   const shiftMonth = (delta: number) => {
     const d = new Date(view.year, view.month - 1 + delta, 1);
@@ -116,9 +118,14 @@ export function CalendarScreen() {
             >
               <Icon path={CHEVRON_LEFT} size={19} stroke="currentColor" strokeWidth={2.2} />
             </button>
-            <span className={styles.monthName}>
+            <button
+              type="button"
+              className={styles.monthName}
+              onClick={() => setMonthPickerOpen(true)}
+              aria-label="년월 선택"
+            >
               {view.year}년 {view.month}월
-            </span>
+            </button>
             <button
               type="button"
               className={styles.nav}
@@ -257,6 +264,23 @@ export function CalendarScreen() {
 
       {searchOpen && (
         <SearchScreen onBack={() => setSearchOpen(false)} onSelectRecord={openFromSearch} />
+      )}
+
+      {monthPickerOpen && (
+        <MonthPickerSheet
+          year={view.year}
+          month={view.month}
+          onClose={() => setMonthPickerOpen(false)}
+          onPick={(year, month) => {
+            setView({ year, month });
+            /* Same rule as the chevrons: land on today when the pick is the
+               current month, otherwise on the 1st. */
+            const isThisMonth =
+              year === today.getFullYear() && month === today.getMonth() + 1;
+            setSelected(fmt(isThisMonth ? today : new Date(year, month - 1, 1)));
+            setMonthPickerOpen(false);
+          }}
+        />
       )}
 
       {toast && <Toast key={toast} text={toast} />}

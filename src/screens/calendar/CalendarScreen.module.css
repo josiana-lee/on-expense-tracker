@@ -26,12 +26,27 @@
   flex: none;
 }
 
+/* A button now — tapping it opens the year/month picker. Styled as plain text
+   so the header reads the same; the chevrons either side already say this
+   area is interactive. */
 .monthName {
+  border: 0;
+  background: none;
+  padding: 2px 4px;
+  border-radius: 10px;
+  font-family: inherit;
   font-size: 24px;
   font-weight: 800;
   color: var(--tx);
   letter-spacing: -0.8px;
   white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.14s var(--spring-hard);
+}
+
+.monthName:active {
+  transform: scale(0.94);
+  background: var(--brandSoft);
 }
 
 .nav {
