@@ -1,0 +1,23 @@
+/* A round × rather than a word: it sits beside the amount at every type size,
+   and at eleven digits the row has no room for a label. 26px keeps it past the
+   24px tap-target floor even though the circle reads smaller. */
+.clear {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: var(--sf2);
+  color: var(--tx2);
+  cursor: pointer;
+}
+
+.clear:active {
+  background: var(--warnSoft);
+  color: var(--warn);
+}

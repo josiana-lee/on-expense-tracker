@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Keypad, applyKey } from '../../components/Keypad';
+import { ClearAmount } from '../../components/ClearAmount';
 import { Sheet } from '../../components/Sheet';
 import { addAccount, deleteAccount, updateAccount } from '../../db/accounts';
 import type { AccountRecord } from '../../db/types';
@@ -102,6 +103,7 @@ export function AccountSheet({ account, onClose, onDone }: Props) {
       <div className={styles.amountRow}>
         <span className={`${styles.amount} tabular`}>{won(amount || '0')}</span>
         <span className={styles.unit}>원</span>
+        {amount && <ClearAmount onClear={() => setAmount('')} />}
       </div>
 
       <Keypad compact onPress={(k) => setAmount((a) => applyKey(a, k))} />

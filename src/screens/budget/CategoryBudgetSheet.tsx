@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
+import { ClearAmount } from '../../components/ClearAmount';
 import { Sheet } from '../../components/Sheet';
 import { deleteCategoryBudget, setCategoryBudget } from '../../db/budgets';
 import type { BudgetRecord, DateStr } from '../../db/types';
@@ -118,6 +119,7 @@ export function CategoryBudgetSheet({
       <div className={styles.amountRow}>
         <span className={`${styles.amount} tabular`}>{won(amount || '0')}</span>
         <span className={styles.unit}>원</span>
+        {amount && <ClearAmount onClear={() => setAmount('')} />}
       </div>
 
       <Keypad compact onPress={(k) => setAmount((a) => applyKey(a, k))} />

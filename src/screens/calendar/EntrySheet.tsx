@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
+import { ClearAmount } from '../../components/ClearAmount';
 import { Sheet } from '../../components/Sheet';
 import { parseDateStr } from '../../db/date';
 import { addExpense, deleteExpense, updateExpense } from '../../db/expenses';
@@ -131,6 +132,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         <span className={`${styles.amount} tabular`} data-size={amountSize(amount)}>
           {won(amount || '0')}원
         </span>
+        {amount && <ClearAmount onClear={() => setAmount('')} />}
       </div>
 
       <div className={styles.cats}>

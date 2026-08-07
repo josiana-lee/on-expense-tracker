@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { ClearAmount } from '../../components/ClearAmount';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
@@ -20,8 +21,6 @@ import styles from './InputScreen.module.css';
 const FALLBACK_CATEGORY = 'etc';
 
 const POPUP_EXIT_MS = 250;
-
-const CLEAR_ICON = 'M6 6l12 12M18 6L6 18';
 
 
 type PopupState = PopupOrigin & { categoryId: string };
@@ -263,16 +262,7 @@ export function InputScreen() {
             <span className={`${styles.keypadValue} tabular`} data-size={amountSize(amount)}>
               {won(amount || '0')}원
             </span>
-            {amount && (
-              <button
-                type="button"
-                className={styles.clearAmount}
-                onClick={() => setAmount('')}
-                aria-label="금액 전체 지우기"
-              >
-                <Icon path={CLEAR_ICON} size={12} stroke="currentColor" strokeWidth={2.6} />
-              </button>
-            )}
+            {amount && <ClearAmount onClear={() => setAmount('')} />}
           </div>
           <Keypad onPress={(k) => setAmount((a) => applyKey(a, k))} />
           <button type="button" className={styles.done} onClick={() => setKeypadOpen(false)}>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
+import { ClearAmount } from '../../components/ClearAmount';
 import { Sheet } from '../../components/Sheet';
 import { fmt, parseDateStr } from '../../db/date';
 import type { RecurringRuleInput } from '../../db/recurring';
@@ -185,6 +186,7 @@ export function RecurringRuleSheet({ rule, onClose, onDone }: Props) {
       <div className={styles.amountRow}>
         <span className={`${styles.amount} tabular`}>{won(amount || '0')}</span>
         <span className={styles.unit}>원</span>
+        {amount && <ClearAmount onClear={() => setAmount('')} />}
       </div>
 
       <div className={styles.cats}>
