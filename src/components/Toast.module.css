@@ -12,9 +12,15 @@
   /* Frosted glass over the solid dark pill the original mock used — tints
      with whichever surface color the current theme already defines, so it
      stays correct in dark mode without a separate override. */
+  /* 각 쌍의 첫 줄은 폴백이다. `color-mix()`는 WebView 111+에만 있고, 없으면
+     그 선언 하나가 통째로 버려진다 — 배경 없이 글자만 뜨는 토스트가 되고,
+     테두리를 얹은 box-shadow는 그림자까지 같이 사라진다. 반투명이 안 되면
+     불투명한 표면색으로 물러서는 게 맞다. */
+  background: var(--sf);
   background: color-mix(in srgb, var(--sf) 72%, transparent);
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 10px 30px rgba(20, 25, 40, 0.16);
   box-shadow:
     0 10px 30px rgba(20, 25, 40, 0.16),
     inset 0 0 0 1px color-mix(in srgb, var(--tx) 10%, transparent);
