@@ -28,6 +28,7 @@
     "@capacitor/share": "^8.0.1",
     "dexie": "^4.0.11",
     "dexie-react-hooks": "^4.4.0",
+    "pretendard": "^1.3.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zod": "^4.4.3"

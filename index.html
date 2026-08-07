@@ -15,10 +15,16 @@
     <!-- Kept in step with APP_INFO.appName in src/data/appInfo.ts by hand;
          plain HTML can't read the module. -->
     <title>온:On 지출 가계부</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css"
-    />
+    <!-- Bundled, not from a CDN. The app ships as a package and its whole
+         premise is that nothing needs a network: a CDN font meant the design
+         collapsed to a system fallback whenever the phone was offline, which
+         for something used while out and about is most of the time it
+         matters. It also put an outbound request on every launch, which sits
+         badly with a privacy policy promising nothing leaves the device.
+
+         Dynamic subset: 92 slices keyed by unicode-range, so only the few
+         covering the characters actually on screen are read. -->
+    <link rel="stylesheet" href="/fonts/pretendard.css" />
   </head>
   <body>
     <div id="root"></div>

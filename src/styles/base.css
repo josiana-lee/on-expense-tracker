@@ -24,7 +24,10 @@ body {
 body {
   background: var(--bg);
   color: var(--tx);
-  font-family: Pretendard, system-ui, -apple-system, sans-serif;
+  /* 'Pretendard Variable' is the family the bundled font declares; plain
+     Pretendard stays behind it for anyone who has the static family
+     installed on the system. */
+  font-family: 'Pretendard Variable', Pretendard, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   /* The app owns all scrolling; the page itself never moves. */
   overflow: hidden;
