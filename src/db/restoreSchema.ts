@@ -105,18 +105,24 @@ const recurringRuleSchema = z.looseObject({
   subLabel: z.string().optional(),
   paymentMethodId: id,
   memo: z.string().optional(),
-  interval: z.enum(['weekly', 'monthly', 'yearly']),
+  lastUsedAt: epoch.optional(),
+  createdAt: epoch,
+  updatedAt: epoch,
+
+  /* Left over from when these ran on a schedule. Optional rather than
+     removed: a backup made by that version must still restore, and a row that
+     failed validation here would be dropped silently rather than kept with
+     fields nothing reads. */
+  interval: z.enum(['weekly', 'monthly', 'yearly']).optional(),
   dayOfMonth: z.number().optional(),
   weekday: z.number().optional(),
   monthOfYear: z.number().optional(),
-  startDate: dateStr,
+  startDate: dateStr.optional(),
   endDate: dateStr.optional(),
-  nextRunDate: dateStr,
+  nextRunDate: dateStr.optional(),
   lastRunDate: dateStr.optional(),
-  mode: z.enum(['auto', 'remind']),
-  active: z.boolean(),
-  createdAt: epoch,
-  updatedAt: epoch,
+  mode: z.enum(['auto', 'remind']).optional(),
+  active: z.boolean().optional(),
 });
 
 const settingsSchema = z.looseObject({

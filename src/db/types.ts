@@ -135,20 +135,25 @@ export interface RecurringRuleRecord {
   paymentMethodId: ID;
   memo?: string;
 
-  interval: 'weekly' | 'monthly' | 'yearly';
+  /** Orders the list so the templates actually used drift to the front. */
+  lastUsedAt?: Epoch;
+
+  createdAt: Epoch;
+  updatedAt: Epoch;
+
+  /* Written by the scheduled version of this feature, which was removed. Kept
+     optional so a backup made before that still restores instead of failing
+     validation; nothing reads them. */
+  interval?: 'weekly' | 'monthly' | 'yearly';
   dayOfMonth?: number;
   weekday?: number;
   monthOfYear?: number;
-
-  startDate: DateStr;
+  startDate?: DateStr;
   endDate?: DateStr;
-  nextRunDate: DateStr;
+  nextRunDate?: DateStr;
   lastRunDate?: DateStr;
-
-  mode: 'auto' | 'remind';
-  active: boolean;
-  createdAt: Epoch;
-  updatedAt: Epoch;
+  mode?: 'auto' | 'remind';
+  active?: boolean;
 }
 
 export interface SettingsRecord {

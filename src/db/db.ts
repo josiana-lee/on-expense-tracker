@@ -28,6 +28,14 @@ export class AppDB extends Dexie {
     super('on-expense-tracker');
 
     // 'id'에 ++ 가 없는 것은 의도적 — PK를 앱이 UUIDv7로 직접 만든다.
+    //
+    // 반복 지출이 스케줄에서 원탭 템플릿으로 바뀌면서 남은 인덱스 두 개
+    // (expenses의 &[recurringRuleId+occurrenceDate], recurringRules의
+    // nextRunDate)는 일부러 그대로 뒀다. 지우려면 버전을 올려야 하고,
+    // 그건 이미 설치된 기기의 DB를 건드리는 일이라 얻는 것보다 위험이 크다.
+    // 두 필드 모두 이제 아무도 쓰지 않아 undefined이고, Dexie는 키 일부가
+    // undefined인 행을 색인하지 않으므로 unique 제약도 함께 잠든다 —
+    // logFromTemplate이 같은 템플릿을 두 번 기록할 수 있는 이유다.
     this.version(1).stores({
       expenses: 'id, date, updatedAt, &[recurringRuleId+occurrenceDate]',
       categories: 'id, &presetKey, updatedAt',

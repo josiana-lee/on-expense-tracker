@@ -5,21 +5,14 @@ import type { RecurringRuleRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useRecurringRules } from '../../hooks/useRecurringRules';
 import { useToast } from '../../hooks/useToast';
-import { fmt } from '../../db/date';
+import { logFromTemplate } from '../../db/recurring';
+import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { won } from '../../lib/format';
 import { RecurringRuleSheet } from './RecurringRuleSheet';
 import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './SettingsScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
-const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
-
-function scheduleText(rule: RecurringRuleRecord): string {
-  if (rule.interval === 'weekly') return `매주 ${DOWS[rule.weekday ?? 0]}요일`;
-  if (rule.interval === 'monthly') return `매월 ${rule.dayOfMonth}일`;
-  return `매년 ${rule.monthOfYear}월 ${rule.dayOfMonth}일`;
-}
-
 type Props = {
   onBack: () => void;
 };
@@ -30,8 +23,22 @@ export function RecurringManageScreen({ onBack }: Props) {
   const { byId } = useCatalog();
   const { text: toast, flash } = useToast();
   const [editing, setEditing] = useState<RecurringRuleRecord | 'new' | null>(null);
+  const { busy, guard } = useGuardedAction();
 
-  const today = fmt(new Date());
+  /** The whole point of a saved expense: file it without retyping anything.
+   *  Separate from the row itself, which opens the editor — one tap has to
+   *  mean one thing, and mixing "use this" with "change this" on the same
+   *  target is how you log an expense while trying to rename it. */
+  const logNow = (rule: RecurringRuleRecord) => {
+    guard(async () => {
+      try {
+        await logFromTemplate(rule);
+        flash(`${rule.name} ${won(rule.amount)}원 기록했어!`);
+      } catch {
+        flash('기록하지 못했어');
+      }
+    });
+  };
 
   return (
     <div className={styles.sub}>
@@ -60,37 +67,38 @@ export function RecurringManageScreen({ onBack }: Props) {
           <div className={styles.subCard}>
             {rules.map((rule) => {
               const category = byId.get(rule.categoryId);
-              const overdue = rule.active && rule.nextRunDate <= today;
               return (
-                <button
-                  key={rule.id}
-                  type="button"
-                  onClick={() => setEditing(rule)}
-                  className={`${styles.catRow} ${rule.active ? '' : styles.catRowDim}`}
-                >
-                  <span
-                    className={styles.catBadge}
-                    style={{ background: category?.colorHex ?? '#CFD5DE' }}
+                <div key={rule.id} className={styles.catRow}>
+                  <button
+                    type="button"
+                    className={styles.ruleMain}
+                    onClick={() => setEditing(rule)}
                   >
-                    {category && (
-                      <Icon path={category.iconPath} size={17} strokeWidth={1.8} />
-                    )}
-                  </span>
-                  <div className={styles.catMain}>
-                    <div className={styles.catName}>{rule.name}</div>
-                    <div className={styles.catSubs}>
-                      {scheduleText(rule)} · {won(rule.amount)}원
-                      {overdue && rule.mode === 'remind' ? ' · 기록 대기 중' : ''}
+                    <span
+                      className={styles.catBadge}
+                      style={{ background: category?.colorHex ?? '#CFD5DE' }}
+                    >
+                      {category && (
+                        <Icon path={category.iconPath} size={17} strokeWidth={1.8} />
+                      )}
+                    </span>
+                    <div className={styles.catMain}>
+                      <div className={styles.catName}>{rule.name}</div>
+                      <div className={styles.catSubs}>
+                        {category?.name}
+                        {rule.subLabel ? ` · ${rule.subLabel}` : ''} · {won(rule.amount)}원
+                      </div>
                     </div>
-                  </div>
-                  <span
-                    className={`${styles.catState} ${
-                      rule.active ? styles.catStateOn : styles.catStateOff
-                    }`}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.ruleLog}
+                    onClick={() => logNow(rule)}
+                    disabled={busy}
                   >
-                    {rule.active ? '사용중' : '중지됨'}
-                  </span>
-                </button>
+                    기록
+                  </button>
+                </div>
               );
             })}
           </div>

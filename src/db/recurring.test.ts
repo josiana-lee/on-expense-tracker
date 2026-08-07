@@ -1,115 +1,95 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
+import { fmt } from './date';
 import { db } from './db';
-import {
-  addRecurringRule,
-  logRecurringOccurrence,
-  materializeDueRules,
-  updateRecurringRule,
-} from './recurring';
+import { addRecurringRule, deleteRecurringRule, logFromTemplate } from './recurring';
 import { bootstrap } from './seed';
 
-const REMIND = {
-  name: '헬스장',
-  amount: 50000,
-  categoryId: 'food',
-  paymentMethodId: 'cash',
-  interval: 'monthly' as const,
-  startDate: '2026-07-29',
-  mode: 'remind' as const,
-};
-
-async function onlyRule() {
-  return (await db.recurringRules.toArray())[0];
+async function makeTemplate(over: Partial<Parameters<typeof addRecurringRule>[0]> = {}) {
+  await bootstrap();
+  await addRecurringRule({
+    name: '월세',
+    amount: 600000,
+    categoryId: 'housing',
+    paymentMethodId: 'cash',
+    ...over,
+  });
+  const [rule] = await db.recurringRules.toArray();
+  return rule;
 }
 
-describe('recurring rules', () => {
-  /* Catch-up runs up to "today", so these assertions are only stable against
-     a fixed clock. Only Date is faked — faking timers wholesale would stall
-     Dexie, which schedules its own. */
-  beforeAll(() => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(2026, 7, 4, 12, 0, 0));
-  });
-  afterAll(() => {
-    vi.useRealTimers();
+describe('saved expenses', () => {
+  it('stores the amount as given', async () => {
+    const rule = await makeTemplate();
+    expect(rule.amount).toBe(600_000);
+    expect(rule.name).toBe('월세');
   });
 
-  it('generates one record per month-end, clamped to short months', async () => {
-    await bootstrap();
-    await addRecurringRule({
-      ...REMIND,
-      startDate: '2026-01-31',
-      mode: 'auto',
+  it('carries the whole entry, not just the amount', async () => {
+    const rule = await makeTemplate({
+      subLabel: '보증금',
+      memo: '집주인 계좌',
+      paymentMethodId: 'hyundai',
     });
 
-    await materializeDueRules();
+    await logFromTemplate(rule);
 
-    const dates = (await db.expenses.toArray()).map((e) => e.date).sort();
-    expect(dates).toEqual([
-      '2026-01-31',
-      '2026-02-28',
-      '2026-03-31',
-      '2026-04-30',
-      '2026-05-31',
-      '2026-06-30',
-      '2026-07-31',
-    ]);
+    /* The template stores minor units and `addExpense` takes minor units —
+       `toMinor` is the identity for KRW. Passing it through a /100 on the way
+       out silently logged 6,000원 for a 600,000원 template. */
+    const [expense] = await db.expenses.toArray();
+    expect(expense.amount).toBe(600_000);
+    expect(expense.categoryId).toBe('housing');
+    expect(expense.subLabel).toBe('보증금');
+    expect(expense.memo).toBe('집주인 계좌');
+    expect(expense.paymentMethodId).toBe('hyundai');
   });
 
-  it('does not duplicate occurrences across repeated catch-up passes', async () => {
-    await bootstrap();
-    await addRecurringRule({ ...REMIND, startDate: '2026-01-31', mode: 'auto' });
+  /* The scheduled version needed a unique index so a catch-up pass could not
+     write the same occurrence twice. A tap is the user saying it happened,
+     and it can happen twice in a day — blocking the second one would be the
+     bug, not the guard. */
+  it('logs again on a second tap rather than deduplicating', async () => {
+    const rule = await makeTemplate({ name: '커피', amount: 4500 });
 
-    await materializeDueRules();
-    const afterFirst = await db.expenses.count();
-    await materializeDueRules();
-    await materializeDueRules();
+    await logFromTemplate(rule);
+    await logFromTemplate(rule);
 
-    // The &[recurringRuleId+occurrenceDate] unique index is what makes the
-    // catch-up loop safe to re-run on every boot.
-    expect(await db.expenses.count()).toBe(afterFirst);
+    const rows = await db.expenses.toArray();
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.amount === 4500)).toBe(true);
   });
 
-  it('leaves remind-mode rules for the user to log', async () => {
-    await bootstrap();
-    await addRecurringRule(REMIND);
+  it('files the expense at the moment it is tapped', async () => {
+    const rule = await makeTemplate();
+    /* `fmt`, not toISOString — the app files by local date, and in KST the two
+       disagree for the first nine hours of every day. */
+    const today = fmt(new Date());
 
-    await materializeDueRules();
+    await logFromTemplate(rule);
 
-    expect(await db.expenses.count()).toBe(0);
-    expect((await onlyRule()).nextRunDate).toBe('2026-07-29');
+    const [expense] = await db.expenses.toArray();
+    expect(expense.date).toBe(today);
   });
 
-  it('reports whether "지금 기록하기" actually wrote a record', async () => {
-    await bootstrap();
-    await addRecurringRule(REMIND);
+  /* What orders the list, now that there is no next-run date to sort by. */
+  it('records when a template was last used', async () => {
+    const rule = await makeTemplate();
+    expect(rule.lastUsedAt).toBeUndefined();
 
-    expect(await logRecurringOccurrence(await onlyRule())).toBe(true);
+    await logFromTemplate(rule);
+
+    const after = await db.recurringRules.get(rule.id);
+    expect(after?.lastUsedAt).toBeTypeOf('number');
+  });
+
+  it('leaves already-logged expenses alone when the template is deleted', async () => {
+    const rule = await makeTemplate();
+    await logFromTemplate(rule);
+
+    await deleteRecurringRule(rule.id);
+
+    expect(await db.recurringRules.count()).toBe(0);
     expect(await db.expenses.count()).toBe(1);
-
-    // Editing a rule rewinds nextRunDate to its start date, so an occurrence
-    // already logged shows up as pending again. Logging it writes nothing.
-    await updateRecurringRule((await onlyRule()).id, REMIND);
-    const rewound = await onlyRule();
-    expect(rewound.nextRunDate).toBe('2026-07-29');
-
-    expect(await logRecurringOccurrence(rewound)).toBe(false);
-    expect(await db.expenses.count()).toBe(1);
-    // Advancing anyway is what stops the rule getting stuck on that date.
-    expect((await onlyRule()).nextRunDate).toBe('2026-08-29');
-  });
-
-  it('does not claim a run happened when nothing was written', async () => {
-    await bootstrap();
-    await addRecurringRule(REMIND);
-    await logRecurringOccurrence(await onlyRule());
-
-    await updateRecurringRule((await onlyRule()).id, REMIND);
-    await db.recurringRules.update((await onlyRule()).id, { lastRunDate: undefined });
-
-    await logRecurringOccurrence(await onlyRule());
-
-    expect((await onlyRule()).lastRunDate).toBeUndefined();
   });
 });
