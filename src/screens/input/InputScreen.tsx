@@ -21,6 +21,24 @@ const FALLBACK_CATEGORY = 'etc';
 
 const POPUP_EXIT_MS = 250;
 
+/** Which type size the amount needs to stay whole.
+ *
+ *  The card used to ellipsis instead, which on the one number the screen
+ *  exists to show is the worst way to run out of room: "77,000,..." is not
+ *  just hard to read, it is ambiguous between seventy-seven million and seven
+ *  hundred seventy million.
+ *
+ *  Measured against the real card at the 412px reference width, where the
+ *  digits get 259px: six figures fit at the full size, seven need 54px and
+ *  eight need 46px. The keypad caps input at eight, so there is no case
+ *  below `sm`. Bucketed by digit count rather than fitted at runtime — the
+ *  string is a formatted number in a tabular font, so its width is known
+ *  from its length and nothing has to be measured while typing. */
+function amountSize(amount: string): 'lg' | 'md' | 'sm' {
+  if (amount.length <= 6) return 'lg';
+  return amount.length === 7 ? 'md' : 'sm';
+}
+
 type PopupState = PopupOrigin & { categoryId: string };
 
 export function InputScreen() {
@@ -158,7 +176,10 @@ export function InputScreen() {
         <button type="button" className={styles.amountCard} onClick={() => setKeypadOpen(true)}>
           <div className={styles.amountLabel}>얼마 썼어?</div>
           <div className={styles.amountRow}>
-            <span className={`${styles.amountValue} ${amount ? '' : styles.amountEmpty} tabular`}>
+            <span
+              className={`${styles.amountValue} ${amount ? '' : styles.amountEmpty} tabular`}
+              data-size={amountSize(amount)}
+            >
               {amount ? won(amount) : '0'}
             </span>
             <span className={styles.amountUnit}>원</span>

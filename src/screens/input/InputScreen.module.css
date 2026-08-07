@@ -106,15 +106,27 @@
 /* Digits have no descenders, so `normal` leading is ~10px of dead space at
    this size — the ad slot left the column tight enough that the whole flow
    was overflowing by a few px without this. */
+/* Steps down so the amount is never cut. No ellipsis and no min-width:0 on
+   purpose — both exist to let a flex item shrink past its content, which for
+   this number means hiding digits. It should be impossible for the card to
+   decide the user doesn't need to see what they typed. */
 .amountValue {
   font-size: 58px;
   font-weight: 800;
   line-height: 1.02;
   letter-spacing: -2.4px;
   color: var(--tx);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amountValue[data-size='md'] {
+  font-size: 54px;
+  letter-spacing: -2.2px;
+}
+
+.amountValue[data-size='sm'] {
+  font-size: 46px;
+  letter-spacing: -1.8px;
 }
 
 /* An eight-digit amount at 52px runs past the card edge on a 320px phone. */
