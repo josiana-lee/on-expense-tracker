@@ -8,6 +8,7 @@ import { useToast } from '../../hooks/useToast';
 import { fmt } from '../../db/date';
 import { won } from '../../lib/format';
 import { RecurringRuleSheet } from './RecurringRuleSheet';
+import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './SettingsScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
@@ -24,6 +25,7 @@ type Props = {
 };
 
 export function RecurringManageScreen({ onBack }: Props) {
+  useBackHandler(true, onBack);
   const rules = useRecurringRules();
   const { byId } = useCatalog();
   const { text: toast, flash } = useToast();

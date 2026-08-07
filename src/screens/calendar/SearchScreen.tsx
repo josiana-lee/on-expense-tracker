@@ -5,6 +5,7 @@ import type { ExpenseRecord } from '../../db/types';
 import { useAllExpenses } from '../../hooks/useAllExpenses';
 import { useCatalog } from '../../hooks/useCatalog';
 import { shortDate, won } from '../../lib/format';
+import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './SearchScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function SearchScreen({ onBack, onSelectRecord }: Props) {
+  useBackHandler(true, onBack);
   const [query, setQuery] = useState('');
   const { records } = useAllExpenses();
   const { byId, paymentById } = useCatalog();

@@ -4,6 +4,7 @@ import { Icon } from '../../components/Icon';
 import type { CategoryRecord, PaymentMethodRecord } from '../../db/types';
 import { useShell } from '../../shell/ShellContext';
 import { won } from '../../lib/format';
+import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './CategoryPopup.module.css';
 
 export type PopupOrigin = { dx: number; dy: number };
@@ -42,6 +43,12 @@ export function CategoryPopup({
   onClose,
 }: Props) {
   const shell = useShell();
+  /* Back cancels the pick rather than confirming it — the popup exists so a
+     category can be reviewed and backed out of without touching what the next
+     save will use. Registered while the exit animation plays too, which is
+     harmless: onClose is idempotent. */
+  useBackHandler(true, onClose);
+
   if (!shell) return null;
 
   // The popup grows out of the icon the user tapped and collapses back into it.

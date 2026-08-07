@@ -6,6 +6,7 @@ import type { CategoryRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useToast } from '../../hooks/useToast';
 import { CategorySheet } from './CategorySheet';
+import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './SettingsScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function CategoryManageScreen({ onBack }: Props) {
+  useBackHandler(true, onBack);
   const { categories } = useCatalog();
   const { text: toast, flash } = useToast();
   // Deprecated presets (dropped from the catalogue) still hold historical

@@ -7,6 +7,7 @@ import {
   type OpenSourcePackage,
 } from '../../data/licenses';
 import styles from './LicenseScreen.module.css';
+import { useBackHandler } from '../../shell/useBackHandler';
 import settingsStyles from './SettingsScreen.module.css';
 
 const BACK_ICON = 'M15 5l-7 7 7 7';
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function LicenseScreen({ onBack }: Props) {
+  useBackHandler(true, onBack);
   // Full licence texts are long, so they start folded — the attribution that
   // has to be visible is the name, version, licence and copyright, which the
   // row shows without expanding.

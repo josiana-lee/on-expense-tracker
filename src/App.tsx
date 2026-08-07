@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TabBar, TABS, type TabId } from './components/TabBar';
+import { isNative } from './lib/platform';
+import { handleBack } from './shell/useBackHandler';
 import { useReminderScheduler } from './hooks/useReminderScheduler';
 import { useTheme } from './hooks/useTheme';
 import { AssetsScreen } from './screens/assets/AssetsScreen';
@@ -20,11 +22,51 @@ function Placeholder({ tab }: { tab: TabId }) {
   );
 }
 
+/** Gives Android's back button somewhere to go.
+ *
+ *  Capacitor's default is to exit the app on every press, so back closed the
+ *  whole thing from inside a sheet or a sub-screen — on Android that reads as
+ *  a crash, and here it would throw away a half-typed record.
+ *
+ *  Order: whatever is on top dismisses itself first, then a non-input tab
+ *  falls back to the input tab, and only a press on the bare input tab exits.
+ *  Input is the root because it is the screen the app opens on. */
+function useAndroidBackButton(tab: TabId, setTab: (t: TabId) => void): void {
+  useEffect(() => {
+    if (!isNative) return undefined;
+
+    let remove: (() => void) | undefined;
+    let cancelled = false;
+
+    void (async () => {
+      const { App: CapApp } = await import('@capacitor/app');
+      const listener = await CapApp.addListener('backButton', () => {
+        if (handleBack()) return;
+        if (tab !== 'input') {
+          setTab('input');
+          return;
+        }
+        void CapApp.exitApp();
+      });
+      /* The import resolves a tick later, so the effect may already have been
+         torn down by then — drop the listener rather than leaking it. */
+      if (cancelled) void listener.remove();
+      else remove = () => void listener.remove();
+    })();
+
+    return () => {
+      cancelled = true;
+      remove?.();
+    };
+  }, [tab, setTab]);
+}
+
 export function App() {
   const [shell, setShell] = useState<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<TabId>('input');
   useTheme();
   useReminderScheduler();
+  useAndroidBackButton(tab, setTab);
 
   const known =
     tab === 'input' ||
