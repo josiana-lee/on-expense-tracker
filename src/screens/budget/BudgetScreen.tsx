@@ -9,7 +9,7 @@ import { useCatalog } from '../../hooks/useCatalog';
 import { useCategoryBudgets, useMonthlyBudget } from '../../hooks/useBudget';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
-import { shortDate, won } from '../../lib/format';
+import { amountSize, shortDate, won } from '../../lib/format';
 import { BudgetSheet } from './BudgetSheet';
 import { CategoryBudgetSheet } from './CategoryBudgetSheet';
 import styles from './BudgetScreen.module.css';
@@ -96,7 +96,10 @@ export function BudgetScreen() {
             <span className={styles.cardLabel}>{won(budget.amount)}원</span>
           </div>
           <div className={styles.remainRow}>
-            <span className={`${styles.remainValue} ${over ? styles.remainValueOver : ''} tabular`}>
+            <span
+              className={`${styles.remainValue} ${over ? styles.remainValueOver : ''} tabular`}
+              data-size={amountSize(String(Math.abs(remaining)))}
+            >
               {won(Math.abs(remaining))}
             </span>
             <span className={styles.remainUnit}>{over ? '원 초과했어' : '원 남았어'}</span>

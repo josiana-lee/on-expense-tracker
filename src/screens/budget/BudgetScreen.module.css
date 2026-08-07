@@ -73,11 +73,14 @@
   color: var(--tx2);
 }
 
+/* Fixed height and bottom-aligned so the card doesn't resize as the type
+   steps down — the weekly rows below it would shift on every change. */
 .remainRow {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   gap: 6px;
   margin-top: 6px;
+  height: 46px;
 }
 
 .remainValue {
@@ -85,16 +88,43 @@
   font-weight: 800;
   color: var(--tx);
   letter-spacing: -2px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.remainValue[data-size='md'] {
+  font-size: 40px;
+  letter-spacing: -1.8px;
+}
+
+.remainValue[data-size='sm'] {
+  font-size: 34px;
+  letter-spacing: -1.6px;
+}
+
+.remainValue[data-size='xs'] {
+  font-size: 29px;
+  letter-spacing: -1.3px;
+}
+
+.remainValue[data-size='xxs'] {
+  font-size: 24px;
+  letter-spacing: -1px;
 }
 
 .remainValueOver {
   color: var(--warn);
 }
 
+/* "원 초과했어" broke onto three lines when the number crowded it. It is a
+   sentence, not a unit symbol — wrapping it mid-phrase is worse than letting
+   the number shrink. */
 .remainUnit {
   font-size: 18px;
   font-weight: 700;
   color: var(--tx2);
+  white-space: nowrap;
+  flex: none;
 }
 
 .bar {
