@@ -3,7 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { db } from './db/db';
 import { bootstrap } from './db/seed';
+import { isNative } from './lib/platform';
 import './styles/base.css';
+
+/* CSS로는 데스크톱 브라우저와 넓은 실기기를 구분할 방법이 없다. 폭만 보고
+   판단하던 동안 펼친 폴더블이 개발용 폰 프레임을 그대로 받았다 — 네이티브
+   앱이 화면 한가운데 그림자 달린 카드로 떠 있으면 덜 다듬어진 게 아니라
+   고장 난 것으로 읽힌다. 렌더 전에 붙여야 첫 프레임부터 맞는다. */
+if (isNative) document.documentElement.dataset.native = '';
 
 const root = createRoot(document.getElementById('root')!);
 

@@ -51,26 +51,46 @@ input {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* On a desktop browser, pin the app to a phone-sized frame so what we see
-   during development matches the 412x892 target device. */
+/* 넓은 화면. 폰은 CSS 폭이 520 미만이라 여기 걸리지 않지만, 펼친 폴더블은
+   900 안팎이라 정확히 걸린다.
+   `data-native`로 갈리는 이유: 이 미디어 쿼리는 원래 "데스크톱 브라우저"를
+   노린 것인데 CSS에는 그걸 판별할 수단이 없어서, 폭만 보고 넓은 실기기까지
+   개발용 프레임에 넣고 있었다. 표시는 main.tsx가 렌더 전에 붙인다. */
+
+/* 데스크톱 브라우저: 개발 중 보는 화면이 412x892 목표 기기와 같게. */
 @media (min-width: 520px) {
-  body {
+  :root:not([data-native]) body {
     display: flex;
     align-items: center;
     justify-content: center;
     background: #efede8;
   }
 
-  :root[data-theme='dark'] body {
+  :root:not([data-native])[data-theme='dark'] body {
     background: #0c0d11;
   }
 
-  #root {
+  :root:not([data-native]) #root {
     width: 412px;
     height: min(892px, 100dvh);
     border-radius: 18px;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
     background: var(--bg);
+  }
+
+  /* 펼친 폴더블·태블릿. 배경은 화면을 끝까지 채우고 내용만 가운데로 모은다 —
+     카드도 그림자도 없이. 폭을 묶는 건 여백을 위해서가 아니라 키패드 때문이다:
+     900px을 3열로 나누면 키 하나가 300px이 되어 한 손으로 덮지 못한다.
+     520은 이미 검증된 폭(360~412)에서 크게 벗어나지 않는 선. 제대로 된
+     태블릿 레이아웃은 별개 작업이고, 이건 그때까지 멀쩡해 보이게 하는 것. */
+  :root[data-native] body {
+    display: flex;
+    justify-content: center;
+  }
+
+  :root[data-native] #root {
+    width: 100%;
+    max-width: 520px;
   }
 }
 
