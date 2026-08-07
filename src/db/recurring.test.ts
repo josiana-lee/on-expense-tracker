@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { fmt } from './date';
 import { db } from './db';
+import { addExpense } from './expenses';
 import {
   MAX_RECURRING_RULES,
   RecurringLimitError,
   addRecurringRule,
   deleteRecurringRule,
   isTemplateVisible,
-  logFromTemplate,
   setRecurringVisible,
+  templateAmountText,
   touchTemplate,
   updateRecurringRule,
 } from './recurring';
 import { bootstrap } from './seed';
+import { toMinor } from './types';
 
 async function makeTemplate(over: Partial<Parameters<typeof addRecurringRule>[0]> = {}) {
   await bootstrap();
@@ -35,67 +36,49 @@ describe('saved expenses', () => {
     expect(rule.name).toBe('월세');
   });
 
-  it('carries the whole entry, not just the amount', async () => {
+  it('keeps every field the input screen fills from', async () => {
     const rule = await makeTemplate({
       subLabel: '보증금',
       memo: '집주인 계좌',
       paymentMethodId: 'hyundai',
     });
 
-    await logFromTemplate(rule);
-
-    /* The template stores minor units and `addExpense` takes minor units —
-       `toMinor` is the identity for KRW. Passing it through a /100 on the way
-       out silently logged 6,000원 for a 600,000원 template. */
-    const [expense] = await db.expenses.toArray();
-    expect(expense.amount).toBe(600_000);
-    expect(expense.categoryId).toBe('housing');
-    expect(expense.subLabel).toBe('보증금');
-    expect(expense.memo).toBe('집주인 계좌');
-    expect(expense.paymentMethodId).toBe('hyundai');
+    expect(rule.categoryId).toBe('housing');
+    expect(rule.subLabel).toBe('보증금');
+    expect(rule.memo).toBe('집주인 계좌');
+    expect(rule.paymentMethodId).toBe('hyundai');
   });
 
-  /* The scheduled version needed a unique index so a catch-up pass could not
-     write the same occurrence twice. A tap is the user saying it happened,
-     and it can happen twice in a day — blocking the second one would be the
-     bug, not the guard. */
-  it('logs again on a second tap rather than deduplicating', async () => {
-    const rule = await makeTemplate({ name: '커피', amount: 4500 });
+  /* 저장된 금액이 입력 화면을 거쳐 그대로 기록돼야 한다. 이 왕복에 100으로
+     나누는 코드가 끼어 60만원 템플릿이 6천원으로 기록된 적이 있고, 화면 쪽에
+     같은 모양의 변환이 그대로 남아 있어서 불변식만 따로 잡아 둔다. */
+  it('round-trips the amount through the input screen unchanged', async () => {
+    for (const amount of [4500, 600_000, 99_999_999_999]) {
+      await db.delete();
+      await db.open();
+      const rule = await makeTemplate({ amount });
 
-    await logFromTemplate(rule);
-    await logFromTemplate(rule);
-
-    const rows = await db.expenses.toArray();
-    expect(rows).toHaveLength(2);
-    expect(rows.every((r) => r.amount === 4500)).toBe(true);
+      const typed = templateAmountText(rule);
+      expect(typed).toMatch(/^\d+$/);
+      expect(toMinor(Number(typed))).toBe(rule.amount);
+    }
   });
 
-  it('files the expense at the moment it is tapped', async () => {
+  it('files nothing on its own — saving stays the user’s "추가!"', async () => {
     const rule = await makeTemplate();
-    /* `fmt`, not toISOString — the app files by local date, and in KST the two
-       disagree for the first nine hours of every day. */
-    const today = fmt(new Date());
 
-    await logFromTemplate(rule);
+    await touchTemplate(rule.id);
 
-    const [expense] = await db.expenses.toArray();
-    expect(expense.date).toBe(today);
+    expect(await db.expenses.count()).toBe(0);
   });
 
-  /* What orders the list, now that there is no next-run date to sort by. */
-  it('records when a template was last used', async () => {
+  it('leaves already-saved expenses alone when the template is deleted', async () => {
     const rule = await makeTemplate();
-    expect(rule.lastUsedAt).toBeUndefined();
-
-    await logFromTemplate(rule);
-
-    const after = await db.recurringRules.get(rule.id);
-    expect(after?.lastUsedAt).toBeTypeOf('number');
-  });
-
-  it('leaves already-logged expenses alone when the template is deleted', async () => {
-    const rule = await makeTemplate();
-    await logFromTemplate(rule);
+    await addExpense({
+      amount: rule.amount,
+      categoryId: rule.categoryId,
+      paymentMethodId: rule.paymentMethodId,
+    });
 
     await deleteRecurringRule(rule.id);
 

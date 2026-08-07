@@ -2,9 +2,8 @@ import { db } from './db';
 import { now, uuidv7 } from './id';
 import type { ID, RecurringRuleRecord } from './types';
 import { toMinor } from './types';
-import { addExpense } from './expenses';
 
-/** Saved expenses you log with one tap.
+/** Saved expenses you fill the input screen with in one tap.
  *
  *  These used to run on a schedule — pick 매월 and a start date, and the app
  *  wrote the record for you on the day. That was dropped because the schedule
@@ -14,8 +13,10 @@ import { addExpense } from './expenses';
  *  costs more than a missing one.
  *
  *  What is left is the part that was actually saving work: the amount, the
- *  category and the payment method, kept together under a name so logging
- *  them again is one tap instead of a dozen. */
+ *  category and the payment method, kept together under a name. Tapping one
+ *  fills the input screen with all of it; saving is still the user's "추가!",
+ *  for the same reason the schedule went — nothing writes a record on its
+ *  own. */
 export interface RecurringRuleInput {
   name: string;
   amount: number;
@@ -96,25 +97,18 @@ export async function deleteRecurringRule(id: ID): Promise<void> {
  *
  *  `lastUsedAt` is what orders the list, so the templates someone actually
  *  reaches for drift to the front. */
-/** 템플릿을 썼다고 표시한다. 기록 버튼은 여기서 바로 끝나고, 입력 탭 칩은
- *  칩을 누른 순간이 아니라 "추가!"로 실제 저장된 뒤에 부른다 — 채워만 놓고
- *  그만둔 것까지 사용으로 세면 정렬이 쓰지도 않은 걸 위로 올린다. */
+/** 템플릿을 썼다고 표시한다. 칩을 누른 순간이 아니라 "추가!"로 실제 저장된
+ *  뒤에 부른다 — 채워만 놓고 그만둔 것까지 사용으로 세면 정렬이 쓰지도 않은
+ *  걸 위로 올린다. */
 export async function touchTemplate(id: ID): Promise<void> {
   const stamp = now();
   await db.recurringRules.update(id, { lastUsedAt: stamp, updatedAt: stamp });
 }
 
-export async function logFromTemplate(rule: RecurringRuleRecord): Promise<void> {
-  await addExpense({
-    /* Already minor units, and `toMinor` is the identity for KRW — 원 is the
-       smallest unit, there are no cents to divide out. */
-    amount: rule.amount,
-    categoryId: rule.categoryId,
-    subLabel: rule.subLabel,
-    paymentMethodId: rule.paymentMethodId,
-    memo: rule.memo,
-    type: rule.type,
-  });
-
-  await touchTemplate(rule.id);
+/** 입력 화면 금액 칸에 넣을 문자열. 키패드가 들고 있는 상태가 숫자열이라
+ *  변환이 한 번 끼는데, 그 자리에 100으로 나누는 코드가 들어가 60만원짜리가
+ *  6천원으로 기록된 적이 있다. 원화는 toMinor가 항등이라 나눌 게 없다.
+ *  세 줄짜리라도 함수로 두는 건 이 불변식에 테스트를 걸어두기 위해서다. */
+export function templateAmountText(rule: RecurringRuleRecord): string {
+  return String(rule.amount);
 }

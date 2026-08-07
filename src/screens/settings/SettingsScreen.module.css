@@ -333,10 +333,10 @@
   color: var(--tx2);
 }
 
-/* A recurring row does two different things, so it is two buttons rather than
-   one row with a control inside it — tapping the name edits the template,
-   tapping 기록 files the expense. Nesting the second inside the first would
-   make every 기록 tap also open the editor behind it. */
+/* A recurring row does two different things, so it is two buttons side by
+   side rather than one row with a control nested inside it — tapping the name
+   edits the template, tapping the pill shows or hides it. Nested, every pill
+   tap would also open the editor behind it. */
 .ruleMain {
   flex: 1;
   min-width: 0;
@@ -351,11 +351,8 @@
   cursor: pointer;
 }
 
-/* 표시/숨김. 글자 수가 달라도 같은 폭이라야 누를 때마다 옆 버튼이 밀리지
+/* 표시/숨김. 글자 수가 달라도 같은 폭이라야 누를 때마다 자리가 밀리지
    않는다 — 연달아 켰다 껐다 하는 컨트롤이라 자리가 움직이면 오조작이 난다. */
-/* 테두리만, 기록은 채움 — 나란히 붙어 있는 두 버튼이 같은 색이면 손이 어느
-   쪽을 눌렀는지 모른다. 한쪽은 칩이 사라질 뿐이고 한쪽은 돈 기록이 생기니
-   비슷하게 보여서는 안 된다. */
 .ruleShow {
   flex: none;
   min-width: 54px;
@@ -376,31 +373,6 @@
 }
 
 .ruleShow:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-/* The one-tap action, so it reads as the primary control on the row even
-   though it sits second. */
-.ruleLog {
-  flex: none;
-  font-size: 12.5px;
-  font-weight: 800;
-  font-family: inherit;
-  padding: 7px 14px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--brandSoft);
-  color: var(--brand);
-  cursor: pointer;
-}
-
-.ruleLog:active {
-  background: var(--brand);
-  color: #fff;
-}
-
-.ruleLog:disabled {
   opacity: 0.5;
   cursor: default;
 }

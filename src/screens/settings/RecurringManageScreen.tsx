@@ -5,12 +5,7 @@ import type { RecurringRuleRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useRecurringRules } from '../../hooks/useRecurringRules';
 import { useToast } from '../../hooks/useToast';
-import {
-  MAX_RECURRING_RULES,
-  isTemplateVisible,
-  logFromTemplate,
-  setRecurringVisible,
-} from '../../db/recurring';
+import { MAX_RECURRING_RULES, isTemplateVisible, setRecurringVisible } from '../../db/recurring';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { won } from '../../lib/format';
 import { RecurringRuleSheet } from './RecurringRuleSheet';
@@ -29,21 +24,6 @@ export function RecurringManageScreen({ onBack }: Props) {
   const { text: toast, flash } = useToast();
   const [editing, setEditing] = useState<RecurringRuleRecord | 'new' | null>(null);
   const { busy, guard } = useGuardedAction();
-
-  /** The whole point of a saved expense: file it without retyping anything.
-   *  Separate from the row itself, which opens the editor — one tap has to
-   *  mean one thing, and mixing "use this" with "change this" on the same
-   *  target is how you log an expense while trying to rename it. */
-  const logNow = (rule: RecurringRuleRecord) => {
-    guard(async () => {
-      try {
-        await logFromTemplate(rule);
-        flash(`${rule.name} ${won(rule.amount)}원 기록했어!`);
-      } catch {
-        flash('기록하지 못했어');
-      }
-    });
-  };
 
   /** 표시 여부는 시트에 들어가지 않고 여기서 바로 뒤집는다. 켜고 끄는 걸
    *  자주 하게 되는 설정이라 열고-바꾸고-저장은 세 배로 든다. */
@@ -126,9 +106,6 @@ export function RecurringManageScreen({ onBack }: Props) {
                       </div>
                     </div>
                   </button>
-                  {/* 표시와 기록은 결과의 무게가 다르다 — 하나는 칩이
-                      나타났다 사라지고 하나는 돈 기록이 생긴다. 잘못 눌렀을
-                      때를 생각해 채운 버튼은 기록 쪽에만 둔다. */}
                   <button
                     type="button"
                     className={`${styles.ruleShow} ${visible ? styles.ruleShowOn : ''}`}
@@ -137,14 +114,6 @@ export function RecurringManageScreen({ onBack }: Props) {
                     aria-pressed={visible}
                   >
                     {visible ? '표시 중' : '숨김'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.ruleLog}
-                    onClick={() => logNow(rule)}
-                    disabled={busy}
-                  >
-                    기록
                   </button>
                 </div>
               );

@@ -8,7 +8,7 @@ import { addExpense } from '../../db/expenses';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
 import { useVisibleRecurringRules } from '../../hooks/useRecurringRules';
-import { touchTemplate } from '../../db/recurring';
+import { templateAmountText, touchTemplate } from '../../db/recurring';
 import type { RecurringRuleRecord } from '../../db/types';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useNow } from '../../hooks/useNow';
@@ -154,7 +154,7 @@ export function InputScreen() {
    *  잘못된 기록이 비싸다. 채워두면 "추가!"가 한 번 남는다. */
   const useTemplate = useCallback(
     (rule: RecurringRuleRecord) => {
-      setAmount(String(rule.amount));
+      setAmount(templateAmountText(rule));
       setStagedCategoryId(rule.categoryId);
       setStagedSub(rule.subLabel ?? null);
       setStagedMemo(rule.memo ?? '');
