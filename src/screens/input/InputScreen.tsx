@@ -10,7 +10,7 @@ import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useNow } from '../../hooks/useNow';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
-import { dateText, timeText, won } from '../../lib/format';
+import { amountSize, dateText, timeText, won } from '../../lib/format';
 import { offsetFromShellCentre, useShell } from '../../shell/ShellContext';
 import { CategoryPopup, type PopupOrigin } from './CategoryPopup';
 import styles from './InputScreen.module.css';
@@ -21,23 +21,8 @@ const FALLBACK_CATEGORY = 'etc';
 
 const POPUP_EXIT_MS = 250;
 
-/** Which type size the amount needs to stay whole.
- *
- *  The card used to ellipsis instead, which on the one number the screen
- *  exists to show is the worst way to run out of room: "77,000,..." is not
- *  just hard to read, it is ambiguous between seventy-seven million and seven
- *  hundred seventy million.
- *
- *  Measured against the real card at the 412px reference width, where the
- *  digits get 259px: six figures fit at the full size, seven need 54px and
- *  eight need 46px. The keypad caps input at eight, so there is no case
- *  below `sm`. Bucketed by digit count rather than fitted at runtime — the
- *  string is a formatted number in a tabular font, so its width is known
- *  from its length and nothing has to be measured while typing. */
-function amountSize(amount: string): 'lg' | 'md' | 'sm' {
-  if (amount.length <= 6) return 'lg';
-  return amount.length === 7 ? 'md' : 'sm';
-}
+const CLEAR_ICON = 'M6 6l12 12M18 6L6 18';
+
 
 type PopupState = PopupOrigin & { categoryId: string };
 
@@ -272,7 +257,12 @@ export function InputScreen() {
               user is looking — noticing a wrong amount means reading it. */}
           <div className={styles.keypadHead}>
             <span className={styles.keypadLabel}>금액</span>
-            <span className={`${styles.keypadValue} tabular`}>{won(amount || '0')}원</span>
+            {/* Same ladder as the card. This row is tighter — it also carries
+                the label and the clear button — so at eleven digits the
+                number pushed the button off the edge. */}
+            <span className={`${styles.keypadValue} tabular`} data-size={amountSize(amount)}>
+              {won(amount || '0')}원
+            </span>
             {amount && (
               <button
                 type="button"
@@ -280,7 +270,7 @@ export function InputScreen() {
                 onClick={() => setAmount('')}
                 aria-label="금액 전체 지우기"
               >
-                지우기
+                <Icon path={CLEAR_ICON} size={12} stroke="currentColor" strokeWidth={2.6} />
               </button>
             )}
           </div>

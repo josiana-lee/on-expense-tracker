@@ -20,7 +20,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  min-width: 0;
+  flex: none;
 }
 
 .monthName {
@@ -50,16 +50,22 @@
   transform: scale(0.85);
 }
 
+/* Everything in the header was flex:none, so a long month total had nothing
+   to give and pushed the row past its padding. This side yields instead: the
+   total's type already steps down, and the label above it can ellipsis. */
 .headRight {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .headTotal {
   text-align: right;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .searchBtn {
@@ -88,10 +94,38 @@
   color: var(--tx2);
 }
 
+/* The month title must not be squeezed by a long total, so this shrinks
+   instead. `.title` has min-width: 0 and would otherwise lose the fight. */
+/* Shrinks so the month title doesn't have to. `.title` carries min-width: 0
+   and would otherwise be the one that gives, which is backwards — the month
+   is how the user knows what they are looking at. */
 .headTotalValue {
   font-size: 17px;
   font-weight: 800;
   color: var(--tx);
+  white-space: nowrap;
+}
+
+/* This slot is narrow — the month title and the search button take most of
+   the row — so the steps start earlier than elsewhere. */
+.headTotalValue[data-size='md'] {
+  font-size: 14.5px;
+  letter-spacing: -0.2px;
+}
+
+.headTotalValue[data-size='sm'] {
+  font-size: 14px;
+  letter-spacing: -0.2px;
+}
+
+.headTotalValue[data-size='xs'] {
+  font-size: 12.5px;
+  letter-spacing: -0.3px;
+}
+
+.headTotalValue[data-size='xxs'] {
+  font-size: 11px;
+  letter-spacing: -0.4px;
 }
 
 /* ── grid ───────────────────────────────────────────────────── */

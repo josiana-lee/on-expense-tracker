@@ -39,11 +39,24 @@
   margin-top: 4px;
 }
 
+/* Steps down with the digit count so a large balance can't push past the
+   card. Same ladder as the input screen; the sizes differ because this row
+   is narrower. */
 .netValue {
   font-size: 42px;
   font-weight: 800;
   color: var(--tx);
   letter-spacing: -2px;
+}
+
+.netValue[data-size='xs'] {
+  font-size: 36px;
+  letter-spacing: -1.6px;
+}
+
+.netValue[data-size='xxs'] {
+  font-size: 30px;
+  letter-spacing: -1.2px;
 }
 
 .netValueNeg {

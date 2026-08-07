@@ -5,7 +5,7 @@ import type { AccountRecord, PaymentMethodRecord } from '../../db/types';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useToast } from '../../hooks/useToast';
-import { won } from '../../lib/format';
+import { amountSize, won } from '../../lib/format';
 import { AccountSheet } from './AccountSheet';
 import { CardRow } from './CardRow';
 import { CardSheet } from './CardSheet';
@@ -48,7 +48,10 @@ export function AssetsScreen() {
       <div className={styles.netCard}>
         <div className={styles.netLabel}>총 자산</div>
         <div className={styles.netRow}>
-          <span className={`${styles.netValue} ${netWorth < 0 ? styles.netValueNeg : ''} tabular`}>
+          <span
+            className={`${styles.netValue} ${netWorth < 0 ? styles.netValueNeg : ''} tabular`}
+            data-size={amountSize(String(Math.abs(netWorth)))}
+          >
             {won(Math.abs(netWorth))}
           </span>
           <span className={styles.netUnit}>{netWorth < 0 ? '원 마이너스' : '원'}</span>

@@ -28,7 +28,11 @@
   gap: 10px;
 }
 
+/* Holds its width. The amount used to be flex:none and this shrank instead,
+   so a long number clipped the category to "식" — the label that says what is
+   being recorded is not the part to sacrifice. */
 .name {
+  flex: none;
   font-size: 14px;
   font-weight: 700;
   color: var(--tx2);
@@ -37,11 +41,29 @@
   white-space: nowrap;
 }
 
+/* Steps down instead of pushing the name out. This row is narrower than the
+   input screen's card because it shares the line with the category label, so
+   the ladder starts smaller. */
 .amount {
   font-size: 34px;
   font-weight: 800;
   color: var(--tx);
-  flex: none;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.amount[data-size='sm'] {
+  font-size: 30px;
+}
+
+.amount[data-size='xs'] {
+  font-size: 27px;
+  letter-spacing: -0.6px;
+}
+
+.amount[data-size='xxs'] {
+  font-size: 23px;
+  letter-spacing: -0.8px;
 }
 
 /* A horizontal scroller cannot keep the other axis visible — CSS promotes

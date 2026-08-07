@@ -8,7 +8,7 @@ import { useDateExpenses } from '../../hooks/useExpenses';
 import { useMonth } from '../../hooks/useMonth';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
-import { dateText, won } from '../../lib/format';
+import { amountSize, dateText, won } from '../../lib/format';
 import { EntrySheet } from './EntrySheet';
 import { SearchScreen } from './SearchScreen';
 import styles from './CalendarScreen.module.css';
@@ -123,7 +123,9 @@ export function CalendarScreen() {
         <div className={styles.headRight}>
           <div className={styles.headTotal}>
             <div className={styles.headTotalLabel}>이번 달 지출</div>
-            <div className={`${styles.headTotalValue} tabular`}>{won(monthTotal)}원</div>
+            <div className={`${styles.headTotalValue} tabular`} data-size={amountSize(String(monthTotal))}>
+              {won(monthTotal)}원
+            </div>
           </div>
           <button
             type="button"

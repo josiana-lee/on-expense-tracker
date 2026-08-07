@@ -9,7 +9,7 @@ import { toMinor } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useSettings } from '../../hooks/useSettings';
-import { won } from '../../lib/format';
+import { amountSize, won } from '../../lib/format';
 import styles from './EntrySheet.module.css';
 
 type Props = {
@@ -128,7 +128,9 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
       <div className={styles.amountRow}>
         <span className={styles.name}>{subLabel || category?.name}</span>
-        <span className={`${styles.amount} tabular`}>{won(amount || '0')}원</span>
+        <span className={`${styles.amount} tabular`} data-size={amountSize(amount)}>
+          {won(amount || '0')}원
+        </span>
       </div>
 
       <div className={styles.cats}>

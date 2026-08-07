@@ -96,24 +96,30 @@
   letter-spacing: 0.2px;
 }
 
+/* Fixed height, bottom-aligned. The type steps down as digits are added, and
+   without this the row shrank with it — the card lost height and the category
+   grid below jumped on almost every keypress. Digits have no descenders, so
+   sitting them on a common bottom edge reads as a stable baseline. */
 .amountRow {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   gap: 6px;
   margin-top: 5px;
+  height: 60px;
 }
 
-/* Digits have no descenders, so `normal` leading is ~10px of dead space at
-   this size — the ad slot left the column tight enough that the whole flow
-   was overflowing by a few px without this. */
 /* Steps down so the amount is never cut. No ellipsis and no min-width:0 on
    purpose — both exist to let a flex item shrink past its content, which for
    this number means hiding digits. It should be impossible for the card to
-   decide the user doesn't need to see what they typed. */
+   decide the user doesn't need to see what they typed.
+
+   line-height 1 rather than normal: digits have no descenders, so normal
+   leading is dead space, and a fixed multiple keeps every step's box bottom
+   on the same line as the row bottom-aligns them. */
 .amountValue {
   font-size: 58px;
   font-weight: 800;
-  line-height: 1.02;
+  line-height: 1;
   letter-spacing: -2.4px;
   color: var(--tx);
   white-space: nowrap;
@@ -129,11 +135,44 @@
   letter-spacing: -1.8px;
 }
 
-/* An eight-digit amount at 52px runs past the card edge on a 320px phone. */
+.amountValue[data-size='xs'] {
+  font-size: 42px;
+  letter-spacing: -1.6px;
+}
+
+.amountValue[data-size='xxs'] {
+  font-size: 34px;
+  letter-spacing: -1.2px;
+}
+
+/* A 320px phone gives the digits ~229px instead of ~255px, so the whole
+   ladder shifts down a step. Each rule repeats the attribute selector: a bare
+   `.amountValue` here would lose to `.amountValue[data-size=…]` above on
+   specificity and silently leave the narrow screen overflowing. */
 @media (max-width: 360px) {
   .amountValue {
     font-size: 44px;
     letter-spacing: -1.5px;
+  }
+
+  .amountValue[data-size='md'] {
+    font-size: 40px;
+    letter-spacing: -1.4px;
+  }
+
+  .amountValue[data-size='sm'] {
+    font-size: 38px;
+    letter-spacing: -1.3px;
+  }
+
+  .amountValue[data-size='xs'] {
+    font-size: 34px;
+    letter-spacing: -1.2px;
+  }
+
+  .amountValue[data-size='xxs'] {
+    font-size: 29px;
+    letter-spacing: -1px;
   }
 
   .time {
@@ -443,17 +482,28 @@
   margin-right: auto;
 }
 
+/* A round × rather than a word: it sits beside the amount at every type size,
+   and at eleven digits the row has no room for a label. Sized past the 24px
+   tap-target floor even though the circle itself is smaller. */
 .clearAmount {
   flex: none;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
   border: 0;
-  border-radius: 999px;
-  padding: 5px 11px;
+  border-radius: 50%;
+  padding: 0;
   background: var(--sf2);
   color: var(--tx2);
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 700;
   cursor: pointer;
+}
+
+.clearAmount:active {
+  background: var(--warnSoft);
+  color: var(--warn);
 }
 
 .clearAmount:active {
@@ -465,6 +515,16 @@
   font-size: 32px;
   font-weight: 800;
   color: var(--tx);
+  white-space: nowrap;
+}
+
+.keypadValue[data-size='xs'] {
+  font-size: 28px;
+}
+
+.keypadValue[data-size='xxs'] {
+  font-size: 24px;
+  letter-spacing: -0.6px;
 }
 
 .done {
