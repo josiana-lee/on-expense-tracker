@@ -11,6 +11,12 @@ import {
   restoreBackupFile,
   RestoreFormatError,
 } from './restore';
+import {
+  addRecurringRule,
+  isTemplateVisible,
+  setRecurringVisible,
+  templateAmountText,
+} from './recurring';
 import { bootstrap } from './seed';
 import * as download from '../lib/download';
 import type { HandoffResult } from '../lib/download';
@@ -159,6 +165,73 @@ describe('restore validation', () => {
 
   it('accepts a backup from the current schema version', async () => {
     await expect(parseBackupFile(backupFile({ schemaVersion: db.verno }))).resolves.toBeDefined();
+  });
+
+  /* 1.0.0이 쓴 반복 지출은 스케줄 필드를 달고 있고 visibleOnHome/lastUsedAt이
+     없다. 그 백업을 지금 빌드로 복원하는 건 내부 테스트에서 실제로 일어날
+     일이고, 규칙이 통째로 버려지거나 입력 화면에서 사라지면 사용자가 원인을
+     알 수 없다. 스키마 버전을 올리지 않은 선택이 여기서 값을 치른다. */
+  it('restores a 1.0.0 recurring rule and still shows it', async () => {
+    const scheduled = {
+      id: 'r1',
+      name: '월세',
+      amount: 600000,
+      type: 'expense',
+      categoryId: 'housing',
+      paymentMethodId: 'cash',
+      interval: 'monthly',
+      dayOfMonth: 25,
+      startDate: '2026-01-25',
+      nextRunDate: '2026-09-25',
+      lastRunDate: '2026-08-25',
+      mode: 'remind',
+      active: true,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+
+    const parsed = await parseBackupFile(backupFile({}, { recurringRules: [scheduled] }));
+    expect(parsed.skippedCounts.recurringRules ?? 0).toBe(0);
+    expect(parsed.validCounts.recurringRules).toBe(1);
+
+    silenceSafetyDownload();
+    await restoreBackupFile(parsed);
+
+    const restored = await db.recurringRules.get('r1');
+    expect(restored).toBeDefined();
+    expect(restored!.name).toBe('월세');
+    expect(restored!.amount).toBe(600000);
+    // 표시 여부가 없는 규칙은 표시로 읽는다 — 업데이트 한 번에 조용히
+    // 사라지는 쪽이 하나 더 보이는 쪽보다 나쁘다.
+    expect(isTemplateVisible(restored!)).toBe(true);
+    expect(templateAmountText(restored!)).toBe('600000');
+  });
+
+  /* 반대 방향. 숨겨둔 게 복원하고 나서 다시 나타나면, 사용자가 껐다는 사실이
+     백업을 거치며 사라진 것이다 — 조용하고, 되돌리려면 또 꺼야 한다. */
+  it('keeps a hidden template hidden through a real backup', async () => {
+    await bootstrap();
+    await addRecurringRule({
+      name: '넷플릭스',
+      amount: 17000,
+      categoryId: 'food',
+      paymentMethodId: 'cash',
+    });
+    const [made] = await db.recurringRules.toArray();
+    await setRecurringVisible(made.id, false);
+
+    const snapshot = await buildBackupFile();
+    silenceSafetyDownload();
+    await db.recurringRules.clear();
+
+    const parsed = await parseBackupFile(
+      new File([JSON.stringify(snapshot)], 'b.json', { type: 'application/json' }),
+    );
+    await restoreBackupFile(parsed);
+
+    const back = await db.recurringRules.get(made.id);
+    expect(back).toBeDefined();
+    expect(isTemplateVisible(back!)).toBe(false);
   });
 });
 

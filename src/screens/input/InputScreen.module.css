@@ -201,13 +201,6 @@
   flex: none;
 }
 
-.gridScroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  align-content: start;
-}
-
 .cat {
   background: none;
   border: 0;
