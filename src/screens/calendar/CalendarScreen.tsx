@@ -8,7 +8,7 @@ import { useDateExpenses } from '../../hooks/useExpenses';
 import { useMonth } from '../../hooks/useMonth';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
-import { amountSize, dateText, won } from '../../lib/format';
+import { dateText, won } from '../../lib/format';
 import { EntrySheet } from './EntrySheet';
 import { SearchScreen } from './SearchScreen';
 import styles from './CalendarScreen.module.css';
@@ -28,10 +28,17 @@ function heatClass(sum: number): string {
   return '';
 }
 
-/** Cells are ~44px wide, so five figures get abbreviated to fit. */
+/** Cells are ~44px wide, so anything past four figures gets abbreviated.
+ *
+ *  `k` alone stopped working once amounts could reach 억: 20,318,054 came out
+ *  as "20318k", which is both unreadable and wider than the cell. Korean
+ *  amounts are grouped by 만 and 억 in speech, so the abbreviation follows
+ *  that rather than thousands. */
 function cellAmount(sum: number): string {
   if (!sum) return '';
-  return sum >= 10_000 ? `${Math.round(sum / 1000)}k` : won(sum);
+  if (sum >= 100_000_000) return `${(sum / 100_000_000).toFixed(1).replace(/\.0$/, '')}억`;
+  if (sum >= 10_000) return `${Math.round(sum / 10_000)}만`;
+  return won(sum);
 }
 
 export function CalendarScreen() {
@@ -99,33 +106,27 @@ export function CalendarScreen() {
   return (
     <div className={styles.screen}>
       <div className={styles.head}>
-        <div className={styles.title}>
-          <button
-            type="button"
-            className={styles.nav}
-            onClick={() => shiftMonth(-1)}
-            aria-label="이전 달"
-          >
-            <Icon path={CHEVRON_LEFT} size={19} stroke="currentColor" strokeWidth={2.2} />
-          </button>
-          <span className={styles.monthName}>
-            {view.year}년 {view.month}월
-          </span>
-          <button
-            type="button"
-            className={styles.nav}
-            onClick={() => shiftMonth(1)}
-            aria-label="다음 달"
-          >
-            <Icon path={CHEVRON_RIGHT} size={19} stroke="currentColor" strokeWidth={2.2} />
-          </button>
-        </div>
-        <div className={styles.headRight}>
-          <div className={styles.headTotal}>
-            <div className={styles.headTotalLabel}>이번 달 지출</div>
-            <div className={`${styles.headTotalValue} tabular`} data-size={amountSize(String(monthTotal))}>
-              {won(monthTotal)}원
-            </div>
+        <div className={styles.headTop}>
+          <div className={styles.title}>
+            <button
+              type="button"
+              className={styles.nav}
+              onClick={() => shiftMonth(-1)}
+              aria-label="이전 달"
+            >
+              <Icon path={CHEVRON_LEFT} size={19} stroke="currentColor" strokeWidth={2.2} />
+            </button>
+            <span className={styles.monthName}>
+              {view.year}년 {view.month}월
+            </span>
+            <button
+              type="button"
+              className={styles.nav}
+              onClick={() => shiftMonth(1)}
+              aria-label="다음 달"
+            >
+              <Icon path={CHEVRON_RIGHT} size={19} stroke="currentColor" strokeWidth={2.2} />
+            </button>
           </div>
           <button
             type="button"
@@ -139,6 +140,13 @@ export function CalendarScreen() {
       </div>
 
       <div className={styles.card}>
+        {/* Sits on the grid it totals, and gets the card's full width — the
+            month title and search button no longer have to share a line with
+            it, which is what kept squeezing it. */}
+        <div className={styles.cardTotal}>
+          <span className={styles.cardTotalLabel}>이번 달 지출</span>
+          <span className={`${styles.cardTotalValue} tabular`}>{won(monthTotal)}원</span>
+        </div>
         <div className={styles.dows}>
           {dows.map((d) => (
             <div key={d} className={`${styles.dow} ${d === 0 ? styles.sunday : ''}`}>
