@@ -138,6 +138,11 @@ export interface RecurringRuleRecord {
   /** Orders the list so the templates actually used drift to the front. */
   lastUsedAt?: Epoch;
 
+  /** 입력 탭 금액 시트에 칩으로 띄울지. 없으면 표시로 친다 — 스케줄을 쓰던
+   *  시절에 만든 규칙은 이 필드가 없는데, 업데이트 한 번에 쓰던 게 조용히
+   *  사라지는 쪽이 하나 더 보이는 쪽보다 나쁘다. isTemplateVisible()로 읽어라. */
+  visibleOnHome?: boolean;
+
   createdAt: Epoch;
   updatedAt: Epoch;
 

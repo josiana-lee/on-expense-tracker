@@ -106,6 +106,9 @@ const recurringRuleSchema = z.looseObject({
   paymentMethodId: id,
   memo: z.string().optional(),
   lastUsedAt: epoch.optional(),
+  /* 이 필드가 생기기 전 백업에는 없다. isTemplateVisible()이 없을 때를
+     표시로 읽으므로, 복원한 규칙은 입력 화면에 그대로 나온다. */
+  visibleOnHome: z.boolean().optional(),
   createdAt: epoch,
   updatedAt: epoch,
 

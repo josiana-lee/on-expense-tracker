@@ -244,6 +244,13 @@
   margin-bottom: 12px;
 }
 
+/* 상한에 닿은 추가 버튼. disabled가 아니라 흐리게만 두는 건, 눌렀을 때
+   왜 안 되는지 말해줄 기회가 있어야 하기 때문이다. */
+.addBtn[data-full] {
+  background: var(--sf2);
+  color: var(--tx2);
+}
+
 .empty {
   padding: 16px 0;
   text-align: center;
@@ -342,6 +349,35 @@
   font-family: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* 표시/숨김. 글자 수가 달라도 같은 폭이라야 누를 때마다 옆 버튼이 밀리지
+   않는다 — 연달아 켰다 껐다 하는 컨트롤이라 자리가 움직이면 오조작이 난다. */
+/* 테두리만, 기록은 채움 — 나란히 붙어 있는 두 버튼이 같은 색이면 손이 어느
+   쪽을 눌렀는지 모른다. 한쪽은 칩이 사라질 뿐이고 한쪽은 돈 기록이 생기니
+   비슷하게 보여서는 안 된다. */
+.ruleShow {
+  flex: none;
+  min-width: 54px;
+  font-size: 11.5px;
+  font-weight: 800;
+  font-family: inherit;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tx2);
+  cursor: pointer;
+}
+
+.ruleShowOn {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.ruleShow:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* The one-tap action, so it reads as the primary control on the row even

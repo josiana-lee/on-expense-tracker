@@ -5,6 +5,7 @@ import { ClearAmount } from '../../components/ClearAmount';
 import { Sheet } from '../../components/Sheet';
 import type { RecurringRuleInput } from '../../db/recurring';
 import {
+  RecurringLimitError,
   addRecurringRule,
   deleteRecurringRule,
   updateRecurringRule,
@@ -80,8 +81,11 @@ export function RecurringRuleSheet({ rule, onClose, onDone }: Props) {
           onDone('반복 지출을 추가했어!');
         }
         onClose();
-      } catch {
-        onDone(editing ? '수정하지 못했어' : '추가하지 못했어');
+      } catch (e) {
+        /* 상한은 다시 눌러도 안 되니 "다시 해봐"로 뭉뚱그리면 안 된다. 시트는
+           열어둔 채로 둔다 — 지우고 오면 입력한 게 남아 있어야 한다. */
+        if (e instanceof RecurringLimitError) onDone(e.message);
+        else onDone(editing ? '수정하지 못했어' : '추가하지 못했어');
       }
     });
   };

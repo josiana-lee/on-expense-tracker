@@ -157,9 +157,9 @@ export function SettingsScreen({ onManageCards }: Props) {
 
         <button type="button" className={styles.row} onClick={() => setSub('recurring')}>
           <span className={styles.rowLabel}>반복 지출</span>
-          <span className={styles.rowValue}>
-            {recurringRules.filter((r) => r.active).length}개
-          </span>
+          {/* 전부 센다. `active`로 거르던 시절이 있었는데, 스케줄이 빠지면서
+              그 필드를 아무도 쓰지 않게 돼 방금 만든 규칙도 0개로 보였다. */}
+          <span className={styles.rowValue}>{recurringRules.length}개</span>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>

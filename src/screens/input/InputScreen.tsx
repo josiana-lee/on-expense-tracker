@@ -7,6 +7,9 @@ import { Toast } from '../../components/Toast';
 import { addExpense } from '../../db/expenses';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
+import { useVisibleRecurringRules } from '../../hooks/useRecurringRules';
+import { touchTemplate } from '../../db/recurring';
+import type { RecurringRuleRecord } from '../../db/types';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useNow } from '../../hooks/useNow';
 import { useSettings } from '../../hooks/useSettings';
@@ -31,6 +34,7 @@ export function InputScreen() {
   const { homeCategories, byId, payments, paymentById } = useCatalog();
   const settings = useSettings();
   const { records, total } = useDayExpenses(now);
+  const templates = useVisibleRecurringRules();
   const { text: toast, flash } = useToast();
   const { busy: saving, guard } = useGuardedAction();
 
@@ -56,6 +60,11 @@ export function InputScreen() {
   const [stagedSub, setStagedSub] = useState<string | null>(null);
   const [stagedMemo, setStagedMemo] = useState('');
   const [stagedPaymentId, setStagedPaymentId] = useState<string | null>(null);
+
+  /** 저장해둔 지출로 채웠다면 그게 어느 것이었는지. 저장이 끝난 뒤에 "썼다"고
+   *  표시하려고 들고 있는다. 채운 뒤 금액을 고쳐도 그대로 두는 건, 이 값이
+   *  정확한 이력이 아니라 목록 정렬용 신호이기 때문이다 — 손이 간 건 맞다. */
+  const [fromTemplateId, setFromTemplateId] = useState<string | null>(null);
 
   /** Live only while a popup is open — what the user is currently editing,
    *  before they press "입력 완료". Reopening the already-staged category
@@ -124,16 +133,37 @@ export function InputScreen() {
           memo: stagedMemo,
           paymentMethodId: paymentId,
         });
+        /* 지출은 이미 저장됐다. 사용 표시는 정렬용 부가 정보라 여기서
+           실패해도 저장을 되돌리거나 실패로 알릴 일이 아니다. */
+        if (fromTemplateId) await touchTemplate(fromTemplateId).catch(() => {});
         flash(`${won(amount)}원 저장했어!`);
         setAmount('');
         setStagedCategoryId(null);
         setStagedSub(null);
         setStagedMemo('');
+        setFromTemplateId(null);
       } catch {
         flash('저장하지 못했어. 다시 눌러줘');
       }
     });
-  }, [amount, paymentId, stagedCategoryId, stagedSub, stagedMemo, flash, guard]);
+  }, [amount, paymentId, stagedCategoryId, stagedSub, stagedMemo, fromTemplateId, flash, guard]);
+
+  /** 저장해둔 지출을 골랐을 때. 바로 기록하지 않고 화면만 채운 뒤 시트를
+   *  닫는다 — 여기는 금액을 입력하려고 연 시트고, 열자마자 기록이 생기면
+   *  되돌릴 방법이 없다. 스케줄을 뺄 때 세운 기준과 같다: 빠진 기록보다
+   *  잘못된 기록이 비싸다. 채워두면 "추가!"가 한 번 남는다. */
+  const useTemplate = useCallback(
+    (rule: RecurringRuleRecord) => {
+      setAmount(String(rule.amount));
+      setStagedCategoryId(rule.categoryId);
+      setStagedSub(rule.subLabel ?? null);
+      setStagedMemo(rule.memo ?? '');
+      setStagedPaymentId(rule.paymentMethodId);
+      setFromTemplateId(rule.id);
+      setKeypadOpen(false);
+    },
+    [],
+  );
 
   const popupCategory = popup ? byId.get(popup.categoryId) : undefined;
   const stagedCategory = stagedCategoryId ? byId.get(stagedCategoryId) : undefined;
@@ -264,6 +294,33 @@ export function InputScreen() {
             </span>
             {amount && <ClearAmount onClear={() => setAmount('')} />}
           </div>
+
+          {/* 저장해둔 지출. 결제수단 칩과 같이 가로로 흐르게 두는 건 열 개가
+              차도 키패드를 밀어내지 않게 하려는 것 — 이 시트에서 제일 중요한
+              건 여전히 숫자판이다. */}
+          {templates.length > 0 && (
+            <div className={styles.templates}>
+              {templates.map((t) => {
+                const cat = byId.get(t.categoryId);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={styles.template}
+                    onClick={() => useTemplate(t)}
+                  >
+                    <span
+                      className={styles.templateDot}
+                      style={{ background: cat?.colorHex ?? '#CFD5DE' }}
+                    />
+                    <span className={styles.templateName}>{t.name}</span>
+                    <span className={`${styles.templateAmount} tabular`}>{won(t.amount)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <Keypad onPress={(k) => setAmount((a) => applyKey(a, k))} />
           <button type="button" className={styles.done} onClick={() => setKeypadOpen(false)}>
             완료

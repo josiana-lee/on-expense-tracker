@@ -5,7 +5,12 @@ import type { RecurringRuleRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useRecurringRules } from '../../hooks/useRecurringRules';
 import { useToast } from '../../hooks/useToast';
-import { logFromTemplate } from '../../db/recurring';
+import {
+  MAX_RECURRING_RULES,
+  isTemplateVisible,
+  logFromTemplate,
+  setRecurringVisible,
+} from '../../db/recurring';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { won } from '../../lib/format';
 import { RecurringRuleSheet } from './RecurringRuleSheet';
@@ -40,6 +45,22 @@ export function RecurringManageScreen({ onBack }: Props) {
     });
   };
 
+  /** 표시 여부는 시트에 들어가지 않고 여기서 바로 뒤집는다. 켜고 끄는 걸
+   *  자주 하게 되는 설정이라 열고-바꾸고-저장은 세 배로 든다. */
+  const toggleVisible = (rule: RecurringRuleRecord) => {
+    const next = !isTemplateVisible(rule);
+    guard(async () => {
+      try {
+        await setRecurringVisible(rule.id, next);
+        flash(next ? `${rule.name} 입력 화면에 표시할게` : `${rule.name} 숨겼어`);
+      } catch {
+        flash('바꾸지 못했어');
+      }
+    });
+  };
+
+  const full = rules.length >= MAX_RECURRING_RULES;
+
   return (
     <div className={styles.sub}>
       <div className={styles.subHead}>
@@ -47,14 +68,24 @@ export function RecurringManageScreen({ onBack }: Props) {
           <Icon path={BACK_ICON} size={19} stroke="var(--tx)" strokeWidth={2.2} />
         </button>
         <span className={styles.subTitle}>반복 지출</span>
-        <span className={styles.subMeta}>{rules.length}개</span>
+        <span className={styles.subMeta}>
+          {rules.length} / {MAX_RECURRING_RULES}
+        </span>
       </div>
 
       <div className={styles.subBody}>
+        {/* 상한에 닿으면 버튼을 지우지 않고 막는다. 사라진 버튼은 왜 없는지
+            설명하지 못해서, 사용자가 자기 실수인지 앱 고장인지 모른다. */}
         <button
           type="button"
           className={styles.addBtn}
-          onClick={() => setEditing('new')}
+          onClick={() =>
+            full
+              ? flash(`반복 지출은 ${MAX_RECURRING_RULES}개까지야. 안 쓰는 걸 먼저 지워줘`)
+              : setEditing('new')
+          }
+          aria-disabled={full}
+          data-full={full || undefined}
         >
           + 반복 지출 추가
         </button>
@@ -67,8 +98,12 @@ export function RecurringManageScreen({ onBack }: Props) {
           <div className={styles.subCard}>
             {rules.map((rule) => {
               const category = byId.get(rule.categoryId);
+              const visible = isTemplateVisible(rule);
               return (
-                <div key={rule.id} className={styles.catRow}>
+                <div
+                  key={rule.id}
+                  className={`${styles.catRow} ${visible ? '' : styles.catRowDim}`}
+                >
                   <button
                     type="button"
                     className={styles.ruleMain}
@@ -85,10 +120,23 @@ export function RecurringManageScreen({ onBack }: Props) {
                     <div className={styles.catMain}>
                       <div className={styles.catName}>{rule.name}</div>
                       <div className={styles.catSubs}>
-                        {category?.name}
-                        {rule.subLabel ? ` · ${rule.subLabel}` : ''} · {won(rule.amount)}원
+                        {[category?.name, rule.subLabel, `${won(rule.amount)}원`]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </div>
                     </div>
+                  </button>
+                  {/* 표시와 기록은 결과의 무게가 다르다 — 하나는 칩이
+                      나타났다 사라지고 하나는 돈 기록이 생긴다. 잘못 눌렀을
+                      때를 생각해 채운 버튼은 기록 쪽에만 둔다. */}
+                  <button
+                    type="button"
+                    className={`${styles.ruleShow} ${visible ? styles.ruleShowOn : ''}`}
+                    onClick={() => toggleVisible(rule)}
+                    disabled={busy}
+                    aria-pressed={visible}
+                  >
+                    {visible ? '표시 중' : '숨김'}
                   </button>
                   <button
                     type="button"
