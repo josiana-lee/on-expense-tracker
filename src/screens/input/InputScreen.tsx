@@ -267,9 +267,22 @@ export function InputScreen() {
 
       {keypadOpen && (
         <Sheet label="금액 입력" onClose={() => setKeypadOpen(false)}>
+          {/* Clear sits right after the amount rather than in the keypad,
+              which has no free slot and, more to the point, is not where the
+              user is looking — noticing a wrong amount means reading it. */}
           <div className={styles.keypadHead}>
             <span className={styles.keypadLabel}>금액</span>
             <span className={`${styles.keypadValue} tabular`}>{won(amount || '0')}원</span>
+            {amount && (
+              <button
+                type="button"
+                className={styles.clearAmount}
+                onClick={() => setAmount('')}
+                aria-label="금액 전체 지우기"
+              >
+                지우기
+              </button>
+            )}
           </div>
           <Keypad onPress={(k) => setAmount((a) => applyKey(a, k))} />
           <button type="button" className={styles.done} onClick={() => setKeypadOpen(false)}>

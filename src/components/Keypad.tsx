@@ -31,8 +31,13 @@ export function Keypad({ onPress, compact }: Props) {
  *  half-typed value keeps its own state; they cap at 8 digits (99,999,999원).
  *
  *  The cap is checked against the result, not the input — '00' adds two digits
- *  at a time, so testing the length beforehand let seven digits become nine. */
+ *  at a time, so testing the length beforehand let seven digits become nine.
+ *
+ *  'clear' wipes the whole amount. Backspacing out eight digits one key at a
+ *  time is the opposite of what this screen promises, and a wrong amount is
+ *  usually wrong from the first digit rather than the last. */
 export function applyKey(amount: string, key: string): string {
+  if (key === 'clear') return '';
   if (key === 'del') return amount.slice(0, -1);
   const next = (amount + key).replace(/^0+/, '');
   return next.length > 8 ? amount : next;

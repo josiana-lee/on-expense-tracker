@@ -428,8 +428,8 @@
 
 .keypadHead {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
+  gap: 8px;
   padding: 2px 10px 12px;
 }
 
@@ -437,6 +437,28 @@
   font-size: 12.5px;
   font-weight: 700;
   color: var(--tx2);
+  flex: none;
+  /* Holds the label left and lets the amount and its clear button sit
+     together on the right, where the eye lands after reading the number. */
+  margin-right: auto;
+}
+
+.clearAmount {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 11px;
+  background: var(--sf2);
+  color: var(--tx2);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clearAmount:active {
+  background: var(--warnSoft);
+  color: var(--warn);
 }
 
 .keypadValue {
