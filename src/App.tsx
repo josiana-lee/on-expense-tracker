@@ -52,7 +52,13 @@ function useAndroidBackButton(tab: TabId, setTab: (t: TabId) => void): void {
          torn down by then — drop the listener rather than leaking it. */
       if (cancelled) void listener.remove();
       else remove = () => void listener.remove();
-    })();
+    })().catch((err: unknown) => {
+      /* Worth saying out loud. The plugin's native side swallows the back
+         press whether or not JS is listening, so a failure here does not
+         restore the default — it leaves the button doing nothing at all,
+         which is indistinguishable from a dead button. */
+      console.error('back button listener failed to register', err);
+    });
 
     return () => {
       cancelled = true;

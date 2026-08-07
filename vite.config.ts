@@ -6,10 +6,31 @@ import { VitePWA } from 'vite-plugin-pwa';
 // in-app name can't drift apart.
 import { APP_INFO } from './src/data/appInfo';
 
+/* The app ships as an Android package, and a service worker inside one is a
+   liability rather than a feature.
+ *
+ *  Capacitor serves the bundle from https://localhost, so a service worker
+ *  registers against that origin and caches the JS. The WebView's storage
+ *  survives an app update, so the next release installs new native code
+ *  beside a cache still handing out the previous release's bundle. That is
+ *  not hypothetical — it is how the back button appeared broken here: the new
+ *  APK's plugin swallowed the press while the cached bundle had no listener
+ *  to receive it.
+ *
+ *  Nothing is lost by dropping it. The assets are already on the device
+ *  inside the APK, so there is no network to be offline from, and the
+ *  manifest is only meaningful to a browser. Set BUILD_PWA=1 to get the
+ *  service worker back if the app is ever served over the web. */
+const withServiceWorker = process.env.BUILD_PWA === '1';
+
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      /* `injectManifest` with no register call would still emit a worker;
+         disabling outright is what keeps it out of the bundle. */
+      injectRegister: withServiceWorker ? 'auto' : null,
+      selfDestroying: !withServiceWorker,
       registerType: 'autoUpdate',
       manifest: {
         name: APP_INFO.appName,

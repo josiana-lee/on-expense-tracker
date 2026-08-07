@@ -47,9 +47,35 @@ function fatal(message: string) {
   );
 }
 
-// The service worker updates itself, so an old tab can still hold the database
-// open when a new one tries to upgrade it. Both directions need handling, or
-// the app silently dies on a white screen.
+/** Removes any service worker left over from a build that shipped one.
+ *
+ *  The app is packaged, so its assets already sit on the device and a worker
+ *  buys nothing — but it costs something. Capacitor serves from
+ *  https://localhost and the WebView's storage survives an app update, so a
+ *  worker registered by one release keeps handing out that release's bundle
+ *  to the next one. That is exactly how the back button looked broken here:
+ *  new native code beside a cached bundle with no listener in it.
+ *
+ *  This cannot rescue an install that is already serving a stale bundle —
+ *  that bundle does not contain this code. The generated self-destroying
+ *  worker covers those, and this covers everything after. */
+function dropServiceWorkers(): void {
+  if (!('serviceWorker' in navigator)) return;
+  void navigator.serviceWorker
+    .getRegistrations()
+    .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+    .then(() => (typeof caches === 'undefined' ? [] : caches.keys()))
+    .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+    .catch(() => {
+      /* Storage may be unavailable; the app works either way. */
+    });
+}
+
+dropServiceWorkers();
+
+// A service worker that updates itself can leave an old tab holding the
+// database open when a new one tries to upgrade it. Both directions need
+// handling, or the app silently dies on a white screen.
 db.on('versionchange', () => {
   db.close();
   fatal('앱이 업데이트됐어. 새로고침하면 이어서 쓸 수 있어.');
