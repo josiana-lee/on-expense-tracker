@@ -30,6 +30,16 @@
   overflow-y: auto;
 }
 
+/* A scrolling column must not shrink what it holds. Flex children default to
+   `flex-shrink: 1`, so once a sheet's contents passed its max-height the
+   browser squeezed them instead of scrolling — the recurring-rule sheet lost
+   its payment chips entirely (0px tall) and its category row down to bare
+   padding, which read as a half-built screen rather than a layout fault.
+   Every sheet is one row of content away from the same thing. */
+.sheet > * {
+  flex-shrink: 0;
+}
+
 /* Declared locally rather than shared from styles/animations.css: CSS
    Modules hashes any bare animation-name it finds, matching local
    declarations or not, so a name that only exists in a plain global
