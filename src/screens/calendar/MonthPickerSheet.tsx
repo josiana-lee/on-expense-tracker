@@ -8,6 +8,14 @@ const CHEVRON_RIGHT = 'M9 5l7 7-7 7';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
+/** `DateStr` is 'YYYY-MM-DD' and nothing pads the year, so a year outside four
+ *  digits produces '999-01-01' and breaks the format the restore schema
+ *  enforces. Below 100 it is worse than malformed: `new Date(50, ...)` means
+ *  1950, so the view and the selected date would silently disagree. */
+const MIN_YEAR = 1970;
+const MAX_YEAR = 2100;
+const clampYear = (y: number) => Math.min(Math.max(y, MIN_YEAR), MAX_YEAR);
+
 type Props = {
   year: number;
   month: number;
@@ -36,7 +44,7 @@ export function MonthPickerSheet({ year, month, onPick, onClose }: Props) {
         <button
           type="button"
           className={styles.nav}
-          onClick={() => setBrowseYear((y) => y - 1)}
+          onClick={() => setBrowseYear((y) => clampYear(y - 1))}
           aria-label="이전 해"
         >
           <Icon path={CHEVRON_LEFT} size={19} stroke="currentColor" strokeWidth={2.2} />
@@ -45,7 +53,7 @@ export function MonthPickerSheet({ year, month, onPick, onClose }: Props) {
         <button
           type="button"
           className={styles.nav}
-          onClick={() => setBrowseYear((y) => y + 1)}
+          onClick={() => setBrowseYear((y) => clampYear(y + 1))}
           aria-label="다음 해"
         >
           <Icon path={CHEVRON_RIGHT} size={19} stroke="currentColor" strokeWidth={2.2} />

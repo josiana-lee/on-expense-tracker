@@ -5,7 +5,7 @@ import type { AccountRecord, PaymentMethodRecord } from '../../db/types';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useToast } from '../../hooks/useToast';
-import { amountSize, won } from '../../lib/format';
+import { amountSize, oneStepDown, won } from '../../lib/format';
 import { AccountSheet } from './AccountSheet';
 import { CardRow } from './CardRow';
 import { CardSheet } from './CardSheet';
@@ -50,7 +50,7 @@ export function AssetsScreen() {
         <div className={styles.netRow}>
           <span
             className={`${styles.netValue} ${netWorth < 0 ? styles.netValueNeg : ''} tabular`}
-            data-size={amountSize(String(Math.abs(netWorth)))}
+            data-size={netWorth < 0 ? oneStepDown(amountSize(String(-netWorth))) : amountSize(String(netWorth))}
           >
             {won(Math.abs(netWorth))}
           </span>

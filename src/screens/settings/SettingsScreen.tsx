@@ -63,14 +63,11 @@ export function SettingsScreen({ onManageCards }: Props) {
   const sendICloudBackup = () => {
     icloudExport.guard(async () => {
       try {
-        const { rows, shared } = await icloudBackup();
-        if (rows === 0) {
-          flash('백업할 데이터가 없어');
-        } else if (shared) {
-          flash('공유 시트에서 iCloud Drive를 골라서 저장해줘');
-        } else {
-          flash('백업 파일을 다운로드했어. 파일 앱에서 iCloud Drive로 옮겨줘');
-        }
+        const { rows, result } = await icloudBackup();
+        if (rows === 0) flash('백업할 데이터가 없어');
+        else if (result === 'shared') flash('백업 파일을 넘겼어. 저장됐는지 확인해줘');
+        else if (result === 'downloaded') flash('백업 파일을 저장했어');
+        else flash('저장을 취소했어. 백업은 만들어지지 않았어');
       } catch {
         flash('백업 파일을 만들지 못했어. 다시 시도해줘');
       }
@@ -261,7 +258,7 @@ export function SettingsScreen({ onManageCards }: Props) {
           onClick={sendICloudBackup}
           disabled={icloudExport.busy}
         >
-          <span className={styles.rowLabel}>아이클라우드에 백업하기</span>
+          <span className={styles.rowLabel}>백업 파일로 저장하기</span>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>

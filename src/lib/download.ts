@@ -12,7 +12,11 @@ import { isNative } from './platform';
  *  passes a URI, not bytes. Cache needs no storage permission on any API
  *  level and Android reclaims it on its own; the copy the user keeps is
  *  whatever the app they picked saved for itself. */
-async function shareNative(blob: Blob, filename: string, text?: string): Promise<boolean> {
+async function shareNative(
+  blob: Blob,
+  filename: string,
+  text?: string,
+): Promise<HandoffResult> {
   const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
   const { Share } = await import('@capacitor/share');
 
@@ -28,12 +32,12 @@ async function shareNative(blob: Blob, filename: string, text?: string): Promise
 
   try {
     await Share.share({ title: filename, text, url: uri });
-    return true;
+    return 'shared';
   } catch {
     /* Cancelling the sheet throws. Nothing was handed off, and unlike the web
        path there is no second-best action to fall back to — the file is still
        in the cache and the user can simply try again. */
-    return false;
+    return 'cancelled';
   }
 }
 
@@ -53,18 +57,43 @@ export function downloadBlob(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** What became of a file the app tried to hand to the user.
+ *
+ *  Three states, not a boolean. The old signature collapsed "the user backed
+ *  out of the share sheet" and "sharing wasn't available so it downloaded
+ *  instead" into the same `false`, which made it impossible for a caller to
+ *  tell a refusal from a success by another route. The pre-restore safety copy
+ *  reads exactly that distinction before overwriting the database, so the
+ *  ambiguity was load-bearing in the one place it could destroy data. */
+export type HandoffResult =
+  /** The OS share sheet took the file. */
+  | 'shared'
+  /** No share sheet available, so the file was written out directly. Still a
+   *  success — the user has the file. */
+  | 'downloaded'
+  /** A share sheet was offered and the user dismissed it. The file did not
+   *  reach them, and on native there is no second route to try. */
+  | 'cancelled';
+
+/** True when the handoff put the file somewhere the user can get at it. */
+export function handedOff(result: HandoffResult): boolean {
+  return result !== 'cancelled';
+}
+
 /** Prefers the OS share sheet when the platform supports sharing files
  *  (Android does) — it lands the file directly in Drive/카카오톡/이메일 without
  *  a detour through the Downloads folder. Falls back to a plain download
- *  wherever share isn't available, or if the user backs out of the sheet.
- *  Returns whether the share sheet actually took the file, so a caller that
- *  needs a share-specific fallback (e.g. opening a mailto: compose) knows
- *  whether one is still needed. */
+ *  wherever share isn't available.
+ *
+ *  On the web a dismissed sheet still falls through to a download, because
+ *  there the download genuinely works and leaving the user with nothing would
+ *  be worse. On native there is no such fallback — `<a download>` does nothing
+ *  in a WebView — so a dismissed sheet is reported as cancelled. */
 export async function shareOrDownload(
   blob: Blob,
   filename: string,
   text?: string,
-): Promise<boolean> {
+): Promise<HandoffResult> {
   if (isNative) return shareNative(blob, filename, text);
 
   const file = new File([blob], filename, { type: blob.type });
@@ -76,7 +105,7 @@ export async function shareOrDownload(
   if (nav.canShare?.({ files: [file] }) && nav.share) {
     try {
       await nav.share({ files: [file], title: filename, text });
-      return true;
+      return 'shared';
     } catch {
       // Cancelled or failed — fall through to a direct download instead of
       // leaving the user with nothing.
@@ -84,7 +113,7 @@ export async function shareOrDownload(
   }
 
   downloadBlob(blob, filename);
-  return false;
+  return 'downloaded';
 }
 
 /** mailto: can carry a subject and body but never an attachment — every

@@ -35,11 +35,18 @@ function heatClass(sum: number): string {
  *  as "20318k", which is both unreadable and wider than the cell. Korean
  *  amounts are grouped by 만 and 억 in speech, so the abbreviation follows
  *  that rather than thousands. */
-function cellAmount(sum: number): string {
+export function cellAmount(sum: number): string {
   if (!sum) return '';
-  if (sum >= 100_000_000) return `${(sum / 100_000_000).toFixed(1).replace(/\.0$/, '')}억`;
-  if (sum >= 10_000) return `${Math.round(sum / 10_000)}만`;
-  return won(sum);
+  if (sum < 10_000) return won(sum);
+
+  /* Rounded first, then re-checked against the next unit. Testing the raw
+     figure let 99,999,999 round up to "10000만" — five digits plus a unit,
+     wider than the cell and a worse answer than the "1억" it is. */
+  const man = Math.round(sum / 10_000);
+  if (man < 10_000) return `${man}만`;
+
+  const eok = sum / 100_000_000;
+  return `${eok < 10 ? eok.toFixed(1).replace(/\.0$/, '') : Math.round(eok)}억`;
 }
 
 export function CalendarScreen() {

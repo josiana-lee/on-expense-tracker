@@ -60,6 +60,10 @@ function fatal(message: string) {
  *  that bundle does not contain this code. The generated self-destroying
  *  worker covers those, and this covers everything after. */
 function dropServiceWorkers(): void {
+  /* Skipped when the build deliberately shipped a worker. Without this the
+     BUILD_PWA escape hatch was a dead promise — a web build would register a
+     worker and then unregister it on the next load. */
+  if (import.meta.env.VITE_BUILD_PWA === '1') return;
   if (!('serviceWorker' in navigator)) return;
   void navigator.serviceWorker
     .getRegistrations()

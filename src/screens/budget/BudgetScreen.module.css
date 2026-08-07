@@ -350,3 +350,35 @@
   flex: 1;
   min-width: 0;
 }
+
+/* 320px leaves the number ~252px once "원 초과했어" (6 characters, ~90px)
+   takes its share, so the whole ladder drops a step. "원 남았어" is a
+   character shorter and fits without this, but the sizes follow the wider
+   label — a card that changes size when the sign flips is worse than one
+   that runs slightly small. */
+@media (max-width: 360px) {
+  .remainValue {
+    font-size: 36px;
+    letter-spacing: -1.6px;
+  }
+
+  .remainValue[data-size='md'] {
+    font-size: 31px;
+    letter-spacing: -1.3px;
+  }
+
+  .remainValue[data-size='sm'] {
+    font-size: 27px;
+    letter-spacing: -1.1px;
+  }
+
+  .remainValue[data-size='xs'] {
+    font-size: 23px;
+    letter-spacing: -0.9px;
+  }
+
+  .remainValue[data-size='xxs'] {
+    font-size: 20px;
+    letter-spacing: -0.7px;
+  }
+}

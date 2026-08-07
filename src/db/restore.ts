@@ -1,7 +1,7 @@
 import { PRESET_CATEGORIES } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
 import { APP_INFO } from '../data/appInfo';
-import { shareOrDownload } from '../lib/download';
+import { handedOff, shareOrDownload } from '../lib/download';
 import { BACKUP_TABLES, buildBackupFile } from './backup';
 import { db } from './db';
 import { fmt } from './date';
@@ -164,24 +164,26 @@ async function safetyExportBeforeRestore(): Promise<void> {
   const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
   const filename = `${APP_INFO.fileName}_복원전백업_${fmt(new Date())}.json`;
 
-  const file = new File([blob], filename, { type: blob.type });
-  const canConfirm = Boolean(
-    (navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean }).canShare?.({
-      files: [file],
-    }),
-  );
-
-  const handedOff = await shareOrDownload(
+  const result = await shareOrDownload(
     blob,
     filename,
     '복원하기 전에 지금 데이터를 백업해 둘게. 저장해줘.',
   );
 
-  /* Only meaningful where the platform could have confirmed it: there,
-     `false` means the sheet was dismissed, so the copy very likely doesn't
-     exist. Restoring anyway would destroy the data it was meant to protect,
-     so stop instead — nothing has been written at this point. */
-  if (canConfirm && !handedOff) {
+  /* Judged on what actually happened to the file, not on what the platform
+     might have been able to tell us.
+   *
+   *  This used to gate on `navigator.canShare`, which is a web API and does
+   *  not exist in an Android WebView — so on the only platform this ships to,
+   *  the guard was permanently switched off and a dismissed share sheet let
+   *  the restore proceed and overwrite everything anyway. On desktop it failed
+   *  the other way: a share sheet that fell through to a working download
+   *  reported the same `false` as a refusal, so restores were blocked with the
+   *  safety copy sitting in the user's Downloads folder.
+   *
+   *  'downloaded' is a success. Only an outright dismissal stops the restore,
+   *  and nothing has been written at this point. */
+  if (!handedOff(result)) {
     throw new RestoreAbortedError(
       '복원 전 백업을 저장하지 않아서 멈췄어. 데이터는 그대로야. 다시 시도해줘',
     );

@@ -2,7 +2,7 @@ import { APP_INFO } from '../data/appInfo';
 import { db } from './db';
 import { fmt } from './date';
 import { now } from './id';
-import { openMailto, shareOrDownload } from '../lib/download';
+import { openMailto, shareOrDownload, type HandoffResult } from '../lib/download';
 
 export const APP_VERSION = '1.0.0';
 
@@ -68,32 +68,36 @@ async function markBackedUp(): Promise<void> {
   await db.meta.put({ key: 'lastBackupAt', value: now(), updatedAt: now() });
 }
 
-export interface ICloudBackupResult {
+export interface FileBackupResult {
   rows: number;
-  shared: boolean;
+  result: HandoffResult;
 }
 
-/** "아이클라우드에 백업하기" — a web PWA has no CloudKit access (that needs a
- *  native iOS plugin, which waits for the Capacitor wrap), so this hands the
- *  backup file to the OS share sheet and lets the user pick "파일에 저장" →
- *  iCloud Drive themselves, the same way emailBackup() lets them pick a mail
- *  app. `shared` tells the caller whether the share sheet actually took it,
- *  so it can word the toast correctly when it fell back to a plain
- *  download instead. */
-export async function icloudBackup(): Promise<ICloudBackupResult> {
+/** "파일로 백업하기" — hands the backup to the OS share sheet so the user can
+ *  drop it wherever they keep things: Drive, KakaoTalk, their own mail, the
+ *  Files app. The app has no cloud of its own to put it in.
+ *
+ *  This was worded around iCloud, which was wrong for an Android-only release
+ *  — it named a service the user does not have and a Files app that isn't
+ *  theirs. The share sheet shows whatever they actually installed, so the copy
+ *  shouldn't presume.
+ *
+ *  The result tells the caller which route the file took, so the toast can
+ *  say something true about where to look for it. */
+export async function icloudBackup(): Promise<FileBackupResult> {
   const backup = await buildBackupFile();
   const rows = totalBackupRows(backup.counts);
   const filename = `${APP_INFO.fileName}_백업_${fmt(new Date())}.json`;
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
 
-  const shared = await shareOrDownload(
+  const result = await shareOrDownload(
     blob,
     filename,
-    `${APP_INFO.appName} 백업 파일이야. "파일에 저장"을 골라서 iCloud Drive에 저장해줘.`,
+    `${APP_INFO.appName} 백업 파일이야. 저장할 곳을 골라줘.`,
   );
 
   if (rows > 0) await markBackedUp();
-  return { rows, shared };
+  return { rows, result };
 }
 
 /** "이메일로 백업하기" — there's no client-side way to actually send an email
@@ -111,13 +115,16 @@ export async function emailBackup(): Promise<number> {
   const filename = `${APP_INFO.fileName}_백업_${fmt(new Date())}.json`;
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
 
-  const shared = await shareOrDownload(
+  const result = await shareOrDownload(
     blob,
     filename,
     `${APP_INFO.appName} 백업 파일이야. 이메일 앱을 골라서 나에게 보내줘.`,
   );
 
-  if (!shared) {
+  /* Only when the file went out as a plain download — a share sheet that
+     reached a mail app already did this job, and one the user dismissed
+     shouldn't be answered by opening a compose window they didn't ask for. */
+  if (result === 'downloaded') {
     openMailto(
       `${APP_INFO.appName} 백업 (${fmt(new Date())})`,
       `${filename} 파일을 다운로드했어. 이 메일에 그 파일을 첨부해서 보내줘.`,

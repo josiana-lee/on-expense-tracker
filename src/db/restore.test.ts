@@ -12,6 +12,8 @@ import {
   RestoreFormatError,
 } from './restore';
 import { bootstrap } from './seed';
+import * as download from '../lib/download';
+import type { HandoffResult } from '../lib/download';
 
 type BackupShape = Record<string, unknown>;
 
@@ -161,28 +163,24 @@ describe('restore validation', () => {
 });
 
 describe('pre-restore safety copy', () => {
-  /** jsdom has no Web Share, which is the plain-web case. These install one so
-   *  the Capacitor-style path can be exercised. */
-  function stubShare(accepts: boolean) {
-    Object.assign(navigator, {
-      canShare: () => true,
-      share: accepts
-        ? () => Promise.resolve()
-        : () => Promise.reject(new Error('cancelled')),
-    });
+  /** The guard's decision now turns on what became of the file, so these mock
+   *  the hand-off itself rather than the Web Share API. The old tests stubbed
+   *  `navigator.canShare` to stand in for the native path, but jsdom is never
+   *  `isNative`, so they exercised the web branch while claiming otherwise —
+   *  and that mismatch is what hid the real bug: on Android `canShare` does
+   *  not exist at all, so the guard was permanently off there. */
+  function stubHandoff(result: HandoffResult) {
+    vi.spyOn(download, 'shareOrDownload').mockResolvedValue(result);
   }
 
   afterEach(() => {
-    Reflect.deleteProperty(navigator, 'canShare');
-    Reflect.deleteProperty(navigator, 'share');
     vi.restoreAllMocks();
   });
 
-  it('refuses to restore when a confirmable hand-off was declined', async () => {
+  it('refuses to restore when the user dismissed the share sheet', async () => {
     await bootstrap();
     await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
-    silenceSafetyDownload();
-    stubShare(false);
+    stubHandoff('cancelled');
 
     const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
 
@@ -193,11 +191,10 @@ describe('pre-restore safety copy', () => {
     expect(rows[0].amount).toBe(9900);
   });
 
-  it('restores once the hand-off is confirmed', async () => {
+  it('restores once the share sheet took the file', async () => {
     await bootstrap();
     await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
-    silenceSafetyDownload();
-    stubShare(true);
+    stubHandoff('shared');
 
     const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
     await restoreBackupFile(parsed);
@@ -207,15 +204,28 @@ describe('pre-restore safety copy', () => {
     expect(rows[0].amount).toBe(1000);
   });
 
-  it('still restores on platforms that cannot confirm at all', async () => {
+  /* The desktop failure this replaced: a dismissed share sheet falls through
+     to a download that actually works, and the restore used to abort anyway
+     with the safety copy already sitting in the user's Downloads folder. */
+  it('restores when the file went out as a plain download', async () => {
     await bootstrap();
-    silenceSafetyDownload();
+    stubHandoff('downloaded');
 
-    // No canShare — the web path, where <a download> is reliable and there is
-    // nothing to confirm.
     const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
     await expect(restoreBackupFile(parsed)).resolves.toBeGreaterThan(0);
     expect(await db.expenses.count()).toBe(1);
+  });
+
+  it('leaves the database untouched when it refuses', async () => {
+    await bootstrap();
+    await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
+    const before = await db.expenses.toArray();
+    stubHandoff('cancelled');
+
+    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
+    await expect(restoreBackupFile(parsed)).rejects.toBeInstanceOf(RestoreAbortedError);
+
+    expect(await db.expenses.toArray()).toEqual(before);
   });
 });
 

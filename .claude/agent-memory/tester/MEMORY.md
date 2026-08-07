@@ -1,5 +1,7 @@
 - [Input screen layout risk](project_input_screen_layout_risk.md) — RESOLVED (commit 21d42e8): dedicated inner scroller keeps 추가! CTA always reachable; re-verify via hit-test if regression suspected
-- [QA verification setup](project_qa_verification_setup.md) — dev server on 5173, no test framework, how to read/clean up IndexedDB and fake the clock
+- [QA verification setup](project_qa_verification_setup.md) — dev server on 5173, Vitest covers only the DB layer, use Playwright MCP (Claude browser clicks time out), how to read/restore IndexedDB
+- [Amount overflow hotspots](project_amount_overflow_hotspots.md) — where the amountSize ladder is missing or not wired in; 320px is the width that exposes it
+- [Restore blocked by share guard](project_restore_blocked_by_share_guard.md) — 복원하기 silently aborts wherever navigator.canShare is true; disarm Web Share to test the rest
 - [Busy-guard race condition](project_busy_guard_race_condition.md) — RESOLVED (commit 554433d): useGuardedAction's ref-based lock blocks rapid double-tap duplicates everywhere; re-verify via sync triple-click if regression suspected
 - [Input staging payment leak](project_input_staging_payment_leak.md) — RESOLVED (commit 554433d): category popup's payment chip is now staged/discarded on cancel like sub/memo
 - [Verify scripted-click bugs with trusted clicks](feedback_verify_scripted_click_bugs_with_trusted_clicks.md) — a "bug" found only via scripted element.click() across multiple exec calls can be a stale-DOM-ref false positive; sanity-check with a real click before reporting

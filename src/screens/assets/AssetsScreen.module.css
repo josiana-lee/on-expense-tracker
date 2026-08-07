@@ -47,15 +47,26 @@
   font-weight: 800;
   color: var(--tx);
   letter-spacing: -2px;
+  white-space: nowrap;
 }
 
-.netValue[data-size='xs'] {
+.netValue[data-size='md'] {
+  font-size: 39px;
+  letter-spacing: -1.8px;
+}
+
+.netValue[data-size='sm'] {
   font-size: 36px;
   letter-spacing: -1.6px;
 }
 
+.netValue[data-size='xs'] {
+  font-size: 32px;
+  letter-spacing: -1.6px;
+}
+
 .netValue[data-size='xxs'] {
-  font-size: 30px;
+  font-size: 26px;
   letter-spacing: -1.2px;
 }
 
@@ -63,10 +74,16 @@
   color: var(--warn);
 }
 
+/* The label is "원" when positive and "원 마이너스" when not — five characters
+   longer for the same digit count, which is why it must not wrap and must not
+   be squeezed. The ladder only sees the digits, so the sizes above are picked
+   against the wider label. */
 .netUnit {
   font-size: 18px;
   font-weight: 700;
   color: var(--tx2);
+  white-space: nowrap;
+  flex: none;
 }
 
 .netHint {
@@ -225,4 +242,34 @@
 .spacer {
   flex: none;
   height: 8px;
+}
+
+/* 320px, where a negative total is the tightest case in the app: fourteen
+   digits beside "원 마이너스". The ladder already drops a step for the sign,
+   so this drops the pixel sizes on top of that. */
+@media (max-width: 360px) {
+  .netValue {
+    font-size: 36px;
+    letter-spacing: -1.6px;
+  }
+
+  .netValue[data-size='md'] {
+    font-size: 33px;
+    letter-spacing: -1.4px;
+  }
+
+  .netValue[data-size='sm'] {
+    font-size: 30px;
+    letter-spacing: -1.2px;
+  }
+
+  .netValue[data-size='xs'] {
+    font-size: 26px;
+    letter-spacing: -1px;
+  }
+
+  .netValue[data-size='xxs'] {
+    font-size: 21px;
+    letter-spacing: -0.8px;
+  }
 }

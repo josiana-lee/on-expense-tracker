@@ -2,8 +2,10 @@ import styles from './Keypad.module.css';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'del'] as const;
 
+export type KeypadKey = (typeof KEYS)[number];
+
 type Props = {
-  onPress: (key: string) => void;
+  onPress: (key: KeypadKey) => void;
   compact?: boolean;
 };
 
@@ -43,11 +45,12 @@ export const MAX_AMOUNT_DIGITS = 11;
  *  The cap is checked against the result, not the input — '00' adds two digits
  *  at a time, so testing the length beforehand let ten digits become twelve.
  *
- *  'clear' wipes the whole amount. Backspacing out eleven digits one key at a
- *  time is the opposite of what this screen promises, and a wrong amount is
- *  usually wrong from the first digit rather than the last. */
-export function applyKey(amount: string, key: string): string {
-  if (key === 'clear') return '';
+ *  Clearing the whole amount is not a key — the input screen's 지우기 button
+ *  sets the amount directly. A `'clear'` branch used to live here for a design
+ *  that was never built, which is worse than nothing: it reads as if this is
+ *  where clearing happens, so the next person adds a key for it and the screen
+ *  ends up with two paths that clear. */
+export function applyKey(amount: string, key: KeypadKey): string {
   if (key === 'del') return amount.slice(0, -1);
   const next = (amount + key).replace(/^0+/, '');
   return next.length > MAX_AMOUNT_DIGITS ? amount : next;

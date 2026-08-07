@@ -46,3 +46,16 @@ export function amountSize(amount: string): AmountSize {
   if (n === 9) return 'xs';
   return 'xxs';
 }
+
+/** The next size down, for a number sharing its line with a longer-than-usual
+ *  label.
+ *
+ *  `amountSize` only counts digits, which is enough while the thing beside the
+ *  number is a single 원. The assets screen writes "원 마이너스" when the total
+ *  is negative — five characters more for the same digits — so a six-figure
+ *  balance that fits when positive runs past the card when it isn't. Rather
+ *  than give that screen its own ladder, it asks for one step less room. */
+export function oneStepDown(size: AmountSize): AmountSize {
+  const order: AmountSize[] = ['lg', 'md', 'sm', 'xs', 'xxs'];
+  return order[Math.min(order.indexOf(size) + 1, order.length - 1)];
+}

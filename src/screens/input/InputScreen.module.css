@@ -506,11 +506,6 @@
   color: var(--warn);
 }
 
-.clearAmount:active {
-  background: var(--warnSoft);
-  color: var(--warn);
-}
-
 .keypadValue {
   font-size: 32px;
   font-weight: 800;
