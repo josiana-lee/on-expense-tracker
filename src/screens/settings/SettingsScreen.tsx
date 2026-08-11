@@ -280,7 +280,21 @@ export function SettingsScreen({ onManageCards }: Props) {
           onClick={sendICloudBackup}
           disabled={icloudExport.busy}
         >
-          <span className={styles.rowLabel}>백업 파일로 저장하기</span>
+          {/* "저장하기"가 아니라 "내보내기". 눌렀을 때 뜨는 건 안드로이드
+              공유 시트고, 거기에 늘어선 건 카카오톡·Gmail 같은 앱이다.
+              "저장"을 기대한 사람은 저장할 곳을 찾다가 멈춘다 — 테스터가
+              실제로 그 화면에서 막혔다.
+
+              공유 시트를 쓰는 건 어쩔 수 없다. 앱이 임의의 위치에 파일을
+              쓰려면 파일 선택기(SAF)를 붙여야 하고, 앱 전용 폴더에 쓰면
+              앱을 지울 때 같이 사라져 백업 구실을 못 한다. 그러니 고칠 건
+              동작이 아니라 이름과, 무엇을 고르면 되는지에 대한 안내다. */}
+          <div className={styles.rowLabel}>
+            백업 파일 내보내기
+            <span className={styles.rowSub}>
+              카톡 &apos;나와의 채팅&apos;이나 드라이브에 저장해두면 돼
+            </span>
+          </div>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
@@ -311,7 +325,16 @@ export function SettingsScreen({ onManageCards }: Props) {
         </button>
 
         <button type="button" className={styles.row} onClick={pickRestoreFile}>
-          <span className={styles.rowLabel}>백업 파일 복원하기</span>
+          {/* 복원 도중 지금 데이터를 먼저 내보내는데, 그때 위와 같은 공유
+              시트가 뜬다. 거기서 취소하면 복원이 멈춘다 — 시트를 처음 보는
+              사람은 "복원한다더니 왜 공유?" 하고 취소하기 쉽다. 시트가 뜨기
+              전에 미리 말해두면 그 취소가 안 일어난다. */}
+          <div className={styles.rowLabel}>
+            백업 파일 복원하기
+            <span className={styles.rowSub}>
+              지금 데이터를 먼저 내보낸 다음에 복원해. 중간에 뜨는 창을 취소하면 멈춰
+            </span>
+          </div>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
