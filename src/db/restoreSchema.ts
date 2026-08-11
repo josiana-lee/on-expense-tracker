@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { COLOR_THEMES } from '../data/themes';
 import { BACKUP_TABLES } from './backup';
 
 /** A backup file is user-editable external input (docs/data-model.md §7-1
@@ -137,6 +138,9 @@ const settingsSchema = z.looseObject({
   reminderEnabled: z.boolean(),
   reminderTime: timeStr.optional(),
   themeMode: z.enum(['light', 'dark', 'system']),
+  /* 이 필드가 생기기 전 백업에는 없다. 없으면 기본 팔레트로 읽으므로
+     복원한 기기는 테마 기능이 없던 때와 같은 화면으로 시작한다. */
+  colorTheme: z.enum(COLOR_THEMES.map((t) => t.id)).optional(),
   budgetAlertThresholds: z.array(z.number()),
   updatedAt: epoch,
 });

@@ -1,12 +1,21 @@
 import { useEffect } from 'react';
+import { DEFAULT_COLOR_THEME } from '../data/themes';
 import { useSettings } from './useSettings';
 
-/** Applies settings.themeMode to the document root. 'system' tracks the OS
- *  scheme live, so a change while the app is open (or backgrounded) takes
- *  effect without a reload. */
+/** Applies settings.themeMode and settings.colorTheme to the document root.
+ *  'system' tracks the OS scheme live, so a change while the app is open (or
+ *  backgrounded) takes effect without a reload.
+ *
+ *  두 축은 서로 독립이라 속성도 따로 쓴다 — data-theme은 밝게/어둡게,
+ *  data-palette는 색. tokens.css가 그 조합으로 값을 고른다. */
 export function useTheme(): void {
   const settings = useSettings();
   const mode = settings?.themeMode ?? 'system';
+  const palette = settings?.colorTheme ?? DEFAULT_COLOR_THEME;
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-palette', palette);
+  }, [palette]);
 
   useEffect(() => {
     const root = document.documentElement;

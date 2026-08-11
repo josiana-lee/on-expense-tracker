@@ -1,3 +1,5 @@
+import type { ColorTheme } from '../data/themes';
+
 /** UUIDv7 문자열. 모든 테이블의 PK. */
 export type ID = string;
 
@@ -172,6 +174,10 @@ export interface SettingsRecord {
   reminderEnabled: boolean;
   reminderTime?: TimeStr;
   themeMode: 'light' | 'dark' | 'system';
+  /** 색 테마. themeMode(밝게/어둡게)와는 별개의 축이다 — 어느 색을 골라도
+   *  밝은 모드와 어두운 모드가 각각 있다. 이 기능이 생기기 전에 만들어진
+   *  설정 행에는 없으므로 optional이고, 읽는 쪽에서 기본값을 준다. */
+  colorTheme?: ColorTheme;
   budgetAlertThresholds: number[];
   updatedAt: Epoch;
 }

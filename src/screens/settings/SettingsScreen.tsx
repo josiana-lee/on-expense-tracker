@@ -21,12 +21,14 @@ import { MonthStartDaySheet } from './MonthStartDaySheet';
 import { RecurringManageScreen } from './RecurringManageScreen';
 import { RestoreSheet } from './RestoreSheet';
 import { WeekStartDaySheet } from './WeekStartDaySheet';
+import { ColorThemeSheet } from './ColorThemeSheet';
+import { COLOR_THEMES, DEFAULT_COLOR_THEME } from '../../data/themes';
 import styles from './SettingsScreen.module.css';
 
 const CHEVRON = 'M9 5l7 7-7 7';
 const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
 
-type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | null;
+type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | 'colorTheme' | null;
 type Sub = 'categories' | 'recurring' | 'licenses' | null;
 
 type Props = {
@@ -112,6 +114,8 @@ export function SettingsScreen({ onManageCards }: Props) {
   };
 
   const dark = settings?.themeMode === 'dark';
+  const colorTheme = settings?.colorTheme ?? DEFAULT_COLOR_THEME;
+  const colorThemeName = COLOR_THEMES.find((t) => t.id === colorTheme)?.name;
   const visibleCount = categories.filter((c) => c.visibleOnHome && !c.deprecated).length;
   const cardCount = payments.filter((p) => p.kind !== 'cash').length;
   const monthStartDay = settings?.monthStartDay ?? 1;
@@ -136,6 +140,16 @@ export function SettingsScreen({ onManageCards }: Props) {
             <span className={styles.knob} />
           </button>
         </div>
+
+        {/* 다크모드 바로 아래. 둘 다 화면 색을 정하는 설정이라 붙어 있어야
+            어느 쪽을 만져야 하는지 헷갈리지 않는다. */}
+        <button type="button" className={styles.row} onClick={() => setSheet('colorTheme')}>
+          <span className={styles.rowLabel}>색 테마</span>
+          <span className={styles.rowValue}>{colorThemeName}</span>
+          <span className={styles.chevron}>
+            <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+          </span>
+        </button>
 
         <button type="button" className={styles.row} onClick={() => setSub('categories')}>
           <span className={styles.rowLabel}>카테고리 관리</span>
@@ -396,6 +410,9 @@ export function SettingsScreen({ onManageCards }: Props) {
       )}
       {sheet === 'weekStart' && (
         <WeekStartDaySheet value={weekStartDay} onClose={() => setSheet(null)} />
+      )}
+      {sheet === 'colorTheme' && (
+        <ColorThemeSheet value={colorTheme} onClose={() => setSheet(null)} />
       )}
       {sheet === 'defaultPayment' && (
         <DefaultPaymentSheet

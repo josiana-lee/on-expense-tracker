@@ -19,6 +19,70 @@
   --ease-out-fast: cubic-bezier(0.5, 0, 0.75, 0);
 }
 
+/* ── 색 테마 ──────────────────────────────────────────────────────────
+   밝은 모드에서만 바탕까지 물들이고, 어두운 모드에서는 포인트 색만 바꾼다.
+   어두운 배경에 색을 섞으면 쉽게 탁해지는데, 정작 그 차이는 잘 보이지도
+   않는다. 값이 테마당 10개에서 7개로 줄어드는 건 덤.
+
+   물들이는 건 --bg, --sf2, --line 셋뿐이다.
+   --sf(카드 흰색)는 카테고리 원 30개가 놓이는 바탕이라 흔들면 그 색들이
+   전부 영향을 받고, --tx/--tx2(글자)는 색을 섞는 만큼 가독성이 깎인다.
+   둘은 어느 테마에서도 중립으로 둔다.
+
+   빨강 계열은 뺐다. --warn(예산 초과·삭제)이 빨강이라 같은 색조가 되면
+   경고가 그냥 앱 색으로 보인다. 테마 하나를 위해 경고색 체계를 따로
+   손볼 값어치는 없다.
+
+   순서 주의: 아래 팔레트 블록과 [data-theme='dark']는 명시도가 같아서
+   나중에 오는 쪽이 이긴다. 그래서 dark를 팔레트 뒤에 두어 어두운 모드의
+   중립색이 팔레트의 밝은 중립색을 덮게 한다. */
+
+:root[data-palette='mint'] {
+  --bg: #edf5f3;
+  --sf2: #f3f9f7;
+  --line: #e4f0ec;
+  --brand: #22a38c;
+  --brandSoft: #e3f5f1;
+}
+
+/* 로즈가 아니라 마젠타 쪽. --warn(#f0806e)이 코랄이라 로즈핑크와 색조가
+   28°밖에 안 벌어져서, "초과했어"가 테마색처럼 보였다. 마젠타로 밀면 38°가
+   되어 경고가 다시 경고로 읽힌다. */
+:root[data-palette='pink'] {
+  --bg: #f7eff5;
+  --sf2: #fcf6fa;
+  --line: #f1e3ec;
+  --brand: #dd5c9b;
+  --brandSoft: #fce9f3;
+}
+
+/* 노랑은 흰 바탕에서 대비가 무너지는 유일한 색조라, 포인트는 순노랑이
+   아니라 황금/호박 쪽으로 내렸다. 칩과 버튼의 글자가 읽혀야 한다. */
+:root[data-palette='yellow'] {
+  --bg: #f5f3ec;
+  --sf2: #faf8f1;
+  --line: #ede8dc;
+  --brand: #c98a12;
+  --brandSoft: #fbf0d9;
+}
+
+/* 지금까지의 기본값. 팔레트를 고르지 않은 기기와 같은 화면이 나온다. */
+:root[data-palette='purple'] {
+  --bg: #f0f2f6;
+  --sf2: #f6f7fa;
+  --line: #eceff4;
+  --brand: #7b87f5;
+  --brandSoft: #eef0ff;
+}
+
+:root[data-palette='blue'] {
+  --bg: #eef2f8;
+  --sf2: #f5f8fc;
+  --line: #e6edf6;
+  --brand: #3d86db;
+  --brandSoft: #e3effb;
+}
+
 :root[data-theme='dark'] {
   --bg: #111318;
   --sf: #1b1e25;
@@ -30,4 +94,30 @@
   --brandSoft: #262b3b;
   --warn: #ff9585;
   --warnSoft: #33262a;
+}
+
+/* 어두운 모드에서는 포인트만. 명시도가 위 블록들보다 한 단계 높다. */
+:root[data-theme='dark'][data-palette='mint'] {
+  --brand: #45cbb2;
+  --brandSoft: #1e322e;
+}
+
+:root[data-theme='dark'][data-palette='pink'] {
+  --brand: #ff85bc;
+  --brandSoft: #33222c;
+}
+
+:root[data-theme='dark'][data-palette='yellow'] {
+  --brand: #e8b54a;
+  --brandSoft: #322c1e;
+}
+
+:root[data-theme='dark'][data-palette='purple'] {
+  --brand: #8e98ff;
+  --brandSoft: #262b3b;
+}
+
+:root[data-theme='dark'][data-palette='blue'] {
+  --brand: #6ba8f0;
+  --brandSoft: #1e2938;
 }
