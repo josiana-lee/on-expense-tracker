@@ -58,6 +58,17 @@
   color: var(--tx);
 }
 
+/* 켜기 전에 무엇이 오는지 알려주는 한 줄. 알림은 켜 보고 판단하기엔
+   비용이 큰 설정이라 — 한 번 놀라면 다시 켜지 않는다. */
+.rowSub {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+  line-height: 1.45;
+}
+
 .rowValue {
   font-size: 13px;
   font-weight: 600;

@@ -107,7 +107,7 @@ export function SettingsScreen({ onManageCards }: Props) {
   const toggleReminder = async () => {
     const turningOn = !settings?.reminderEnabled;
     if (turningOn && !(await requestReminderPermission())) {
-      flash('알림 권한을 허용해야 알람을 켤 수 있어');
+      flash('알림 권한을 허용해야 켤 수 있어');
       return;
     }
     await setReminder(turningOn, settings?.reminderTime);
@@ -203,8 +203,16 @@ export function SettingsScreen({ onManageCards }: Props) {
           </span>
         </button>
 
+        {/* "알람"이 아니라 "알림". 하는 일은 정한 시각에 알림창에 메시지를
+            띄우는 것이고, 소리로 깨우는 게 아니다. 알람이라고 부르면 시계
+            알람을 기대하게 되는데, 켜 보고 기대와 다르면 그냥 끈다.
+            바로 아래 시간 행이 이미 "알림 시간"이라 한 기능이 두 이름으로
+            불리고 있기도 했다. */}
         <div className={styles.row} style={{ cursor: 'default' }}>
-          <span className={styles.rowLabel}>알람</span>
+          <div className={styles.rowLabel}>
+            알림
+            <span className={styles.rowSub}>정한 시각에 하루 한 번, 오늘 기록했는지 물어볼게</span>
+          </div>
           <button
             type="button"
             role="switch"
