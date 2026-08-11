@@ -17,17 +17,68 @@
   bottom: 0;
   z-index: 13;
   /* Never taller than the shell, so a sheet that grows past a short screen
-     scrolls inside itself instead of pushing its own footer out of reach. */
-  max-height: calc(100% - 14px);
+     scrolls inside itself instead of pushing its own footer out of reach.
+     The gap used to be 14px, which is what the scrim shrank to on a tall
+     sheet — under a third of the 44px a finger needs, so "tap outside to
+     close" quietly stopped being a way out. 56px keeps a real target. */
+  max-height: calc(100% - 56px);
   background: var(--sf);
   border-radius: 26px 26px 0 0;
-  padding: 16px 14px calc(20px + env(safe-area-inset-bottom));
   animation: sheetUp 0.34s var(--spring);
   box-shadow: 0 -8px 30px rgba(15, 20, 35, 0.14);
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  /* 스크롤은 .body가 맡는다. 여기서 넘치는 것만 잘라낸다. */
+  overflow: hidden;
+}
+
+/* 끌어내리는 손잡이. 시트 본문이 스크롤되기 때문에 시트 전체를 잡게 하면
+   아래로 끄는 동작이 스크롤인지 닫기인지 매번 판단해야 하고, 그 판단이
+   조금만 어긋나도 "가끔 안 닫힌다"로 읽힌다. 손잡이는 스크롤 대상이 아니라
+   그 질문 자체가 생기지 않는다. */
+.handle {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  /* 보이는 건 4px 막대지만 잡는 영역은 그보다 넉넉해야 한다. */
+  padding: 14px 14px 10px;
+  cursor: grab;
+  /* 없으면 브라우저가 이 제스처를 스크롤로 가로채 드래그가 끊긴다. */
+  touch-action: none;
+}
+
+/* 스크롤하는 건 본문뿐. 시트가 갖고 있던 패딩과 간격이 여기로 내려왔다. */
+.body {
+  flex: 1;
+  /* 없으면 flex 아이템의 기본 min-height:auto 때문에 줄어들지 못해
+     overflow가 걸리지 않는다. */
+  min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 2px 14px calc(20px + env(safe-area-inset-bottom));
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.grabber {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+/* 손을 뗐을 때 제자리로 돌아가는 움직임. 끄는 동안에는 손가락을 그대로
+   따라와야 하므로 꺼둔다. */
+.sheet {
+  transition: transform 0.22s var(--spring);
+}
+
+.sheet[data-dragging] {
+  transition: none;
 }
 
 /* A scrolling column must not shrink what it holds. Flex children default to
@@ -36,7 +87,7 @@
    its payment chips entirely (0px tall) and its category row down to bare
    padding, which read as a half-built screen rather than a layout fault.
    Every sheet is one row of content away from the same thing. */
-.sheet > * {
+.body > * {
   flex-shrink: 0;
 }
 

@@ -53,11 +53,15 @@
   color: var(--tx);
 }
 
-/* Same horizontal-scroller clipping fix as EntrySheet.module.css's .cats. */
+/* Same horizontal-scroller clipping fix as EntrySheet.module.css's .cats.
+   Scrolls sideways rather than wrapping: wrapped, thirty categories stood
+   420px tall and made this the only sheet that filled the screen, which is
+   what left the scrim at 14px and the sheet effectively unclosable. Every
+   other category picker in the app already scrolls. */
 .cats {
   display: flex;
-  flex-wrap: wrap;
   gap: 10px;
+  overflow-x: auto;
   padding: 8px;
   margin: -4px -8px;
 }
