@@ -12,6 +12,9 @@ const BACK_ICON = 'M15 5l-7 7 7 7';
 const SEARCH_ICON = 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.35-4.35';
 const CLOSE_ICON = 'M6 6l12 12M18 6L6 18';
 
+/** 한 번에 그리는 검색 결과 수. */
+const SHOWN_LIMIT = 100;
+
 type Props = {
   onBack: () => void;
   onSelectRecord: (record: ExpenseRecord) => void;
@@ -35,6 +38,21 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
       );
     });
   }, [records, query, byId]);
+
+  /* 화면에 그리는 건 앞의 일부뿐이다. 비용이 걸리는 곳은 거르는 계산이
+     아니라 DOM이다 — 기록 5,000건에서 "점"을 검색하면 2,500건이 걸리고
+     행마다 10개씩, 노드 26,000개가 한 번에 만들어져 렌더러가 멈춘다.
+     거르는 계산 자체는 그 상태에서도 수 ms다.
+
+     한글은 이걸 앞당긴다. "점심"을 치면 ㅈ → 저 → 점 → 점ㅅ → 점시 → 점심
+     순으로 입력이 들어와서, 최종 검색어가 좁아도 가장 넓은 중간 단계를
+     반드시 지나간다. 사용자는 늘 제일 비싼 순간을 먼저 만난다.
+
+     가상 스크롤 대신 상한을 둔 이유: 상한이면 이 문제가 사라지고, 가상
+     스크롤은 의존성과 함께 스크롤 위치·포커스·접근성 처리를 새로 안고 온다.
+     찾는 기록이 100건 밖에 있다면 필요한 건 더 긴 목록이 아니라 더 좁은
+     검색어다. */
+  const shown = useMemo(() => results.slice(0, SHOWN_LIMIT), [results]);
 
   return (
     <div className={styles.sub}>
@@ -76,9 +94,12 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
           <p className={styles.hint}>검색 결과가 없어.</p>
         ) : (
           <>
-            <div className={styles.count}>{results.length}건</div>
+            <div className={styles.count}>
+              {results.length}건
+              {results.length > SHOWN_LIMIT && ` 중 ${SHOWN_LIMIT}건`}
+            </div>
             <div className={styles.resultCard}>
-              {results.map((r) => {
+              {shown.map((r) => {
                 const cat = byId.get(r.categoryId);
                 const pay = paymentById.get(r.paymentMethodId);
                 return (
@@ -109,6 +130,9 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
                 );
               })}
             </div>
+            {results.length > SHOWN_LIMIT && (
+              <p className={styles.more}>검색어를 조금 더 좁히면 찾는 걸 빨리 볼 수 있어</p>
+            )}
           </>
         )}
       </div>
