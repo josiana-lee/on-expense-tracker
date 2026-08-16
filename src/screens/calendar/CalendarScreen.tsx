@@ -8,6 +8,7 @@ import { useDateExpenses } from '../../hooks/useExpenses';
 import { useMonth } from '../../hooks/useMonth';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
+import { useToday } from '../../hooks/useToday';
 import { dateText, won } from '../../lib/format';
 import { EntrySheet } from './EntrySheet';
 import { MonthPickerSheet } from './MonthPickerSheet';
@@ -53,7 +54,7 @@ export function CalendarScreen() {
   const settings = useSettings();
   const weekStartDay = settings?.weekStartDay ?? 0;
 
-  const today = useMemo(() => new Date(), []);
+  const today = useToday();
   const [view, setView] = useState(() => ({
     year: today.getFullYear(),
     month: today.getMonth() + 1,

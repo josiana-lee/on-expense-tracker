@@ -9,6 +9,7 @@ import { useCatalog } from '../../hooks/useCatalog';
 import { useCategoryBudgets, useMonthlyBudget } from '../../hooks/useBudget';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
+import { useToday } from '../../hooks/useToday';
 import { amountSize, shortDate, won } from '../../lib/format';
 import { BudgetSheet } from './BudgetSheet';
 import { CategoryBudgetSheet } from './CategoryBudgetSheet';
@@ -27,7 +28,7 @@ export function BudgetScreen() {
   );
   const { byId } = useCatalog();
 
-  const today = useMemo(() => new Date(), []);
+  const today = useToday();
   const { year, month } = currentAccountingMonth(monthStartDay, today);
   const { from, to } = monthRange(year, month, monthStartDay);
 

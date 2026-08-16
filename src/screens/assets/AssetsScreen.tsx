@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Toast } from '../../components/Toast';
 import { moveCard } from '../../db/paymentMethods';
 import type { AccountRecord, PaymentMethodRecord } from '../../db/types';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useToast } from '../../hooks/useToast';
+import { useToday } from '../../hooks/useToday';
 import { amountSize, oneStepDown, won } from '../../lib/format';
 import { AccountSheet } from './AccountSheet';
 import { CardRow } from './CardRow';
@@ -31,7 +32,7 @@ export function AssetsScreen() {
   const { accounts } = useAccounts();
   const { payments } = useCatalog();
   const { text: toast, flash } = useToast();
-  const today = useMemo(() => new Date(), []);
+  const today = useToday();
 
   const [accountSheet, setAccountSheet] = useState<{ account: AccountRecord | null } | null>(
     null,
