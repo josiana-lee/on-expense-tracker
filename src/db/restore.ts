@@ -11,6 +11,9 @@ import { bootstrap } from './seed';
 
 const SUPPORTED_FORMAT_VERSION = 1;
 
+/** 읽어보기 전에 거절할 크기. 50MB. */
+const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
+
 export class RestoreFormatError extends Error {}
 
 /** Thrown when the pre-restore safety copy couldn't be secured, so nothing
@@ -78,6 +81,15 @@ function countDangling(tables: ParsedRestore['tables']): DanglingCounts {
  *  Malformed individual rows are dropped rather than failing the whole
  *  restore — docs/data-model.md §7-1 rule 4 ("Zod로 파싱 후 통과분만 쓴다"). */
 export async function parseBackupFile(file: File): Promise<ParsedRestore> {
+  /* 파일 선택기의 accept="application/json"은 힌트일 뿐 강제가 아니라,
+     안드로이드에서는 아무 파일이나 고를 수 있다. 검증은 파일 전체를 문자열로
+     읽은 뒤에야 시작되므로, 잘못 고른 동영상 하나면 그 전에 WebView가 죽는다.
+     사용자 눈에는 앱이 그냥 꺼진 것으로 보인다.
+     한도는 하루 10건씩 10년치 백업(약 14MB)의 세 배 이상으로 잡았다. */
+  if (file.size > MAX_BACKUP_BYTES) {
+    throw new RestoreFormatError('이 파일은 백업 파일치고 너무 커. 다른 파일인지 확인해줘');
+  }
+
   const text = await file.text();
 
   let json: unknown;

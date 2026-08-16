@@ -18,8 +18,21 @@ import { BACKUP_TABLES } from './backup';
 const id = z.string().min(1);
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const timeStr = z.string().regex(/^\d{2}:\d{2}$/);
-const epoch = z.number();
-const minor = z.number();
+/* 앱 안에서 만들어지는 값은 toMinor()가 정수·안전범위를 보장하지만, 복원은
+   그 함수를 한 번도 거치지 않는다 — 파싱한 행이 bulkPut으로 바로 들어간다.
+   백업 파일은 이 앱의 유일한 외부 입력인데 하필 그 경로만 불변식을 비켜간
+   셈이었다.
+
+   z.number()는 NaN과 Infinity는 막지만 1.5와 1e21은 통과시킨다. 실제로
+   확인했다 — 금액 1.5와 1e21이 든 백업을 복원하면 두 행 모두 유효로 잡히고,
+   그 달 합계가 1e+21이 된다. 달력·예산 진행률·카드 청구액이 한꺼번에
+   의미를 잃는다. 소수점 금액은 조용히 표시만 깨뜨린다. */
+const epoch = z.number().int().min(0);
+const minor = z
+  .number()
+  .int()
+  .min(-Number.MAX_SAFE_INTEGER)
+  .max(Number.MAX_SAFE_INTEGER);
 const txType = z.enum(['expense', 'income']);
 
 const expenseSchema = z.looseObject({
@@ -131,8 +144,13 @@ const recurringRuleSchema = z.looseObject({
 
 const settingsSchema = z.looseObject({
   id: z.literal('app'),
-  monthStartDay: z.number(),
-  weekStartDay: z.number(),
+  /* types.ts가 못박아 둔 범위(1~28, 0~6)가 런타임 어디에도 없었다. 복원된
+     monthStartDay: 45는 monthRange()에서 다음 달로 롤오버하고, weekStartDay가
+     범위를 벗어나면 splitWeeks()의 주차 구분이 뭉개진다.
+     여기서 걸러 행이 버려져도 bootstrap()의 ensureSettings()가 기본값으로
+     되살리므로, 조이는 비용이 사실상 없다. */
+  monthStartDay: z.number().int().min(1).max(28),
+  weekStartDay: z.number().int().min(0).max(6),
   defaultPaymentMethodId: id.optional(),
   baseCurrency: z.literal('KRW'),
   reminderEnabled: z.boolean(),

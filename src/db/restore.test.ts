@@ -163,6 +163,49 @@ describe('restore validation', () => {
     ).rejects.toBeInstanceOf(RestoreFormatError);
   });
 
+  /* 앱 안에서 만드는 값은 toMinor()가 정수·안전범위를 보장하는데, 복원은
+     그 함수를 거치지 않는다. 파싱을 통과한 행이 bulkPut으로 바로 들어가므로,
+     여기서 안 막으면 아무도 안 막는다. 실제로 1.5와 1e21이 통과해 그 달
+     합계가 1e+21이 됐다. */
+  it('금액이 정수가 아니거나 안전 범위를 벗어나면 그 행을 버린다', async () => {
+    const bad = [
+      expenseRow({ id: 'a', amount: 1.5 }),
+      expenseRow({ id: 'b', amount: 1e21 }),
+      expenseRow({ id: 'c', amount: -0.001 }),
+      expenseRow({ id: 'd', amount: 1000 }),
+    ];
+    const parsed = await parseBackupFile(backupFile({}, { expenses: bad }));
+    expect(parsed.validCounts.expenses).toBe(1);
+    expect(parsed.skippedCounts.expenses).toBe(3);
+    expect((parsed.tables.expenses[0] as { id: string }).id).toBe('d');
+  });
+
+  it('월·주 시작일이 범위를 벗어나면 settings 행을 버린다', async () => {
+    const rows = [
+      { id: 'app', monthStartDay: 45, weekStartDay: 0, baseCurrency: 'KRW',
+        reminderEnabled: false, themeMode: 'system', budgetAlertThresholds: [], updatedAt: 1 },
+    ];
+    const parsed = await parseBackupFile(backupFile({}, { settings: rows }));
+    expect(parsed.validCounts.settings).toBe(0);
+    expect(parsed.skippedCounts.settings).toBe(1);
+  });
+
+  /* 파일 선택기의 accept는 힌트일 뿐이라 동영상도 고를 수 있다. 검증은
+     파일을 다 읽은 뒤에야 시작되므로, 그 전에 거절하지 않으면 WebView가
+     먼저 죽는다. */
+  it('너무 큰 파일은 읽기 전에 거절한다', async () => {
+    /* 내용은 완전히 정상인 백업이고 크기만 크다. 내용까지 망가뜨리면
+       크기 검사를 빼도 JSON 파싱이 대신 같은 예외를 던져서, 검사가 있으나
+       없으나 통과하는 테스트가 된다. */
+    const huge = backupFile();
+    Object.defineProperty(huge, 'size', { value: 60 * 1024 * 1024 });
+    await expect(parseBackupFile(huge)).rejects.toBeInstanceOf(RestoreFormatError);
+
+    // 크기만 정상으로 되돌리면 같은 내용이 통과해야 한다.
+    const same = backupFile();
+    await expect(parseBackupFile(same)).resolves.toBeDefined();
+  });
+
   it('accepts a backup from the current schema version', async () => {
     await expect(parseBackupFile(backupFile({ schemaVersion: db.verno }))).resolves.toBeDefined();
   });
