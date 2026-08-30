@@ -27,15 +27,13 @@ export function InstallmentSheet({ months, amount, onDone, onClose }: Props) {
   const [text, setText] = useState(months > 1 ? String(months) : '');
   const n = Number(text || '0');
 
-  /* 확정 전에 무엇이 저장될지 보여준다. 여기서 막지 않으면 금액이 회차 수보다
-     적을 때 "추가!"를 눌러야만 이유를 알게 된다. */
-  let note: string;
+  /* 여기서 말하는 건 두 가지뿐이다 — 얼마씩 나뉘는지, 그리고 왜 안 되는지.
+     "개월 수를 넣어줘" 같은 안내는 넣지 않는다. 숫자판이 열려 있고 칸이 비어
+     있으면 무엇을 하라는 건지는 보면 안다.
+     자리는 비워두되 높이는 잡아둬서, 문구가 생길 때 숫자판이 밀리지 않는다. */
+  let note = '';
   let bad = false;
-  if (n <= 1) {
-    note = '개월 수를 넣어줘. 1이나 비워두면 일시불이야';
-  } else if (!amount) {
-    note = `${n}개월로 나눠서 기록할게. 금액은 이따 넣어도 돼`;
-  } else {
+  if (n > 1 && amount) {
     try {
       const parts = splitInstallment(Number(amount), n);
       note =
