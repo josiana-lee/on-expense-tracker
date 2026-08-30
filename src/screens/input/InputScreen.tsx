@@ -52,16 +52,14 @@ export function InputScreen() {
 
   /* Tapping an icon only opens a popup to review it — nothing is written
    *  anywhere yet. "입력 완료" inside the popup commits that pick into these
-   *  four, which is what "추가!" actually saves. Two separate actions, on
+   *  three, which is what "추가!" actually saves. Two separate actions, on
    *  purpose: picking a category and saving the expense are not the same
    *  step, so a cancelled popup can never leak into the next record.
    *
-   *  Payment is here too, even though it also has its own always-visible
-   *  chips on the main screen. Those chips commit immediately — there's
-   *  nothing to cancel out there. But the popup carries a redundant copy of
-   *  the same chips for convenience, and *that* copy has to behave like the
-   *  rest of the popup: tapping it inside a popup you go on to cancel must
-   *  leave the outer selection untouched. */
+   *  결제수단은 여기 없다. 팝업에도 같은 칩을 한 벌 더 두었다가 뺐다 — 메인
+   *  화면 칩이 늘 보이는 자리에 있어서 중복이었고, 그 사본만 "취소하면
+   *  되돌아가야 하는" 초안 상태를 따로 들고 있어야 했다. 결제수단은
+   *  카테고리에 딸린 값이 아니라 화면 전체의 값이라 바로 확정해도 된다. */
   const [stagedCategoryId, setStagedCategoryId] = useState<string | null>(null);
   const [stagedSub, setStagedSub] = useState<string | null>(null);
   const [stagedMemo, setStagedMemo] = useState('');
@@ -74,12 +72,9 @@ export function InputScreen() {
 
   /** Live only while a popup is open — what the user is currently editing,
    *  before they press "입력 완료". Reopening the already-staged category
-   *  resumes its sub/memo; opening a different one starts those blank. The
-   *  payment draft always starts from the current staged payment, since it
-   *  isn't tied to any one category. */
+   *  resumes its sub/memo; opening a different one starts those blank. */
   const [draftSub, setDraftSub] = useState<string | null>(null);
   const [draftMemo, setDraftMemo] = useState('');
-  const [draftPayment, setDraftPayment] = useState<string | null>(null);
 
   const paymentId =
     stagedPaymentId ?? settings?.defaultPaymentMethodId ?? payments[0]?.id ?? null;
@@ -139,10 +134,9 @@ export function InputScreen() {
         setDraftSub(null);
         setDraftMemo('');
       }
-      setDraftPayment(paymentId);
       setPopup({ categoryId, ...offsetFromShellCentre(el, shell) });
     },
-    [shell, stagedCategoryId, stagedSub, stagedMemo, paymentId],
+    [shell, stagedCategoryId, stagedSub, stagedMemo],
   );
 
   /** Plays the popup back into the icon it grew from. Used both when the
@@ -160,9 +154,8 @@ export function InputScreen() {
     setStagedCategoryId(popup.categoryId);
     setStagedSub(draftSub);
     setStagedMemo(draftMemo);
-    setStagedPaymentId(draftPayment);
     closePopup();
-  }, [popup, draftSub, draftMemo, draftPayment, closePopup]);
+  }, [popup, draftSub, draftMemo, closePopup]);
 
   const save = useCallback(() => {
     if (!amount) {
@@ -442,7 +435,7 @@ export function InputScreen() {
         />
       )}
 
-      {popup && popupCategory && draftPayment && (
+      {popup && popupCategory && (
         <CategoryPopup
           category={popupCategory}
           origin={popup}
@@ -450,11 +443,8 @@ export function InputScreen() {
           amount={amount}
           sub={draftSub}
           memo={draftMemo}
-          payments={payments}
-          paymentId={draftPayment}
           onSelectSub={setDraftSub}
           onMemoChange={setDraftMemo}
-          onSelectPayment={setDraftPayment}
           onConfirm={confirmPopup}
           onClose={closePopup}
         />

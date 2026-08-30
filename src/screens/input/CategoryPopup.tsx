@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import type { CSSProperties } from 'react';
 import { Icon } from '../../components/Icon';
-import type { CategoryRecord, PaymentMethodRecord } from '../../db/types';
+import type { CategoryRecord } from '../../db/types';
 import { useShell } from '../../shell/ShellContext';
 import { won } from '../../lib/format';
 import { useBackHandler } from '../../shell/useBackHandler';
@@ -16,11 +16,8 @@ type Props = {
   amount: string;
   sub: string | null;
   memo: string;
-  payments: PaymentMethodRecord[];
-  paymentId: string;
   onSelectSub: (sub: string) => void;
   onMemoChange: (memo: string) => void;
-  onSelectPayment: (id: string) => void;
   /** Stages this category/sub/memo on the screen behind it — does not touch
    *  the database. Only the screen's own "추가!" button does that. */
   onConfirm: () => void;
@@ -34,11 +31,8 @@ export function CategoryPopup({
   amount,
   sub,
   memo,
-  payments,
-  paymentId,
   onSelectSub,
   onMemoChange,
-  onSelectPayment,
   onConfirm,
   onClose,
 }: Props) {
@@ -94,19 +88,6 @@ export function CategoryPopup({
           placeholder="메모 (선택)"
           enterKeyHint="done"
         />
-
-        <div className={styles.pays}>
-          {payments.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onSelectPayment(p.id)}
-              className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
 
         {/* Not a save — this only hands the pick back to the screen. Distinct
             from the screen's own "추가!", which is the one action that
