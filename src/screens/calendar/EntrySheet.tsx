@@ -5,6 +5,12 @@ import { ClearAmount } from '../../components/ClearAmount';
 import { Sheet } from '../../components/Sheet';
 import { parseDateStr } from '../../db/date';
 import { addExpense, deleteExpense, updateExpense } from '../../db/expenses';
+import {
+  deleteInstallmentGroup,
+  installmentLabel,
+  isInstallment,
+  listInstallmentGroup,
+} from '../../db/installments';
 import type { DateStr, ExpenseRecord } from '../../db/types';
 import { toMinor } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -36,6 +42,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   const { categories, homeCategories, byId, payments } = useCatalog();
   const settings = useSettings();
   const editing = record !== null;
+
+  /* 할부 회차는 혼자 고칠 수 없다. 금액을 하나만 바꾸면 회차 합이 결제
+     총액과 어긋나는데, 그 상태를 화면에 설명할 방법이 없다 — 사용자는
+     달력에서 숫자가 안 맞는 것만 보게 된다. 그래서 금액은 잠그고, 나머지
+     항목은 고치되 묶음 전체에 똑같이 적용한다. 회차마다 카테고리가 다른
+     할부는 읽을 수 없다. */
+  const installment = record !== null && isInstallment(record);
+  const installmentNote = record ? installmentLabel(record) : null;
 
   const [amount, setAmount] = useState(record ? String(record.amount) : '');
   const [subLabel, setSubLabel] = useState(record?.subLabel);
@@ -74,7 +88,17 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
     guard(async () => {
       try {
-        if (record) {
+        if (record && installment) {
+          const patch = {
+            categoryId,
+            subLabel,
+            memo: memo.trim() || undefined,
+            paymentMethodId: paymentId,
+          };
+          const rows = await listInstallmentGroup(record.installmentId!);
+          for (const r of rows) await updateExpense(r.id, patch);
+          onDone(`${rows.length}회차 모두 고쳤어`);
+        } else if (record) {
           await updateExpense(record.id, {
             amount: toMinor(Number(amount)),
             categoryId,
@@ -107,8 +131,13 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
     if (!record) return;
     guard(async () => {
       try {
-        await deleteExpense(record.id);
-        onDone('삭제했어');
+        if (installment) {
+          const removed = await deleteInstallmentGroup(record.installmentId!);
+          onDone(`${removed}회차 모두 지웠어`);
+        } else {
+          await deleteExpense(record.id);
+          onDone('삭제했어');
+        }
         onClose();
       } catch {
         onDone('삭제하지 못했어');
@@ -132,8 +161,17 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         <span className={`${styles.amount} tabular`} data-size={amountSize(amount)}>
           {won(amount || '0')}원
         </span>
-        {amount && <ClearAmount onClear={() => setAmount('')} />}
+        {amount && !installment && <ClearAmount onClear={() => setAmount('')} />}
       </div>
+
+      {installment && (
+        <p className={styles.installNote}>
+          {installmentNote}
+          {record?.installmentTotal !== undefined && ` · 총 ${won(record.installmentTotal)}원`}
+          <br />
+          금액은 회차별로 고칠 수 없어. 나머지를 고치면 모든 회차에 함께 적용돼.
+        </p>
+      )}
 
       <div className={styles.cats}>
         {categories.map((c) => (
@@ -191,7 +229,9 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         ))}
       </div>
 
-      <Keypad compact onPress={(k) => setAmount((a) => applyKey(a, k))} />
+      {/* 할부는 금액을 잠그므로 숫자판도 뺀다. 눌러도 저장되지 않는 키패드는
+          사용자 눈에 고장으로 보인다. */}
+      {!installment && <Keypad compact onPress={(k) => setAmount((a) => applyKey(a, k))} />}
 
       <button type="button" className={styles.save} onClick={submit} disabled={busy}>
         {editing ? '수정 완료' : '추가!'}

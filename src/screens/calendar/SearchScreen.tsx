@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { parseDateStr } from '../../db/date';
+import { installmentLabel } from '../../db/installments';
 import type { ExpenseRecord } from '../../db/types';
 import { useAllExpenses } from '../../hooks/useAllExpenses';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -115,7 +116,7 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
                     <div className={styles.rowMain}>
                       <div className={styles.rowName}>{r.subLabel || cat?.name}</div>
                       <div className={styles.rowSub}>
-                        {[r.memo, r.subLabel ? cat?.name : null, pay?.name]
+                        {[installmentLabel(r), r.memo, r.subLabel ? cat?.name : null, pay?.name]
                           .filter(Boolean)
                           .join(' · ')}
                       </div>

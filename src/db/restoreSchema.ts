@@ -47,6 +47,16 @@ const expenseSchema = z.looseObject({
   memo: z.string().optional(),
   recurringRuleId: id.optional(),
   occurrenceDate: dateStr.optional(),
+  /* 할부. 회차 번호와 개월 수는 화면에 "2/3"으로 그대로 찍히므로 정수·양수만
+     받는다 — 백업 파일을 손으로 고쳐 12.5를 넣으면 달력에 그대로 나온다.
+     묶음이 깨진 행(예: installmentId만 있고 회차가 없는 행)은 여기서 거르지
+     않는다. 행 단위 검사라 형제 회차를 볼 수 없고, 지출 자체는 멀쩡해서
+     버리면 오히려 돈이 사라진다. 화면 쪽 isInstallment()가 필드가 갖춰진
+     행만 할부로 취급한다. */
+  installmentId: id.optional(),
+  installmentNo: z.number().int().min(1).optional(),
+  installmentMonths: z.number().int().min(2).max(12).optional(),
+  installmentTotal: minor.optional(),
   createdAt: epoch,
   updatedAt: epoch,
 });

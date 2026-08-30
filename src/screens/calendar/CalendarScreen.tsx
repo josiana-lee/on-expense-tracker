@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
 import { fmt, parseDateStr } from '../../db/date';
+import { installmentLabel } from '../../db/installments';
 import type { ExpenseRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDateExpenses } from '../../hooks/useExpenses';
@@ -245,7 +246,9 @@ export function CalendarScreen() {
                     <div className={styles.rowSub}>
                       {/* The category name is only worth repeating underneath
                           when the title above is a sub-label instead. */}
-                      {[r.memo, r.subLabel ? cat?.name : null, pay?.name]
+                      {/* 할부 회차를 제일 앞에 둔다. 이 줄에서 사용자가
+                          찾는 건 "이 4십만원은 왜 여기 있지?"의 답이다. */}
+                      {[installmentLabel(r), r.memo, r.subLabel ? cat?.name : null, pay?.name]
                         .filter(Boolean)
                         .join(' · ')}
                     </div>

@@ -44,6 +44,24 @@ export interface ExpenseRecord {
   recurringRuleId?: ID;
   occurrenceDate?: DateStr;
 
+  /** 할부. 한 번의 결제를 회차 수만큼의 행으로 나눠 넣고, 그 행들이
+   *  installmentId를 공유한다.
+   *
+   *  파생 계산이 아니라 실제 행으로 만드는 이유: 달력·예산·카드 청구액·검색·
+   *  통계가 전부 "그 날짜의 행을 더한다"로 되어 있다. 한 행에 개월수만
+   *  달아두고 읽는 쪽에서 나누게 하면 그 여섯 군데가 모두 할부를 알아야 하고,
+   *  한 군데만 빠뜨려도 숫자가 조용히 틀린다. 게다가 이번 달 달력이 지난
+   *  11개월치 행까지 끌어와야 한다. 행으로 만들어두면 읽는 쪽은 손댈 게 없다.
+   *
+   *  대신 쓰는 쪽이 묶음을 책임진다 — 한 회차를 지우면 전부 지워야 한다.
+   *  db/installments.ts가 그 규칙을 갖고 있다. */
+  installmentId?: ID;
+  /** 1부터. 화면에 "2/3"으로 보여준다. */
+  installmentNo?: number;
+  installmentMonths?: number;
+  /** 나눠 담기 전 결제 총액. 회차 금액을 다 더하면 이 값이 된다. */
+  installmentTotal?: Minor;
+
   createdAt: Epoch;
   updatedAt: Epoch;
 }

@@ -88,3 +88,20 @@ export function daySpan(from: DateStr, to: DateStr): number {
   const ms = parseDateStr(to).getTime() - parseDateStr(from).getTime();
   return Math.round(ms / 86_400_000) + 1;
 }
+
+/** `date`에서 `months`개월 뒤. 그 달에 없는 날짜는 말일로 당긴다.
+ *
+ *  할부 회차 날짜를 잡는 데 쓴다. 1/31에 3개월 할부를 하면 2/31이 없으므로
+ *  2/28(윤년이면 2/29)로 내려야 한다. `setMonth`에 그냥 맡기면 2/31을
+ *  3/3으로 넘겨버려서, 회차가 한 달을 건너뛰고 3월에 두 건이 겹친다.
+ *
+ *  당긴 날짜는 다음 회차 계산에 쓰지 않는다 — 항상 원래 구매일에서 다시
+ *  센다. 그러지 않으면 1/31 → 2/28 → 3/28로 하루씩 잃어버린다. */
+export function addMonthsClamped(date: DateStr, months: number): DateStr {
+  const src = parseDateStr(date);
+  const day = src.getDate();
+  const shifted = new Date(src.getFullYear(), src.getMonth() + months, 1);
+  const lastDay = new Date(shifted.getFullYear(), shifted.getMonth() + 1, 0).getDate();
+  shifted.setDate(Math.min(day, lastDay));
+  return fmt(shifted);
+}

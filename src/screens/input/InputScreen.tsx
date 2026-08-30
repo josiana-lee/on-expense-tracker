@@ -1,10 +1,16 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { ClearAmount } from '../../components/ClearAmount';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
 import { addExpense } from '../../db/expenses';
+import {
+  INSTALLMENT_MONTHS,
+  InstallmentRangeError,
+  addInstallment,
+  splitInstallment,
+} from '../../db/installments';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
 import { useVisibleRecurringRules } from '../../hooks/useRecurringRules';
@@ -39,6 +45,8 @@ export function InputScreen() {
   const { busy: saving, guard } = useGuardedAction();
 
   const [amount, setAmount] = useState('');
+  /** 1이면 일시불. 그 위는 할부 개월 수. */
+  const [months, setMonths] = useState(1);
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [closing, setClosing] = useState(false);
@@ -77,6 +85,30 @@ export function InputScreen() {
 
   const paymentId =
     stagedPaymentId ?? settings?.defaultPaymentMethodId ?? payments[0]?.id ?? null;
+
+  /* 할부는 신용카드에만 있다. 현금이나 체크카드로 나눠 낼 수는 없다. */
+  const canInstall = paymentId ? paymentById.get(paymentId)?.kind === 'credit' : false;
+
+  /* 결제수단은 이 화면의 칩에서도, 카테고리 팝업 안에서도 바뀐다. 두 경로에
+     각각 되돌리는 코드를 두면 하나는 반드시 빠뜨리므로, 결과만 보고 되돌린다.
+     신용카드로 3개월을 고른 뒤 현금으로 바꾸면 할부는 조용히 풀린다. */
+  useEffect(() => {
+    if (!canInstall && months > 1) setMonths(1);
+  }, [canInstall, months]);
+
+  /** 저장을 누르기 전에 회차가 어떻게 쪼개지는지 보여준다. 나눠 담긴 결과를
+   *  나중에 달력에서 처음 보게 되면, 사용자는 앱이 금액을 틀리게 적었다고
+   *  읽는다. */
+  const preview = useMemo(() => {
+    if (months < 2) return null;
+    if (!amount) return { kind: 'empty' as const };
+    try {
+      const parts = splitInstallment(Number(amount), months);
+      return { kind: 'ok' as const, first: parts[0], rest: parts[1], even: parts[0] === parts[1] };
+    } catch (e) {
+      return { kind: 'error' as const, message: (e as Error).message };
+    }
+  }, [amount, months]);
 
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
@@ -125,28 +157,48 @@ export function InputScreen() {
     }
 
     guard(async () => {
+      const common = {
+        categoryId: stagedCategoryId ?? FALLBACK_CATEGORY,
+        subLabel: stagedSub ?? undefined,
+        memo: stagedMemo,
+        paymentMethodId: paymentId,
+      };
       try {
-        await addExpense({
-          amount: Number(amount),
-          categoryId: stagedCategoryId ?? FALLBACK_CATEGORY,
-          subLabel: stagedSub ?? undefined,
-          memo: stagedMemo,
-          paymentMethodId: paymentId,
-        });
+        /* 할부는 회차마다 한 건씩, 다음 달들에 미리 적힌다. 나눠서 표시하는
+           게 아니라 실제 기록이라 달력·예산·카드 청구액이 저절로 맞는다. */
+        if (months > 1) await addInstallment({ ...common, total: Number(amount), months });
+        else await addExpense({ ...common, amount: Number(amount) });
+
         /* 지출은 이미 저장됐다. 사용 표시는 정렬용 부가 정보라 여기서
            실패해도 저장을 되돌리거나 실패로 알릴 일이 아니다. */
         if (fromTemplateId) await touchTemplate(fromTemplateId).catch(() => {});
-        flash(`${won(amount)}원 저장했어!`);
+        flash(
+          months > 1 ? `${months}개월 할부로 저장했어!` : `${won(amount)}원 저장했어!`,
+        );
         setAmount('');
+        setMonths(1);
         setStagedCategoryId(null);
         setStagedSub(null);
         setStagedMemo('');
         setFromTemplateId(null);
-      } catch {
-        flash('저장하지 못했어. 다시 눌러줘');
+      } catch (e) {
+        /* 금액이 회차 수보다 적을 때. 왜 안 되는지 말해주지 않으면 사용자는
+           같은 버튼을 계속 누른다. */
+        if (e instanceof InstallmentRangeError) flash(e.message);
+        else flash('저장하지 못했어. 다시 눌러줘');
       }
     });
-  }, [amount, paymentId, stagedCategoryId, stagedSub, stagedMemo, fromTemplateId, flash, guard]);
+  }, [
+    amount,
+    months,
+    paymentId,
+    stagedCategoryId,
+    stagedSub,
+    stagedMemo,
+    fromTemplateId,
+    flash,
+    guard,
+  ]);
 
   /** 저장해둔 지출을 골랐을 때. 바로 기록하지 않고 화면만 채운 뒤 시트를
    *  닫는다 — 여기는 금액을 입력하려고 연 시트고, 열자마자 기록이 생기면
@@ -160,6 +212,9 @@ export function InputScreen() {
       setStagedMemo(rule.memo ?? '');
       setStagedPaymentId(rule.paymentMethodId);
       setFromTemplateId(rule.id);
+      /* 저장해둔 지출은 일시불 금액이다. 할부를 켜둔 채로 채우면 그 금액이
+         회차로 쪼개져서, 사용자가 고른 것과 다른 값이 저장된다. */
+      setMonths(1);
       setKeypadOpen(false);
     },
     [],
@@ -198,6 +253,17 @@ export function InputScreen() {
             </span>
             <span className={styles.amountUnit}>원</span>
           </div>
+          {/* 시트를 닫으면 칩이 사라지므로, 켜둔 상태를 카드에 남긴다.
+              할부를 켜둔 걸 잊고 "추가!"를 누르면 되돌릴 방법이 없다. */}
+          {months > 1 && (
+            <div className={styles.amountBadge}>
+              {months}개월 할부
+              {/* 나머지가 있으면 첫 달만 1원 더 크다. 이 배지는 한 줄이라
+                  그 예외를 담을 자리가 없어서, 단정할 수 있을 때만 금액을
+                  붙인다. 정확한 분배는 시트 안 문구가 말해준다. */}
+              {preview?.kind === 'ok' && preview.even && ` · 매월 ${won(preview.rest)}원`}
+            </div>
+          )}
         </button>
 
         <div className={styles.grid}>
@@ -294,6 +360,48 @@ export function InputScreen() {
             </span>
             {amount && <ClearAmount onClear={() => setAmount('')} />}
           </div>
+
+          {/* 신용카드일 때만 나온다. 현금 결제수단을 쓰는 사람에게 평생 쓸 일
+              없는 줄을 보여줄 이유가 없고, 이 시트에서 제일 중요한 건 여전히
+              숫자판이다. */}
+          {canInstall && (
+            <div className={styles.installWrap}>
+              <div className={styles.installRow}>
+                <button
+                  type="button"
+                  className={`${styles.install} ${months === 1 ? styles.installOn : ''}`}
+                  onClick={() => setMonths(1)}
+                >
+                  일시불
+                </button>
+                {INSTALLMENT_MONTHS.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`${styles.install} ${months === m ? styles.installOn : ''}`}
+                    onClick={() => setMonths(m)}
+                  >
+                    {m}개월
+                  </button>
+                ))}
+              </div>
+              {preview && (
+                <p
+                  className={`${styles.installNote} ${
+                    preview.kind === 'error' ? styles.installNoteBad : ''
+                  }`}
+                >
+                  {preview.kind === 'empty'
+                    ? '금액을 넣으면 회차가 어떻게 나뉘는지 보여줄게'
+                    : preview.kind === 'error'
+                      ? preview.message
+                      : preview.even
+                        ? `매월 ${won(preview.rest)}원씩 ${months}번 기록돼`
+                        : `첫 달 ${won(preview.first)}원, 이후 ${won(preview.rest)}원씩 기록돼`}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 저장해둔 지출. 결제수단 칩과 같이 가로로 흐르게 두는 건 열 개가
               차도 키패드를 밀어내지 않게 하려는 것 — 이 시트에서 제일 중요한

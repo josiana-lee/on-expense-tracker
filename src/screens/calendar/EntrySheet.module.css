@@ -224,3 +224,15 @@
 .save:disabled {
   opacity: 0.55;
 }
+
+/* 할부 회차를 열었을 때의 안내. 금액이 잠긴 이유를 그 자리에서 말한다. */
+.installNote {
+  margin: -2px 2px 2px;
+  border-radius: 12px;
+  background: var(--brandSoft);
+  color: var(--brand);
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
