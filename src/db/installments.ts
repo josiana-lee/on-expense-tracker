@@ -4,12 +4,22 @@ import { now, uuidv7 } from './id';
 import type { ExpenseRecord, ID } from './types';
 import { toMinor } from './types';
 
-/** 입력 화면이 칩으로 내놓는 개월 수. 카드사 무이자 할부가 실제로 걸리는
- *  구간에 맞췄다 — 7·8·10·11개월은 거의 안 쓰여서 칩만 늘린다. */
-export const INSTALLMENT_MONTHS = [2, 3, 4, 5, 6, 9, 12] as const;
-
 const MIN_MONTHS = 2;
-const MAX_MONTHS = 12;
+
+/** 두 자리까지 받는다. 칩으로 고르게 하다가 직접 입력으로 바꿨는데, 카드사마다
+ *  거는 개월 수가 제각각이라(7·10·18·24개월 특별 할부) 몇 개를 골라 내놔도
+ *  반드시 없는 것을 쓰는 사람이 나온다. 상한은 실제 한도라기보다 입력 자릿수다. */
+const MAX_MONTHS = 99;
+
+/** 개월 수 입력에 키패드 한 번을 적용한다.
+ *
+ *  금액용 applyKey와 따로 두는 이유는 자릿수 상한이 다르기 때문이다 — 금액은
+ *  11자리인데 개월 수에 그걸 쓰면 "1200000개월 할부"를 칠 수 있다. */
+export function applyMonthKey(current: string, key: string): string {
+  if (key === 'del') return current.slice(0, -1);
+  const next = (current + key).replace(/^0+/, '');
+  return next.length > 2 ? current : next;
+}
 
 export class InstallmentRangeError extends Error {
   constructor(message: string) {

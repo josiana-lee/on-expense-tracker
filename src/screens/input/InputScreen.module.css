@@ -554,17 +554,3 @@
   font-weight: 800;
   cursor: pointer;
 }
-
-/* 메인 금액 카드에 남는 할부 표시. */
-.amountBadge {
-  margin-top: 7px;
-  /* .amountCard는 블록이라 align-self가 안 먹는다. 인라인 블록이라야 배지가
-     글자 폭에 맞춰 줄어든다. */
-  display: inline-block;
-  border-radius: 999px;
-  background: var(--brandSoft);
-  color: var(--brand);
-  padding: 5px 11px;
-  font-size: 12px;
-  font-weight: 700;
-}

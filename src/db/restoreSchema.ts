@@ -55,7 +55,10 @@ const expenseSchema = z.looseObject({
      행만 할부로 취급한다. */
   installmentId: id.optional(),
   installmentNo: z.number().int().min(1).optional(),
-  installmentMonths: z.number().int().min(2).max(12).optional(),
+  /* 상한을 두지 않는다. 앱이 받는 개월 수가 나중에 늘어나면, 상한이 있는
+     구버전 앱에서 그 백업을 복원할 때 해당 행이 통째로 버려진다 — 검증이
+     돈을 지우는 셈이다. 정수·양수만 확인하고, 실제 한도는 입력 쪽이 건다. */
+  installmentMonths: z.number().int().min(1).optional(),
   installmentTotal: minor.optional(),
   createdAt: epoch,
   updatedAt: epoch,

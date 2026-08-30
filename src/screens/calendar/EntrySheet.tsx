@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { ClearAmount } from '../../components/ClearAmount';
-import { InstallmentPicker } from '../../components/InstallmentPicker';
+import { InstallmentChips } from '../../components/InstallmentChips';
+import { InstallmentSheet } from '../../components/InstallmentSheet';
 import { Sheet } from '../../components/Sheet';
 import { parseDateStr } from '../../db/date';
 import { addExpense, deleteExpense, updateExpense } from '../../db/expenses';
@@ -78,6 +79,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      어긋난다. 수정할 때는 개월 수를 바꿀 수 없다 — 회차 구조를 바꾸는 건
      기존 행을 다시 만드는 일이라, 지우고 새로 넣는 것과 같다. */
   const [months, setMonths] = useState(1);
+  const [installOpen, setInstallOpen] = useState(false);
   const canInstall =
     !editing && payments.find((p) => p.id === paymentId)?.kind === 'credit';
 
@@ -257,7 +259,12 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       </div>
 
       {canInstall && (
-        <InstallmentPicker months={months} onChange={setMonths} amount={amount} />
+        <InstallmentChips
+          months={months}
+          amount={amount}
+          onCash={() => setMonths(1)}
+          onOpen={() => setInstallOpen(true)}
+        />
       )}
 
       {/* 할부는 금액을 잠그므로 숫자판도 뺀다. 눌러도 저장되지 않는 키패드는
@@ -267,6 +274,18 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       <button type="button" className={styles.save} onClick={submit} disabled={busy}>
         {editing ? '수정 완료' : '추가!'}
       </button>
+
+      {/* 시트 위의 시트. Sheet는 shell로 포털되고 나중에 마운트된 쪽이 DOM
+          순서에서 뒤에 오므로, z-index가 같아도 새 시트가 앞에 선다. 뒤로
+          가기도 스택의 맨 위가 가져간다. */}
+      {installOpen && (
+        <InstallmentSheet
+          months={months}
+          amount={amount}
+          onDone={setMonths}
+          onClose={() => setInstallOpen(false)}
+        />
+      )}
     </Sheet>
   );
 }

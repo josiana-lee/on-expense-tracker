@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { ClearAmount } from '../../components/ClearAmount';
 import { Keypad, applyKey } from '../../components/Keypad';
-import { InstallmentPicker } from '../../components/InstallmentPicker';
+import { InstallmentChips } from '../../components/InstallmentChips';
+import { InstallmentSheet } from '../../components/InstallmentSheet';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
 import { addExpense } from '../../db/expenses';
-import { InstallmentRangeError, addInstallment, splitInstallment } from '../../db/installments';
+import { InstallmentRangeError, addInstallment } from '../../db/installments';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
 import { useVisibleRecurringRules } from '../../hooks/useRecurringRules';
@@ -44,6 +45,7 @@ export function InputScreen() {
   /** 1이면 일시불. 그 위는 할부 개월 수. */
   const [months, setMonths] = useState(1);
   const [keypadOpen, setKeypadOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [closing, setClosing] = useState(false);
   const exitTimer = useRef<number | undefined>(undefined);
@@ -92,18 +94,6 @@ export function InputScreen() {
     if (!canInstall && months > 1) setMonths(1);
   }, [canInstall, months]);
 
-  /** 금액 카드 배지에 쓸 회차 금액. 시트를 닫으면 칩이 사라지므로 카드에도
-   *  상태를 남기는데, 배지는 한 줄이라 나머지 원이 붙는 첫 달 예외를 담을
-   *  자리가 없다. 그래서 나누어떨어질 때만 금액을 단정한다. */
-  const evenPerMonth = useMemo(() => {
-    if (months < 2 || !amount) return null;
-    try {
-      const parts = splitInstallment(Number(amount), months);
-      return parts[0] === parts[1] ? parts[0] : null;
-    } catch {
-      return null;
-    }
-  }, [amount, months]);
 
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
@@ -248,14 +238,6 @@ export function InputScreen() {
             </span>
             <span className={styles.amountUnit}>원</span>
           </div>
-          {/* 시트를 닫으면 칩이 사라지므로, 켜둔 상태를 카드에 남긴다.
-              할부를 켜둔 걸 잊고 "추가!"를 누르면 되돌릴 방법이 없다. */}
-          {months > 1 && (
-            <div className={styles.amountBadge}>
-              {months}개월 할부
-              {evenPerMonth !== null && ` · 매월 ${won(evenPerMonth)}원`}
-            </div>
-          )}
         </button>
 
         <div className={styles.grid}>
@@ -289,6 +271,17 @@ export function InputScreen() {
             </button>
           ))}
         </div>
+
+        {/* 결제수단 바로 아래. 신용카드를 고른 순간 나타난다 — 할부는 금액이
+            아니라 결제수단에 딸린 선택이다. */}
+        {canInstall && (
+          <InstallmentChips
+            months={months}
+            amount={amount}
+            onCash={() => setMonths(1)}
+            onOpen={() => setInstallOpen(true)}
+          />
+        )}
 
         <section className={styles.today}>
           <div className={styles.todayHead}>
@@ -356,9 +349,6 @@ export function InputScreen() {
           {/* 신용카드일 때만 나온다. 현금 결제수단을 쓰는 사람에게 평생 쓸 일
               없는 줄을 보여줄 이유가 없고, 이 시트에서 제일 중요한 건 여전히
               숫자판이다. */}
-          {canInstall && (
-            <InstallmentPicker months={months} onChange={setMonths} amount={amount} />
-          )}
 
           {/* 저장해둔 지출. 결제수단 칩과 같이 가로로 흐르게 두는 건 열 개가
               차도 키패드를 밀어내지 않게 하려는 것 — 이 시트에서 제일 중요한
@@ -391,6 +381,15 @@ export function InputScreen() {
             완료
           </button>
         </Sheet>
+      )}
+
+      {installOpen && (
+        <InstallmentSheet
+          months={months}
+          amount={amount}
+          onDone={setMonths}
+          onClose={() => setInstallOpen(false)}
+        />
       )}
 
       {popup && popupCategory && draftPayment && (

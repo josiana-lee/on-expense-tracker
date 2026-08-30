@@ -5,6 +5,7 @@ import { db } from './db';
 import {
   InstallmentRangeError,
   addInstallment,
+  applyMonthKey,
   deleteInstallmentGroup,
   installmentLabel,
   isInstallment,
@@ -46,8 +47,42 @@ describe('splitInstallment', () => {
 
   it('개월 수 범위를 벗어나면 거절한다', () => {
     expect(() => splitInstallment(100_000, 1)).toThrow(InstallmentRangeError);
-    expect(() => splitInstallment(100_000, 13)).toThrow(InstallmentRangeError);
+    expect(() => splitInstallment(100_000, 100)).toThrow(InstallmentRangeError);
     expect(() => splitInstallment(100_000, 2.5)).toThrow(InstallmentRangeError);
+  });
+
+  /* 칩에 없던 개월 수를 직접 칠 수 있게 바뀌었다. 카드사가 거는 7·10·18·24
+     개월도 그대로 통해야 한다. */
+  it('칩에 없던 개월 수도 받는다', () => {
+    for (const months of [7, 10, 18, 24, 36, 99]) {
+      const parts = splitInstallment(1_000_000, months);
+      expect(parts).toHaveLength(months);
+      expect(parts.reduce((a, b) => a + b, 0)).toBe(1_000_000);
+    }
+  });
+});
+
+describe('applyMonthKey', () => {
+  it('숫자를 이어 붙인다', () => {
+    expect(applyMonthKey('', '3')).toBe('3');
+    expect(applyMonthKey('1', '2')).toBe('12');
+  });
+
+  it('지우기는 한 자리씩 뺀다', () => {
+    expect(applyMonthKey('12', 'del')).toBe('1');
+    expect(applyMonthKey('', 'del')).toBe('');
+  });
+
+  it('앞의 0을 남기지 않는다', () => {
+    expect(applyMonthKey('', '0')).toBe('');
+    expect(applyMonthKey('0', '3')).toBe('3');
+  });
+
+  /* 금액용 applyKey를 그대로 쓰면 11자리까지 들어와서 "1200000개월 할부"를
+     칠 수 있다. 두 자리에서 막힌다. */
+  it('두 자리를 넘기지 않는다', () => {
+    expect(applyMonthKey('12', '3')).toBe('12');
+    expect(applyMonthKey('9', '00')).toBe('9');
   });
 });
 
