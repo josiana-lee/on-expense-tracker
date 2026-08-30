@@ -555,56 +555,6 @@
   cursor: pointer;
 }
 
-/* 할부 — 금액 시트 안, 숫자판 위. */
-.installWrap {
-  margin: -4px -14px 8px;
-  padding: 0 14px;
-}
-
-.installRow {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 2px 0;
-  /* 칩이 잘린 채로 끝나면 더 있다는 게 보인다 — 12개월까지 있는데 6개월에서
-     딱 떨어지면 사용자는 거기까지가 전부라고 읽는다. */
-  scrollbar-width: none;
-}
-
-.installRow::-webkit-scrollbar {
-  display: none;
-}
-
-.install {
-  flex: none;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--sf);
-  color: var(--tx2);
-  padding: 7px 12px;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.installOn {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
-}
-
-.installNote {
-  margin: 7px 2px 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--tx2);
-}
-
-.installNoteBad {
-  color: var(--warn);
-}
-
 /* 메인 금액 카드에 남는 할부 표시. */
 .amountBadge {
   margin-top: 7px;

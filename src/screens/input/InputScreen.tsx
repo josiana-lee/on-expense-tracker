@@ -2,15 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { ClearAmount } from '../../components/ClearAmount';
 import { Keypad, applyKey } from '../../components/Keypad';
+import { InstallmentPicker } from '../../components/InstallmentPicker';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
 import { addExpense } from '../../db/expenses';
-import {
-  INSTALLMENT_MONTHS,
-  InstallmentRangeError,
-  addInstallment,
-  splitInstallment,
-} from '../../db/installments';
+import { InstallmentRangeError, addInstallment, splitInstallment } from '../../db/installments';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
 import { useVisibleRecurringRules } from '../../hooks/useRecurringRules';
@@ -96,17 +92,16 @@ export function InputScreen() {
     if (!canInstall && months > 1) setMonths(1);
   }, [canInstall, months]);
 
-  /** 저장을 누르기 전에 회차가 어떻게 쪼개지는지 보여준다. 나눠 담긴 결과를
-   *  나중에 달력에서 처음 보게 되면, 사용자는 앱이 금액을 틀리게 적었다고
-   *  읽는다. */
-  const preview = useMemo(() => {
-    if (months < 2) return null;
-    if (!amount) return { kind: 'empty' as const };
+  /** 금액 카드 배지에 쓸 회차 금액. 시트를 닫으면 칩이 사라지므로 카드에도
+   *  상태를 남기는데, 배지는 한 줄이라 나머지 원이 붙는 첫 달 예외를 담을
+   *  자리가 없다. 그래서 나누어떨어질 때만 금액을 단정한다. */
+  const evenPerMonth = useMemo(() => {
+    if (months < 2 || !amount) return null;
     try {
       const parts = splitInstallment(Number(amount), months);
-      return { kind: 'ok' as const, first: parts[0], rest: parts[1], even: parts[0] === parts[1] };
-    } catch (e) {
-      return { kind: 'error' as const, message: (e as Error).message };
+      return parts[0] === parts[1] ? parts[0] : null;
+    } catch {
+      return null;
     }
   }, [amount, months]);
 
@@ -258,10 +253,7 @@ export function InputScreen() {
           {months > 1 && (
             <div className={styles.amountBadge}>
               {months}개월 할부
-              {/* 나머지가 있으면 첫 달만 1원 더 크다. 이 배지는 한 줄이라
-                  그 예외를 담을 자리가 없어서, 단정할 수 있을 때만 금액을
-                  붙인다. 정확한 분배는 시트 안 문구가 말해준다. */}
-              {preview?.kind === 'ok' && preview.even && ` · 매월 ${won(preview.rest)}원`}
+              {evenPerMonth !== null && ` · 매월 ${won(evenPerMonth)}원`}
             </div>
           )}
         </button>
@@ -365,42 +357,7 @@ export function InputScreen() {
               없는 줄을 보여줄 이유가 없고, 이 시트에서 제일 중요한 건 여전히
               숫자판이다. */}
           {canInstall && (
-            <div className={styles.installWrap}>
-              <div className={styles.installRow}>
-                <button
-                  type="button"
-                  className={`${styles.install} ${months === 1 ? styles.installOn : ''}`}
-                  onClick={() => setMonths(1)}
-                >
-                  일시불
-                </button>
-                {INSTALLMENT_MONTHS.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    className={`${styles.install} ${months === m ? styles.installOn : ''}`}
-                    onClick={() => setMonths(m)}
-                  >
-                    {m}개월
-                  </button>
-                ))}
-              </div>
-              {preview && (
-                <p
-                  className={`${styles.installNote} ${
-                    preview.kind === 'error' ? styles.installNoteBad : ''
-                  }`}
-                >
-                  {preview.kind === 'empty'
-                    ? '금액을 넣으면 회차가 어떻게 나뉘는지 보여줄게'
-                    : preview.kind === 'error'
-                      ? preview.message
-                      : preview.even
-                        ? `매월 ${won(preview.rest)}원씩 ${months}번 기록돼`
-                        : `첫 달 ${won(preview.first)}원, 이후 ${won(preview.rest)}원씩 기록돼`}
-                </p>
-              )}
-            </div>
+            <InstallmentPicker months={months} onChange={setMonths} amount={amount} />
           )}
 
           {/* 저장해둔 지출. 결제수단 칩과 같이 가로로 흐르게 두는 건 열 개가

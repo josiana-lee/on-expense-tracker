@@ -1,0 +1,48 @@
+.wrap {
+  /* 부모의 좌우 여백을 뚫고 나가 칩이 가장자리까지 흐르게 한다. 딱 맞게
+     끝나면 오른쪽에 더 있다는 게 안 보인다. */
+  margin: -4px -14px 8px;
+  padding: 0 14px;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none;
+}
+
+.row::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sf);
+  color: var(--tx2);
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chipOn {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.note {
+  margin: 7px 2px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.noteBad {
+  color: var(--warn);
+}

@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { ClearAmount } from '../../components/ClearAmount';
+import { InstallmentPicker } from '../../components/InstallmentPicker';
 import { Sheet } from '../../components/Sheet';
 import { parseDateStr } from '../../db/date';
 import { addExpense, deleteExpense, updateExpense } from '../../db/expenses';
 import {
+  InstallmentRangeError,
+  addInstallment,
   deleteInstallmentGroup,
   installmentLabel,
   isInstallment,
@@ -70,6 +73,18 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
   const category = byId.get(categoryId);
 
+  /* 지난 날짜에 카드값을 뒤늦게 적는 경우가 있다. 입력 탭에만 할부가 있으면
+     그 사람은 여기서 총액을 통째로 넣게 되고, 달력과 카드 청구액이 다시
+     어긋난다. 수정할 때는 개월 수를 바꿀 수 없다 — 회차 구조를 바꾸는 건
+     기존 행을 다시 만드는 일이라, 지우고 새로 넣는 것과 같다. */
+  const [months, setMonths] = useState(1);
+  const canInstall =
+    !editing && payments.find((p) => p.id === paymentId)?.kind === 'credit';
+
+  useEffect(() => {
+    if (!canInstall && months > 1) setMonths(1);
+  }, [canInstall, months]);
+
   const pickCategory = (id: string) => {
     setPickedCategory(id);
     // The sub-label belonged to the old category's list, so it stops applying.
@@ -109,6 +124,17 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             paymentMethodId: paymentId,
           });
           onDone('수정했어!');
+        } else if (months > 1) {
+          await addInstallment({
+            total: Number(amount),
+            months,
+            categoryId,
+            subLabel,
+            memo,
+            paymentMethodId: paymentId,
+            at: stampFor(date),
+          });
+          onDone(`${months}개월 할부로 저장했어!`);
         } else {
           await addExpense({
             amount: Number(amount),
@@ -121,8 +147,9 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           onDone(`${won(amount)}원 저장했어!`);
         }
         onClose();
-      } catch {
-        onDone(editing ? '수정하지 못했어' : '저장하지 못했어');
+      } catch (e) {
+        if (e instanceof InstallmentRangeError) onDone(e.message);
+        else onDone(editing ? '수정하지 못했어' : '저장하지 못했어');
       }
     });
   };
@@ -228,6 +255,10 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           </button>
         ))}
       </div>
+
+      {canInstall && (
+        <InstallmentPicker months={months} onChange={setMonths} amount={amount} />
+      )}
 
       {/* 할부는 금액을 잠그므로 숫자판도 뺀다. 눌러도 저장되지 않는 키패드는
           사용자 눈에 고장으로 보인다. */}
