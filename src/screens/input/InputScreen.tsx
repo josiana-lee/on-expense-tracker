@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { ClearAmount } from '../../components/ClearAmount';
 import { Keypad, applyKey } from '../../components/Keypad';
@@ -93,6 +93,39 @@ export function InputScreen() {
   useEffect(() => {
     if (!canInstall && months > 1) setMonths(1);
   }, [canInstall, months]);
+
+  /* 떠 있는 할부 칩을 지금 고른 카드 바로 아래에 붙인다. 결제수단 줄 왼쪽 끝에
+     두면 세 번째 카드를 골랐을 때 칩이 화면 반대편에 떠 있어서, 무엇에 딸린
+     선택인지 보이지 않는다.
+
+     CSS로는 못 한다 — 몇 번째 칩이 선택됐는지, 그 칩이 얼마나 넓은지, 줄이
+     옆으로 얼마나 밀렸는지는 그려봐야 안다. 그래서 재서 넣는다. */
+  const paysWrapRef = useRef<HTMLDivElement>(null);
+  const installFloatRef = useRef<HTMLDivElement>(null);
+  const [floatLeft, setFloatLeft] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!canInstall) return undefined;
+    const wrap = paysWrapRef.current;
+    const float = installFloatRef.current;
+    const chip = wrap?.querySelector<HTMLElement>('[data-pay-on]');
+    const pays = chip?.parentElement;
+    if (!wrap || !float || !chip || !pays) return undefined;
+
+    const place = () => {
+      const wrapLeft = wrap.getBoundingClientRect().left;
+      const chipLeft = chip.getBoundingClientRect().left;
+      /* 오른쪽 끝 카드를 고르면 칩이 본문 밖으로 나간다. 안쪽으로 당긴다. */
+      const max = Math.max(0, wrap.clientWidth - float.offsetWidth);
+      setFloatLeft(Math.min(Math.max(0, chipLeft - wrapLeft), max));
+    };
+
+    place();
+    // 결제수단 줄은 옆으로 스크롤된다. 밀면 붙어 있던 칩이 따라가야 한다.
+    pays.addEventListener('scroll', place, { passive: true });
+    return () => pays.removeEventListener('scroll', place);
+    /* months가 바뀌면 "할부"가 "3개월 할부"로 넓어져서 오른쪽 한계가 달라진다. */
+  }, [canInstall, paymentId, months]);
 
 
   const openPopup = useCallback(
@@ -263,7 +296,7 @@ export function InputScreen() {
             scroller가 space-between이라 flex 자식이 하나 늘어나는 순간 열 전체가
             다시 배분되고, 금액 카드까지 위로 밀린다. 카드를 골랐을 뿐인데 화면이
             흔들리는 것으로 보인다. */}
-        <div className={styles.paysWrap}>
+        <div className={styles.paysWrap} ref={paysWrapRef}>
           <div className={styles.pays}>
             {payments.map((p) => (
               <button
@@ -271,6 +304,7 @@ export function InputScreen() {
                 type="button"
                 onClick={() => setStagedPaymentId(p.id)}
                 className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
+                data-pay-on={paymentId === p.id ? '' : undefined}
               >
                 {p.name}
               </button>
@@ -280,7 +314,7 @@ export function InputScreen() {
           {/* 결제수단 바로 아래에 떠 있다. 신용카드를 고른 순간 나타난다 —
               할부는 금액이 아니라 결제수단에 딸린 선택이다. */}
           {canInstall && (
-            <div className={styles.installFloat}>
+            <div className={styles.installFloat} ref={installFloatRef} style={{ left: floatLeft }}>
               <InstallmentChips
                 months={months}
                 onCash={() => setMonths(1)}

@@ -6,13 +6,17 @@
 
 .chip {
   flex: none;
-  border: 1px solid var(--line);
+  /* 테두리로 상태를 말한다. 결제수단 칩은 브랜드색으로 꽉 채우는데, 바로 아래
+     줄까지 같은 방식이면 두 줄이 같은 무게로 경쟁해서 어느 쪽이 무엇인지
+     한눈에 안 갈린다. 채움은 결제수단, 테두리는 할부 — 색은 같으니 둘이
+     한 묶음이라는 건 그대로 읽힌다. */
+  border: 2px solid var(--line);
   border-radius: 999px;
   background: var(--sf);
   color: var(--tx2);
-  /* 결제수단 칩보다 한 단계 작다. 떠 있는 줄이라 아래 카드 위에 얹히는데,
-     결제수단과 같은 높이면 "오늘 기록" 글자까지 밀고 내려온다. */
-  padding: 8px 15px;
+  /* 테두리가 1px에서 2px로 굵어진 만큼 위아래를 8px에서 7px로 줄인다. 칩
+     높이가 그대로여야 떠 있는 위치를 다시 재지 않는다. */
+  padding: 7px 14px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -20,7 +24,6 @@
 }
 
 .chipOn {
-  background: var(--brand);
   border-color: var(--brand);
-  color: #fff;
+  color: var(--brand);
 }

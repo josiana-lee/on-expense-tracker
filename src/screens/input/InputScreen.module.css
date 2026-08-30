@@ -255,7 +255,7 @@
 .installFloat {
   position: absolute;
   top: calc(100% + 3px);
-  left: 0;
+  /* left는 InputScreen이 재서 넣는다 — 고른 카드 아래에 붙인다. */
   z-index: 4;
   filter: drop-shadow(0 3px 10px rgba(20, 25, 40, 0.13));
 }
