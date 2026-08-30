@@ -198,6 +198,11 @@ export function InputScreen() {
         setStagedCategoryId(null);
         setStagedSub(null);
         setStagedMemo('');
+        /* 결제수단도 기본값으로 되돌린다. 여기만 빠져 있어서, 카드로 한 건
+           넣은 뒤 한참 있다 현금 지출을 적으면 조용히 그 카드로 기록됐다.
+           설정의 기본 결제수단이 이미 "새 기록은 여기서 시작한다"는 뜻이라,
+           주로 쓰는 카드를 기본값으로 둔 사람은 이 초기화로 잃는 게 없다. */
+        setStagedPaymentId(null);
         setFromTemplateId(null);
       } catch (e) {
         /* 금액이 회차 수보다 적을 때. 왜 안 되는지 말해주지 않으면 사용자는
