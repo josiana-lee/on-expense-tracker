@@ -1,11 +1,5 @@
-.wrap {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .row {
+  flex: none;
   display: flex;
   gap: 8px;
 }
@@ -27,11 +21,4 @@
   background: var(--brand);
   border-color: var(--brand);
   color: #fff;
-}
-
-.summary {
-  margin: 0 2px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--tx2);
 }

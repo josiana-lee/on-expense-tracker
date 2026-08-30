@@ -277,7 +277,6 @@ export function InputScreen() {
         {canInstall && (
           <InstallmentChips
             months={months}
-            amount={amount}
             onCash={() => setMonths(1)}
             onOpen={() => setInstallOpen(true)}
           />

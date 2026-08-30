@@ -261,7 +261,6 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       {canInstall && (
         <InstallmentChips
           months={months}
-          amount={amount}
           onCash={() => setMonths(1)}
           onOpen={() => setInstallOpen(true)}
         />
