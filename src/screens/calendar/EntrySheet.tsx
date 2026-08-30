@@ -74,6 +74,20 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
   const category = byId.get(categoryId);
 
+  /* 할부 회차를 고칠 때는 신용카드만 고르게 한다.
+   *
+   *  카드를 잘못 적었다가 다른 카드로 바로잡는 건 정상적인 수정이고 그대로
+   *  된다. 막는 건 현금·체크카드로 옮기는 것뿐이다 — 나눠 내는 현금 결제는
+   *  없는데, 달력에는 "3개월 할부 1/2 · 현금"이라고 남는다. 금액이 틀리는
+   *  건 아니지만 사용자 눈에는 앱이 고장난 것으로 보인다.
+   *
+   *  지금 붙어 있는 결제수단은 신용카드가 아니어도 남긴다. 예전 백업을
+   *  복원했거나 카드를 체크카드로 바꾼 경우, 목록에서 빠지면 지금 무엇으로
+   *  기록돼 있는지가 화면에서 사라진다. */
+  const payChoices = installment
+    ? payments.filter((p) => p.kind === 'credit' || p.id === paymentId)
+    : payments;
+
   /* 지난 날짜에 카드값을 뒤늦게 적는 경우가 있다. 입력 탭에만 할부가 있으면
      그 사람은 여기서 총액을 통째로 넣게 되고, 달력과 카드 청구액이 다시
      어긋난다. 수정할 때는 개월 수를 바꿀 수 없다 — 회차 구조를 바꾸는 건
@@ -246,7 +260,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       />
 
       <div className={styles.pays}>
-        {payments.map((p) => (
+        {payChoices.map((p) => (
           <button
             key={p.id}
             type="button"

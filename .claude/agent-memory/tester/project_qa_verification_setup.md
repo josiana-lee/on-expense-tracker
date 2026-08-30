@@ -51,4 +51,18 @@ before confirming.
 설정 → 알람 toggle hangs with no feedback. That's the harness, not the app (Android uses the native
 LocalNotifications path). Mark it BLOCKED rather than FAIL.
 
+**Closing a `Sheet`/popup scrim with Playwright's `browser_click`:** the scrim button
+(`aria-label="닫기"`) covers the full viewport but sits *behind* the sheet/dialog in stacking, so a
+normal click resolves to the center of its bounding box — which is under the dialog — and
+Playwright's actionability check times out ("subtree intercepts pointer events"). Click it via
+`browser_evaluate`: `document.querySelector('button[aria-label="닫기"]').click()`. This is a
+single, immediate dispatch-and-verify (not a stale-ref multi-call pattern), so it doesn't fall
+under [[verify-scripted-click-bugs-with-trusted-clicks]]'s caution — that caution is specifically
+about reproductions built from click calls split across separate tool calls with a re-render in
+between.
+
+**Testing the browser Back button:** `mcp__plugin_playwright_playwright__browser_navigate_back` is
+a real history navigation, not a scripted click — trust what it shows. See
+[[installment-feature-regression-map]] for what it found.
+
 See [[input-screen-layout-risk]] and [[amount-overflow-hotspots]] for this project's regression traps.
