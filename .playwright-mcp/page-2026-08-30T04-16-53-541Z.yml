@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - main [ref=e353]:
+    - generic [ref=e354]:
+      - generic [ref=e355]:
+        - generic [ref=e356]:
+          - generic [ref=e357]:
+            - generic [ref=e358]: 8월 30일 일요일
+            - generic [ref=e359]: 13:16
+          - generic [ref=e360]: 이 시각으로 기록돼
+        - button "얼마 썼어? 0 원" [ref=e362] [cursor=pointer]:
+          - generic [ref=e363]: 얼마 썼어?
+          - generic [ref=e364]:
+            - generic [ref=e365]: "0"
+            - generic [ref=e366]: 원
+        - generic [ref=e367]:
+          - button "식비" [ref=e368] [cursor=pointer]
+          - button "간식" [ref=e373] [cursor=pointer]
+          - button "생필품" [ref=e378] [cursor=pointer]
+          - button "교통비" [ref=e383] [cursor=pointer]
+          - button "의류" [ref=e388] [cursor=pointer]
+          - button "문화생활" [ref=e393] [cursor=pointer]
+          - button "미용" [ref=e398] [cursor=pointer]
+          - button "의료/건강" [ref=e403] [cursor=pointer]
+          - button "교육" [ref=e408] [cursor=pointer]
+          - button "통신비" [ref=e413] [cursor=pointer]
+          - button "경조사" [ref=e418] [cursor=pointer]
+          - button "기타" [ref=e423] [cursor=pointer]
+        - generic [ref=e427]:
+          - generic [ref=e428]:
+            - button "현금" [ref=e429] [cursor=pointer]
+            - button "현대카드" [active] [ref=e430] [cursor=pointer]
+            - button "삼성카드" [ref=e431] [cursor=pointer]
+            - button "국민카드" [ref=e432] [cursor=pointer]
+            - button "롯데카드" [ref=e433] [cursor=pointer]
+            - button "체크카드" [ref=e434] [cursor=pointer]
+          - generic [ref=e451]:
+            - button "일시불" [ref=e452] [cursor=pointer]
+            - button "할부" [ref=e453] [cursor=pointer]
+        - generic [ref=e435]:
+          - generic [ref=e436]:
+            - generic [ref=e437]: 오늘 기록
+            - generic [ref=e438]: 100,000원
+          - generic [ref=e439]:
+            - generic [ref=e443]: 술자리
+            - generic [ref=e444]: 할부
+            - generic [ref=e445]: 13:15 · 현대카드
+            - generic [ref=e446]: 100,000
+      - button "추가!" [ref=e448] [cursor=pointer]
+  - navigation [ref=e112]:
+    - button "입력" [ref=e113] [cursor=pointer]
+    - button "달력" [ref=e118] [cursor=pointer]
+    - button "예산" [ref=e123] [cursor=pointer]
+    - button "자산" [ref=e128] [cursor=pointer]
+    - button "백업이 필요해 설정" [ref=e133] [cursor=pointer]:
+      - generic "백업이 필요해" [ref=e137]
+      - generic [ref=e138]: 설정

@@ -1,0 +1,151 @@
+- generic [ref=e3]:
+  - main [ref=e510]:
+    - generic [ref=e511]:
+      - generic [ref=e512]: 설정
+      - generic [ref=e513]:
+        - generic [ref=e514]:
+          - generic [ref=e515]: 다크모드
+          - switch [ref=e516] [cursor=pointer]
+        - button "색 테마 퍼플" [ref=e518] [cursor=pointer]:
+          - generic [ref=e519]: 색 테마
+          - generic [ref=e520]: 퍼플
+        - button "카테고리 관리 홈 표시 12 · 전체 30" [ref=e524] [cursor=pointer]:
+          - generic [ref=e525]: 카테고리 관리
+          - generic [ref=e526]: 홈 표시 12 · 전체 30
+        - button "카드 관리 5개 · 자산 탭" [ref=e530] [cursor=pointer]:
+          - generic [ref=e531]: 카드 관리
+          - generic [ref=e532]: 5개 · 자산 탭
+        - button "반복 지출 1개" [ref=e536] [cursor=pointer]:
+          - generic [ref=e537]: 반복 지출
+          - generic [ref=e538]: 1개
+        - button "월 시작일 1일" [ref=e542] [cursor=pointer]:
+          - generic [ref=e543]: 월 시작일
+          - generic [ref=e544]: 1일
+        - button "주 시작요일 일요일" [ref=e548] [cursor=pointer]:
+          - generic [ref=e549]: 주 시작요일
+          - generic [ref=e550]: 일요일
+        - button "기본 결제수단 현금" [ref=e554] [cursor=pointer]:
+          - generic [ref=e555]: 기본 결제수단
+          - generic [ref=e556]: 현금
+        - generic [ref=e560]:
+          - generic [ref=e561]:
+            - text: 알림
+            - generic [ref=e562]: 정한 시각에 하루 한 번, 오늘 기록했는지 물어볼게
+          - switch [ref=e563] [cursor=pointer]
+      - generic [ref=e565]: 백업 및 복구
+      - paragraph [ref=e570]: 백업한 지 14일이 넘었어. 기기를 바꾸거나 잃어버리면 그동안 기록이 사라질 수 있으니 지금 백업해두자.
+      - generic [ref=e571]:
+        - button "백업 파일 내보내기 카톡 '나와의 채팅'이나 드라이브에 저장해두면 돼" [ref=e572] [cursor=pointer]:
+          - generic [ref=e573]:
+            - text: 백업 파일 내보내기
+            - generic [ref=e574]: 카톡 '나와의 채팅'이나 드라이브에 저장해두면 돼
+        - button "이메일로 백업하기" [ref=e578] [cursor=pointer]
+        - button "CSV 파일로 내보내기" [ref=e583] [cursor=pointer]
+        - button "백업 파일 복원하기 지금 데이터를 먼저 내보낸 다음에 복원해. 중간에 뜨는 창을 취소하면 멈춰" [ref=e588] [cursor=pointer]:
+          - generic [ref=e589]:
+            - text: 백업 파일 복원하기
+            - generic [ref=e590]: 지금 데이터를 먼저 내보낸 다음에 복원해. 중간에 뜨는 창을 취소하면 멈춰
+      - generic [ref=e594]: 정보
+      - generic [ref=e595]:
+        - link "개인정보처리방침" [ref=e596] [cursor=pointer]:
+          - /url: https://josiana-lee.github.io/jdb-labs-policies/on-expense/
+        - link "문의하기 jdblabskento@gmail.com" [ref=e601] [cursor=pointer]:
+          - /url: mailto:jdblabskento@gmail.com
+          - generic [ref=e602]: 문의하기
+          - generic [ref=e603]: jdblabskento@gmail.com
+        - button "오픈소스 라이선스" [ref=e607] [cursor=pointer]
+        - generic [ref=e612]:
+          - generic [ref=e613]: 버전
+          - generic [ref=e614]: 1.0.0
+      - generic [ref=e615]:
+        - generic [ref=e616]: 온:On 지출 가계부 v1.0.0
+        - generic [ref=e617]: © 2026 JDB Labs
+      - generic [ref=e618]:
+        - generic [ref=e619]:
+          - button "뒤로" [ref=e620] [cursor=pointer]
+          - generic [ref=e623]: 반복 지출
+          - generic [ref=e624]: 1 / 10
+        - generic [ref=e625]:
+          - button "+ 반복 지출 추가" [active] [ref=e626] [cursor=pointer]
+          - generic [ref=e628] [cursor=pointer]:
+            - button "QA템플릿 식비 · 5,000원" [ref=e629]:
+              - generic [ref=e633]:
+                - generic [ref=e634]: QA템플릿
+                - generic [ref=e635]: 식비 · 5,000원
+            - button "표시 중" [pressed] [ref=e636]
+  - navigation [ref=e112]:
+    - button "입력" [ref=e113] [cursor=pointer]
+    - button "달력" [ref=e118] [cursor=pointer]
+    - button "예산" [ref=e123] [cursor=pointer]
+    - button "자산" [ref=e128] [cursor=pointer]
+    - button "백업이 필요해 설정" [ref=e133] [cursor=pointer]:
+      - generic "백업이 필요해" [ref=e137]
+      - generic [ref=e138]: 설정
+  - button "닫기" [ref=e637] [cursor=pointer]
+  - dialog "반복 지출 추가" [ref=e638]:
+    - generic [ref=e641]:
+      - generic [ref=e642]: 반복 지출 추가
+      - 'textbox "이름 (예: 넷플릭스)" [ref=e644]'
+      - generic [ref=e645]:
+        - generic [ref=e646]: "0"
+        - generic [ref=e647]: 원
+      - generic [ref=e648]:
+        - button "식비" [pressed] [ref=e649] [cursor=pointer]
+        - button "간식" [ref=e654] [cursor=pointer]
+        - button "생필품" [ref=e659] [cursor=pointer]
+        - button "교통비" [ref=e664] [cursor=pointer]
+        - button "의류" [ref=e669] [cursor=pointer]
+        - button "문화생활" [ref=e674] [cursor=pointer]
+        - button "미용" [ref=e679] [cursor=pointer]
+        - button "의료/건강" [ref=e684] [cursor=pointer]
+        - button "교육" [ref=e689] [cursor=pointer]
+        - button "통신비" [ref=e694] [cursor=pointer]
+        - button "경조사" [ref=e699] [cursor=pointer]
+        - button "카페" [ref=e704] [cursor=pointer]
+        - button "술/유흥" [ref=e709] [cursor=pointer]
+        - button "주거/월세" [ref=e714] [cursor=pointer]
+        - button "반려동물" [ref=e719] [cursor=pointer]
+        - button "여행" [ref=e724] [cursor=pointer]
+        - button "보험" [ref=e729] [cursor=pointer]
+        - button "공과금" [ref=e734] [cursor=pointer]
+        - button "저축" [ref=e739] [cursor=pointer]
+        - button "자동차" [ref=e744] [cursor=pointer]
+        - button "운동" [ref=e749] [cursor=pointer]
+        - button "취미" [ref=e754] [cursor=pointer]
+        - button "기부/후원" [ref=e759] [cursor=pointer]
+        - button "육아" [ref=e764] [cursor=pointer]
+        - button "전자기기" [ref=e769] [cursor=pointer]
+        - button "세탁/청소" [ref=e774] [cursor=pointer]
+        - button "택배/배송" [ref=e779] [cursor=pointer]
+        - button "수수료" [ref=e784] [cursor=pointer]
+        - button "선물" [ref=e789] [cursor=pointer]
+        - button "기타" [ref=e794] [cursor=pointer]
+      - generic [ref=e798]:
+        - button "점심" [ref=e799] [cursor=pointer]
+        - button "저녁" [ref=e800] [cursor=pointer]
+        - button "아침" [ref=e801] [cursor=pointer]
+        - button "배달" [ref=e802] [cursor=pointer]
+        - button "카페" [ref=e803] [cursor=pointer]
+        - button "술자리" [ref=e804] [cursor=pointer]
+      - textbox "메모 (선택)" [ref=e805]
+      - generic [ref=e806]:
+        - button "현금" [ref=e807] [cursor=pointer]
+        - button "현대카드" [ref=e808] [cursor=pointer]
+        - button "삼성카드" [ref=e809] [cursor=pointer]
+        - button "국민카드" [ref=e810] [cursor=pointer]
+        - button "롯데카드" [ref=e811] [cursor=pointer]
+        - button "체크카드" [ref=e812] [cursor=pointer]
+      - generic [ref=e813]:
+        - button "1" [ref=e814] [cursor=pointer]
+        - button "2" [ref=e815] [cursor=pointer]
+        - button "3" [ref=e816] [cursor=pointer]
+        - button "4" [ref=e817] [cursor=pointer]
+        - button "5" [ref=e818] [cursor=pointer]
+        - button "6" [ref=e819] [cursor=pointer]
+        - button "7" [ref=e820] [cursor=pointer]
+        - button "8" [ref=e821] [cursor=pointer]
+        - button "9" [ref=e822] [cursor=pointer]
+        - button "00" [ref=e823] [cursor=pointer]
+        - button "0" [ref=e824] [cursor=pointer]
+        - button "지우기" [ref=e825] [cursor=pointer]: ←
+      - button "추가!" [ref=e826] [cursor=pointer]

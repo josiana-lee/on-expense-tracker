@@ -118,9 +118,22 @@ export function InputScreen() {
     place();
     // 결제수단 줄은 옆으로 스크롤된다. 밀면 붙어 있던 칩이 따라가야 한다.
     pays.addEventListener('scroll', place, { passive: true });
-    return () => pays.removeEventListener('scroll', place);
-    /* months가 바뀌면 "할부"가 "3개월 할부"로 넓어져서 오른쪽 한계가 달라진다. */
-  }, [canInstall, paymentId, months]);
+
+    /* 폭이 바뀌어도 다시 잰다. 접는 폰을 펼치면 셸이 넓어지면서 결제수단
+       칩이 이동하는데, 다시 재지 않으면 할부 칩만 접힌 상태의 좌표에 남아
+       엉뚱한 카드 아래에 붙는다. 결제수단을 다시 누를 때까지 그대로다.
+       resize 이벤트 대신 관찰자를 쓰는 건 창 크기가 아니라 이 줄의 폭이
+       기준이기 때문이다 — 폰트가 늦게 뜨거나 카드가 추가돼도 같이 잡힌다. */
+    const observer = new ResizeObserver(place);
+    observer.observe(wrap);
+
+    return () => {
+      pays.removeEventListener('scroll', place);
+      observer.disconnect();
+    };
+    /* months가 바뀌면 "할부"가 "3개월 할부"로 넓어져서 오른쪽 한계가 달라지고,
+       payments가 바뀌면(카드 이름 변경·추가) 칩의 폭과 자리가 달라진다. */
+  }, [canInstall, paymentId, months, payments]);
 
 
   const openPopup = useCallback(

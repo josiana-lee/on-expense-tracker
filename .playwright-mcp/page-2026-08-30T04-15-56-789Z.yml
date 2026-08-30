@@ -1,0 +1,70 @@
+- generic [ref=e3]:
+  - main [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 설정
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e9]: 다크모드
+          - switch [ref=e10] [cursor=pointer]
+        - button "색 테마 퍼플" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: 색 테마
+          - generic [ref=e14]: 퍼플
+        - button "카테고리 관리 홈 표시 12 · 전체 30" [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: 카테고리 관리
+          - generic [ref=e20]: 홈 표시 12 · 전체 30
+        - button "카드 관리 5개 · 자산 탭" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: 카드 관리
+          - generic [ref=e26]: 5개 · 자산 탭
+        - button "반복 지출 0개" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: 반복 지출
+          - generic [ref=e32]: 0개
+        - button "월 시작일 1일" [ref=e36] [cursor=pointer]:
+          - generic [ref=e37]: 월 시작일
+          - generic [ref=e38]: 1일
+        - button "주 시작요일 일요일" [ref=e42] [cursor=pointer]:
+          - generic [ref=e43]: 주 시작요일
+          - generic [ref=e44]: 일요일
+        - button "기본 결제수단 현금" [ref=e48] [cursor=pointer]:
+          - generic [ref=e49]: 기본 결제수단
+          - generic [ref=e50]: 현금
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - text: 알림
+            - generic [ref=e56]: 정한 시각에 하루 한 번, 오늘 기록했는지 물어볼게
+          - switch [ref=e57] [cursor=pointer]
+      - generic [ref=e59]: 백업 및 복구
+      - paragraph [ref=e64]: 백업한 지 14일이 넘었어. 기기를 바꾸거나 잃어버리면 그동안 기록이 사라질 수 있으니 지금 백업해두자.
+      - generic [ref=e65]:
+        - button "백업 파일 내보내기 카톡 '나와의 채팅'이나 드라이브에 저장해두면 돼" [ref=e66] [cursor=pointer]:
+          - generic [ref=e67]:
+            - text: 백업 파일 내보내기
+            - generic [ref=e68]: 카톡 '나와의 채팅'이나 드라이브에 저장해두면 돼
+        - button "이메일로 백업하기" [ref=e72] [cursor=pointer]
+        - button "CSV 파일로 내보내기" [ref=e77] [cursor=pointer]
+        - button "백업 파일 복원하기 지금 데이터를 먼저 내보낸 다음에 복원해. 중간에 뜨는 창을 취소하면 멈춰" [ref=e82] [cursor=pointer]:
+          - generic [ref=e83]:
+            - text: 백업 파일 복원하기
+            - generic [ref=e84]: 지금 데이터를 먼저 내보낸 다음에 복원해. 중간에 뜨는 창을 취소하면 멈춰
+      - generic [ref=e88]: 정보
+      - generic [ref=e89]:
+        - link "개인정보처리방침" [ref=e90] [cursor=pointer]:
+          - /url: https://josiana-lee.github.io/jdb-labs-policies/on-expense/
+        - link "문의하기 jdblabskento@gmail.com" [ref=e95] [cursor=pointer]:
+          - /url: mailto:jdblabskento@gmail.com
+          - generic [ref=e96]: 문의하기
+          - generic [ref=e97]: jdblabskento@gmail.com
+        - button "오픈소스 라이선스" [ref=e101] [cursor=pointer]
+        - generic [ref=e106]:
+          - generic [ref=e107]: 버전
+          - generic [ref=e108]: 1.0.0
+      - generic [ref=e109]:
+        - generic [ref=e110]: 온:On 지출 가계부 v1.0.0
+        - generic [ref=e111]: © 2026 JDB Labs
+  - navigation [ref=e112]:
+    - button "입력" [ref=e113] [cursor=pointer]
+    - button "달력" [ref=e118] [cursor=pointer]
+    - button "예산" [ref=e123] [cursor=pointer]
+    - button "자산" [ref=e128] [cursor=pointer]
+    - button "백업이 필요해 설정" [active] [ref=e133] [cursor=pointer]:
+      - generic "백업이 필요해" [ref=e137]
+      - generic [ref=e138]: 설정

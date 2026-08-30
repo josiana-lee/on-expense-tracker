@@ -1,0 +1,57 @@
+- generic [ref=e3]:
+  - main [ref=e840]:
+    - generic [ref=e841]:
+      - generic [ref=e842]:
+        - generic [ref=e843]:
+          - generic [ref=e844]:
+            - generic [ref=e845]: 8월 30일 일요일
+            - generic [ref=e846]: 13:19
+          - generic [ref=e847]: 이 시각으로 기록돼
+        - button "얼마 썼어? 70 원" [ref=e1063] [cursor=pointer]:
+          - generic [ref=e850]: 얼마 썼어?
+          - generic [ref=e851]:
+            - generic [ref=e852]: "70"
+            - generic [ref=e853]: 원
+        - generic [ref=e854]:
+          - button "식비" [ref=e855] [cursor=pointer]
+          - button "간식" [ref=e860] [cursor=pointer]
+          - button "생필품" [ref=e865] [cursor=pointer]
+          - button "교통비" [ref=e870] [cursor=pointer]
+          - button "의류" [ref=e875] [cursor=pointer]
+          - button "문화생활" [ref=e880] [cursor=pointer]
+          - button "미용" [ref=e885] [cursor=pointer]
+          - button "의료/건강" [ref=e890] [cursor=pointer]
+          - button "교육" [ref=e895] [cursor=pointer]
+          - button "통신비" [ref=e900] [cursor=pointer]
+          - button "경조사" [ref=e905] [cursor=pointer]
+          - button "기타" [ref=e910] [cursor=pointer]
+        - generic [ref=e914]:
+          - generic [ref=e915]:
+            - button "현금" [ref=e916] [cursor=pointer]
+            - button "현대카드" [ref=e917] [cursor=pointer]
+            - button "삼성카드" [ref=e918] [cursor=pointer]
+            - button "국민카드" [ref=e919] [cursor=pointer]
+            - button "롯데카드" [ref=e920] [cursor=pointer]
+            - button "체크카드" [ref=e921] [cursor=pointer]
+          - generic [ref=e938]:
+            - button "일시불" [ref=e939] [cursor=pointer]
+            - button "99개월 할부" [ref=e1028] [cursor=pointer]
+        - generic [ref=e922]:
+          - generic [ref=e923]:
+            - generic [ref=e924]: 오늘 기록
+            - generic [ref=e925]: 100,000원
+          - generic [ref=e926]:
+            - generic [ref=e930]: 술자리
+            - generic [ref=e931]: 할부
+            - generic [ref=e932]: 13:15 · 현대카드
+            - generic [ref=e933]: 100,000
+      - button "식비 추가!" [ref=e1001] [cursor=pointer]
+  - navigation [ref=e112]:
+    - button "입력" [ref=e113] [cursor=pointer]
+    - button "달력" [ref=e118] [cursor=pointer]
+    - button "예산" [ref=e123] [cursor=pointer]
+    - button "자산" [ref=e128] [cursor=pointer]
+    - button "백업이 필요해 설정" [ref=e133] [cursor=pointer]:
+      - generic "백업이 필요해" [ref=e137]
+      - generic [ref=e138]: 설정
+  - status: 99개월로 나누기엔 금액이 너무 적어
