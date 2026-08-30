@@ -243,6 +243,23 @@
 
 /* ── payment chips ──────────────────────────────────────────── */
 
+/* 할부 칩의 위치 기준. .pays는 좌우로 삐져나가지만(margin: 0 -20px) 이
+   래퍼는 본문 폭 그대로라, 떠 있는 칩이 다른 내용과 같은 선에서 시작한다. */
+.paysWrap {
+  position: relative;
+  flex: none;
+}
+
+/* 흐름 밖. 아래 카드를 밀어내지 않고 그 위에 얹힌다 — 그림자가 없으면 카드와
+   같은 --sf라서 겹친 자리가 붙어 보인다. */
+.installFloat {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  z-index: 4;
+  filter: drop-shadow(0 3px 10px rgba(20, 25, 40, 0.13));
+}
+
 .pays {
   display: flex;
   gap: 8px;

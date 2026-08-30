@@ -10,7 +10,9 @@
   border-radius: 999px;
   background: var(--sf);
   color: var(--tx2);
-  padding: 9px 16px;
+  /* 결제수단 칩보다 한 단계 작다. 떠 있는 줄이라 아래 카드 위에 얹히는데,
+     결제수단과 같은 높이면 "오늘 기록" 글자까지 밀고 내려온다. */
+  padding: 8px 15px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;

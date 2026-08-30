@@ -259,28 +259,36 @@ export function InputScreen() {
           ))}
         </div>
 
-        <div className={styles.pays}>
-          {payments.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setStagedPaymentId(p.id)}
-              className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
+        {/* 할부 칩을 감싸는 기준. 흐름에 넣으면 이 화면이 통째로 움직인다 —
+            scroller가 space-between이라 flex 자식이 하나 늘어나는 순간 열 전체가
+            다시 배분되고, 금액 카드까지 위로 밀린다. 카드를 골랐을 뿐인데 화면이
+            흔들리는 것으로 보인다. */}
+        <div className={styles.paysWrap}>
+          <div className={styles.pays}>
+            {payments.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setStagedPaymentId(p.id)}
+                className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
 
-        {/* 결제수단 바로 아래. 신용카드를 고른 순간 나타난다 — 할부는 금액이
-            아니라 결제수단에 딸린 선택이다. */}
-        {canInstall && (
-          <InstallmentChips
-            months={months}
-            onCash={() => setMonths(1)}
-            onOpen={() => setInstallOpen(true)}
-          />
-        )}
+          {/* 결제수단 바로 아래에 떠 있다. 신용카드를 고른 순간 나타난다 —
+              할부는 금액이 아니라 결제수단에 딸린 선택이다. */}
+          {canInstall && (
+            <div className={styles.installFloat}>
+              <InstallmentChips
+                months={months}
+                onCash={() => setMonths(1)}
+                onOpen={() => setInstallOpen(true)}
+              />
+            </div>
+          )}
+        </div>
 
         <section className={styles.today}>
           <div className={styles.todayHead}>
