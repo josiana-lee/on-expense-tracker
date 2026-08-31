@@ -1,7 +1,7 @@
 import { addMonthsClamped, fmt, fmtTime } from './date';
-import { db, deleteWithTombstone } from './db';
+import { db } from './db';
 import { now, uuidv7 } from './id';
-import type { ExpenseRecord, ID } from './types';
+import type { ExpenseRecord, ID, PaymentMethodRecord } from './types';
 import { toMinor } from './types';
 
 const MIN_MONTHS = 2;
@@ -55,6 +55,17 @@ export function splitInstallment(total: number, months: number): number[] {
   return Array.from({ length: months }, (_, i) => (i === 0 ? base + remainder : base));
 }
 
+/** 이 결제수단으로 할부를 걸 수 있나.
+ *
+ *  화면마다 따로 판정하지 않는다. 입력 탭은 보관 포함 맵으로, 달력 시트는
+ *  보관 제외 목록으로 같은 질문에 답하고 있었는데, 기본 결제수단으로 지정된
+ *  카드를 보관하면 두 화면의 답이 갈렸다. 판정은 여기 하나뿐이고, 부르는 쪽은
+ *  보관까지 들어 있는 맵으로 찾아 넘긴다 — 보관된 카드로 이미 기록 중인
+ *  상황을 화면에서 지우면 안 된다. */
+export function supportsInstallment(p: PaymentMethodRecord | undefined): boolean {
+  return p?.kind === 'credit';
+}
+
 export type NewInstallment = {
   /** 결제 총액. 회차 금액이 아니다. */
   total: number;
@@ -93,7 +104,7 @@ export async function addInstallment(input: NewInstallment): Promise<ID> {
     categoryId: input.categoryId,
     subLabel: input.subLabel,
     paymentMethodId: input.paymentMethodId,
-    memo: input.memo || undefined,
+    memo: input.memo?.trim() || undefined,
     installmentId,
     installmentNo: i + 1,
     installmentMonths: input.months,
@@ -109,8 +120,24 @@ export async function addInstallment(input: NewInstallment): Promise<ID> {
   return installmentId;
 }
 
-export function isInstallment(r: ExpenseRecord): boolean {
-  return r.installmentId !== undefined && (r.installmentMonths ?? 0) >= MIN_MONTHS;
+/** 할부 필드가 온전히 갖춰진 행. 이 타입을 통과하면 세 필드가 있다는 걸
+ *  타입스크립트도 안다 — 부르는 쪽에서 `!`를 붙일 일이 없어진다. */
+export type InstallmentRow = ExpenseRecord & {
+  installmentId: ID;
+  installmentNo: number;
+  installmentMonths: number;
+};
+
+/** 회차 번호까지 본다. 복원은 행 단위로 검사해서 통과분만 쓰기 때문에
+ *  installmentId만 있고 회차가 없는 행이 들어올 수 있고, 그때 라벨이
+ *  "3개월 할부 undefined/3"이 된다. restoreSchema가 이 검사를 여기에
+ *  맡긴다고 적어두었으니 여기서 실제로 해야 한다. */
+export function isInstallment(r: ExpenseRecord): r is InstallmentRow {
+  return (
+    r.installmentId !== undefined &&
+    (r.installmentMonths ?? 0) >= MIN_MONTHS &&
+    (r.installmentNo ?? 0) >= 1
+  );
 }
 
 /** "3개월 할부 2/3". 할부가 아니면 null. */
@@ -132,6 +159,26 @@ export function listInstallmentGroup(installmentId: ID): Promise<ExpenseRecord[]
     .then((rows) => rows.sort((a, b) => (a.installmentNo ?? 0) - (b.installmentNo ?? 0)));
 }
 
+/** 묶음 전체를 한 트랜잭션에서 고친다.
+ *
+ *  회차별로 나눠 커밋하면 중간에 끊겼을 때 앞쪽 회차만 카테고리가 바뀐 할부가
+ *  남는다. 회차마다 카테고리가 다른 할부는 화면에 설명할 방법이 없고, 사용자는
+ *  "수정하지 못했어" 토스트 한 줄만 보고 무엇이 반쯤 됐는지 알 수 없다.
+ *
+ *  커밋이 한 번이면 liveQuery 무효화도 한 번이다. 24개월 할부를 회차별로
+ *  고치면 달력이 24번 다시 그려진다. */
+export async function updateInstallmentGroup(
+  installmentId: ID,
+  patch: Partial<Omit<ExpenseRecord, 'id' | 'createdAt' | 'installmentId'>>,
+): Promise<number> {
+  const stamp = now();
+  return db.transaction('rw', db.expenses, async () => {
+    const rows = await db.expenses.filter((r) => r.installmentId === installmentId).toArray();
+    for (const r of rows) await db.expenses.update(r.id, { ...patch, updatedAt: stamp });
+    return rows.length;
+  });
+}
+
 /** 할부 한 건을 통째로 지운다.
  *
  *  회차 하나만 지우는 길은 두지 않았다. 남은 회차의 합이 총액과 달라지는데,
@@ -140,7 +187,19 @@ export function listInstallmentGroup(installmentId: ID): Promise<ExpenseRecord[]
  *
  *  회차마다 툼스톤이 남으므로 휴지통에서 되살릴 때도 회차가 보존된다. */
 export async function deleteInstallmentGroup(installmentId: ID): Promise<number> {
-  const rows = await listInstallmentGroup(installmentId);
-  for (const r of rows) await deleteWithTombstone('expenses', r.id);
-  return rows.length;
+  const stamp = now();
+  /* deleteWithTombstone을 회차마다 부르지 않는다. 그러면 트랜잭션이 회차 수만큼
+     따로 커밋돼서 도중에 끊기면 반쪽 묶음이 남는다 — 툼스톤은 지운 행 전체를
+     payload로 복사하므로 저장공간이 빠듯한 기기에서 실패가 나는 지점이 정확히
+     여기다. 그 함수를 트랜잭션으로 감쌀 수도 없다: 안에서 동적 import를
+     await하는데, Dexie 트랜잭션 안에서 네이티브 프라미스를 기다리면 트랜잭션이
+     비활성으로 끝난다. */
+  return db.transaction('rw', db.expenses, db.tombstones, async () => {
+    const rows = await db.expenses.filter((r) => r.installmentId === installmentId).toArray();
+    await db.expenses.bulkDelete(rows.map((r) => r.id));
+    await db.tombstones.bulkPut(
+      rows.map((r) => ({ id: r.id, table: 'expenses', deletedAt: stamp, payload: r })),
+    );
+    return rows.length;
+  });
 }

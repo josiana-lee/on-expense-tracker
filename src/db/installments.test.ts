@@ -11,6 +11,8 @@ import {
   isInstallment,
   listInstallmentGroup,
   splitInstallment,
+  supportsInstallment,
+  updateInstallmentGroup,
 } from './installments';
 import { bootstrap } from './seed';
 import type { ExpenseRecord } from './types';
@@ -215,6 +217,35 @@ describe('addInstallment', () => {
   });
 });
 
+describe('메모 정규화', () => {
+  /* 공백만 남은 메모를 그대로 저장하면 달력 줄이
+     "3개월 할부 2/3 ·    · 현대카드"가 된다. 그 기록을 한 번 수정하면
+     사라지므로, 같은 데이터가 들어온 경로에 따라 다르게 남는다. */
+  it('공백만 있는 메모는 저장하지 않는다', async () => {
+    await bootstrap();
+    const groupId = await addInstallment({
+      total: 300_000,
+      months: 3,
+      categoryId: 'shopping',
+      paymentMethodId: 'cash',
+      memo: '   ',
+    });
+    expect((await listInstallmentGroup(groupId)).every((r) => r.memo === undefined)).toBe(true);
+  });
+
+  it('앞뒤 공백은 다듬는다', async () => {
+    await bootstrap();
+    const groupId = await addInstallment({
+      total: 300_000,
+      months: 3,
+      categoryId: 'shopping',
+      paymentMethodId: 'cash',
+      memo: '  마트  ',
+    });
+    expect((await listInstallmentGroup(groupId)).every((r) => r.memo === '마트')).toBe(true);
+  });
+});
+
 describe('할부 표시', () => {
   it('회차를 사람이 읽는 문구로 만든다', async () => {
     await bootstrap();
@@ -228,10 +259,83 @@ describe('할부 표시', () => {
     expect(installmentLabel(rows[1])).toBe('3개월 할부 2/3');
   });
 
+  /* 복원은 행 단위로 검사해서 통과분만 쓰므로, installmentId만 있고 회차
+     번호가 없는 행이 들어올 수 있다. 그걸 할부로 치면 라벨이
+     "3개월 할부 undefined/3"이 되어 달력과 검색에 그대로 찍힌다.
+     restoreSchema가 이 검사를 여기에 맡긴다고 적어두었다. */
+  it('회차 번호가 없는 행은 할부로 치지 않는다', () => {
+    const broken = {
+      id: 'x',
+      amount: 5000,
+      installmentId: 'g1',
+      installmentMonths: 3,
+    } as unknown as ExpenseRecord;
+    expect(isInstallment(broken)).toBe(false);
+    expect(installmentLabel(broken)).toBeNull();
+  });
+
   it('일시불 기록은 할부로 치지 않는다', () => {
     const plain = { id: 'x', amount: 5000 } as unknown as ExpenseRecord;
     expect(isInstallment(plain)).toBe(false);
     expect(installmentLabel(plain)).toBeNull();
+  });
+});
+
+describe('supportsInstallment', () => {
+  /* 화면마다 따로 판정하다가 갈라진 적이 있다. 입력 탭은 보관 포함 맵으로,
+     달력 시트는 보관 제외 목록으로 같은 질문에 답했다. */
+  it('신용카드만 할부를 받는다', () => {
+    const of = (kind: string) => ({ kind }) as never;
+    expect(supportsInstallment(of('credit'))).toBe(true);
+    expect(supportsInstallment(of('debit'))).toBe(false);
+    expect(supportsInstallment(of('cash'))).toBe(false);
+    expect(supportsInstallment(undefined)).toBe(false);
+  });
+});
+
+describe('updateInstallmentGroup', () => {
+  it('묶음 전체에 적용하고 금액은 건드리지 않는다', async () => {
+    await bootstrap();
+    const groupId = await addInstallment({
+      total: 1_000_000,
+      months: 3,
+      categoryId: 'shopping',
+      paymentMethodId: 'cash',
+    });
+
+    const changed = await updateInstallmentGroup(groupId, {
+      categoryId: 'food',
+      memo: '고침',
+    });
+
+    expect(changed).toBe(3);
+    const rows = await listInstallmentGroup(groupId);
+    expect(rows.every((r) => r.categoryId === 'food')).toBe(true);
+    expect(rows.every((r) => r.memo === '고침')).toBe(true);
+    // 회차 합은 여전히 총액과 같아야 한다.
+    expect(rows.reduce((sum, r) => sum + r.amount, 0)).toBe(1_000_000);
+    expect(rows.map((r) => r.amount)).toEqual([333_334, 333_333, 333_333]);
+  });
+
+  it('다른 묶음은 건드리지 않는다', async () => {
+    await bootstrap();
+    const keep = await addInstallment({
+      total: 200_000,
+      months: 2,
+      categoryId: 'shopping',
+      paymentMethodId: 'cash',
+    });
+    const target = await addInstallment({
+      total: 300_000,
+      months: 3,
+      categoryId: 'shopping',
+      paymentMethodId: 'cash',
+    });
+
+    await updateInstallmentGroup(target, { categoryId: 'food' });
+
+    expect((await listInstallmentGroup(keep)).every((r) => r.categoryId === 'shopping')).toBe(true);
+    expect((await listInstallmentGroup(target)).every((r) => r.categoryId === 'food')).toBe(true);
   });
 });
 

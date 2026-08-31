@@ -13,7 +13,8 @@ import {
   deleteInstallmentGroup,
   installmentLabel,
   isInstallment,
-  listInstallmentGroup,
+  supportsInstallment,
+  updateInstallmentGroup,
 } from '../../db/installments';
 import type { DateStr, ExpenseRecord } from '../../db/types';
 import { toMinor } from '../../db/types';
@@ -43,7 +44,7 @@ function stampFor(date: DateStr): Date {
 }
 
 export function EntrySheet({ record, date, onClose, onDone }: Props) {
-  const { categories, homeCategories, byId, payments } = useCatalog();
+  const { categories, homeCategories, byId, payments, paymentById } = useCatalog();
   const settings = useSettings();
   const editing = record !== null;
 
@@ -52,7 +53,10 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      달력에서 숫자가 안 맞는 것만 보게 된다. 그래서 금액은 잠그고, 나머지
      항목은 고치되 묶음 전체에 똑같이 적용한다. 회차마다 카테고리가 다른
      할부는 읽을 수 없다. */
-  const installment = record !== null && isInstallment(record);
+  /* id를 먼저 꺼낸다. isInstallment가 타입 술어라 여기서 좁혀지고, 아래에서
+     `record.installmentId!` 같은 단언을 쓸 일이 없어진다. */
+  const installmentId = record !== null && isInstallment(record) ? record.installmentId : null;
+  const installment = installmentId !== null;
   const installmentNote = record ? installmentLabel(record) : null;
 
   const [amount, setAmount] = useState(record ? String(record.amount) : '');
@@ -85,7 +89,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
    *  복원했거나 카드를 체크카드로 바꾼 경우, 목록에서 빠지면 지금 무엇으로
    *  기록돼 있는지가 화면에서 사라진다. */
   const payChoices = installment
-    ? payments.filter((p) => p.kind === 'credit' || p.id === paymentId)
+    ? payments.filter((p) => supportsInstallment(p) || p.id === paymentId)
     : payments;
 
   /* 지난 날짜에 카드값을 뒤늦게 적는 경우가 있다. 입력 탭에만 할부가 있으면
@@ -94,8 +98,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      기존 행을 다시 만드는 일이라, 지우고 새로 넣는 것과 같다. */
   const [months, setMonths] = useState(1);
   const [installOpen, setInstallOpen] = useState(false);
-  const canInstall =
-    !editing && payments.find((p) => p.id === paymentId)?.kind === 'credit';
+  const canInstall = !editing && supportsInstallment(paymentById.get(paymentId));
 
   useEffect(() => {
     if (!canInstall && months > 1) setMonths(1);
@@ -119,16 +122,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
     guard(async () => {
       try {
-        if (record && installment) {
-          const patch = {
+        if (installmentId) {
+          const changed = await updateInstallmentGroup(installmentId, {
             categoryId,
             subLabel,
             memo: memo.trim() || undefined,
             paymentMethodId: paymentId,
-          };
-          const rows = await listInstallmentGroup(record.installmentId!);
-          for (const r of rows) await updateExpense(r.id, patch);
-          onDone(`${rows.length}회차 모두 고쳤어`);
+          });
+          onDone(`${changed}회차 모두 고쳤어`);
         } else if (record) {
           await updateExpense(record.id, {
             amount: toMinor(Number(amount)),
@@ -174,8 +175,8 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
     if (!record) return;
     guard(async () => {
       try {
-        if (installment) {
-          const removed = await deleteInstallmentGroup(record.installmentId!);
+        if (installmentId) {
+          const removed = await deleteInstallmentGroup(installmentId);
           onDone(`${removed}회차 모두 지웠어`);
         } else {
           await deleteExpense(record.id);

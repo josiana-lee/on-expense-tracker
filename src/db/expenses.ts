@@ -29,7 +29,10 @@ export async function addExpense(input: NewExpense): Promise<ID> {
     categoryId: input.categoryId,
     subLabel: input.subLabel,
     paymentMethodId: input.paymentMethodId,
-    memo: input.memo || undefined,
+    /* 공백만 남은 메모는 없는 것으로 친다. 그냥 넘기면 "  "가 저장돼서
+       달력 줄이 "3개월 할부 2/3 ·    · 현대카드"가 되는데, 그 기록을 한 번
+       수정하면 사라진다 — 같은 데이터가 들어온 경로에 따라 다르게 남는다. */
+    memo: input.memo?.trim() || undefined,
     createdAt: stamp,
     updatedAt: stamp,
   });

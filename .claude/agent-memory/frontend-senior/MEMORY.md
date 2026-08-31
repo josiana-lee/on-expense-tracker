@@ -1,3 +1,3 @@
 - [사용자 프로필](user_profile.md) — 온:On을 혼자 만들어 Play Store 첫 출시 중인 6년 차 프런트엔드 개발자
-- [리뷰 요청 방식](feedback_review_style.md) — 수정 금지, 심각도 분류 보고, 주장에는 실측 근거
+- [리뷰 요청 방식](feedback_review_style.md) — 수정 금지, 요청한 축으로 분류 보고, 주장·주석 전제에 실측 근거
 - [성능 제안 판단 기준](project_perf_constraints.md) — WebView 하한선, 의존성 12개, gzip이 아니라 raw 파싱 시간

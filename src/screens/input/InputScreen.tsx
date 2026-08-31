@@ -7,7 +7,12 @@ import { InstallmentSheet } from '../../components/InstallmentSheet';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
 import { addExpense } from '../../db/expenses';
-import { InstallmentRangeError, addInstallment, isInstallment } from '../../db/installments';
+import {
+  InstallmentRangeError,
+  addInstallment,
+  isInstallment,
+  supportsInstallment,
+} from '../../db/installments';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
 import { useVisibleRecurringRules } from '../../hooks/useRecurringRules';
@@ -80,7 +85,7 @@ export function InputScreen() {
     stagedPaymentId ?? settings?.defaultPaymentMethodId ?? payments[0]?.id ?? null;
 
   /* 할부는 신용카드에만 있다. 현금이나 체크카드로 나눠 낼 수는 없다. */
-  const canInstall = paymentId ? paymentById.get(paymentId)?.kind === 'credit' : false;
+  const canInstall = supportsInstallment(paymentId ? paymentById.get(paymentId) : undefined);
 
   /* 결제수단은 이 화면의 칩에서도, 카테고리 팝업 안에서도 바뀐다. 두 경로에
      각각 되돌리는 코드를 두면 하나는 반드시 빠뜨리므로, 결과만 보고 되돌린다.
@@ -108,24 +113,31 @@ export function InputScreen() {
     if (!wrap || !float || !chip || !pays) return undefined;
 
     const place = () => {
-      const wrapLeft = wrap.getBoundingClientRect().left;
-      const chipLeft = chip.getBoundingClientRect().left;
+      /* getBoundingClientRect가 아니라 offsetLeft를 쓴다. 결제수단 칩은
+         선택되는 순간 chipPop 애니메이션으로 1.14배까지 커지는데, 그 도중에
+         다시 재면(카드를 누른 직후 줄을 미는 건 흔하다) 확대된 사각형을
+         재서 어긋난 값이 그대로 굳는다. offsetLeft는 transform을 타지 않는다.
+         offsetParent가 .paysWrap(position: relative)이라 그대로 wrap 기준이다. */
+      const x = chip.offsetLeft - pays.scrollLeft;
       /* 오른쪽 끝 카드를 고르면 칩이 본문 밖으로 나간다. 안쪽으로 당긴다. */
       const max = Math.max(0, wrap.clientWidth - float.offsetWidth);
-      setFloatLeft(Math.min(Math.max(0, chipLeft - wrapLeft), max));
+      setFloatLeft(Math.min(Math.max(0, x), max));
     };
 
     place();
     // 결제수단 줄은 옆으로 스크롤된다. 밀면 붙어 있던 칩이 따라가야 한다.
     pays.addEventListener('scroll', place, { passive: true });
 
-    /* 폭이 바뀌어도 다시 잰다. 접는 폰을 펼치면 셸이 넓어지면서 결제수단
-       칩이 이동하는데, 다시 재지 않으면 할부 칩만 접힌 상태의 좌표에 남아
-       엉뚱한 카드 아래에 붙는다. 결제수단을 다시 누를 때까지 그대로다.
-       resize 이벤트 대신 관찰자를 쓰는 건 창 크기가 아니라 이 줄의 폭이
-       기준이기 때문이다 — 폰트가 늦게 뜨거나 카드가 추가돼도 같이 잡힌다. */
+    /* 폭이 바뀌어도 다시 잰다. 둘을 따로 봐야 한다.
+
+       wrap: 접는 폰을 펼치거나 화면을 돌리면 셸이 넓어져 오른쪽 한계가 달라진다.
+       chip: 칩 자체의 폭. 웹폰트가 늦게 떠서 바뀌는 게 여기다 — Pretendard의
+       한글 폭이 폴백보다 좁아서, 폴백으로 먼저 그려진 뒤 스왑되면 세 번째
+       카드 기준 10px 넘게 밀린다. wrap은 flex 자식이라 폭이 컬럼에 맞춰
+       고정이고 칩이 바뀌어도 꿈쩍하지 않으므로, wrap만 봐서는 이걸 못 잡는다. */
     const observer = new ResizeObserver(place);
     observer.observe(wrap);
+    observer.observe(chip);
 
     return () => {
       pays.removeEventListener('scroll', place);
@@ -401,10 +413,6 @@ export function InputScreen() {
             </span>
             {amount && <ClearAmount onClear={() => setAmount('')} />}
           </div>
-
-          {/* 신용카드일 때만 나온다. 현금 결제수단을 쓰는 사람에게 평생 쓸 일
-              없는 줄을 보여줄 이유가 없고, 이 시트에서 제일 중요한 건 여전히
-              숫자판이다. */}
 
           {/* 저장해둔 지출. 결제수단 칩과 같이 가로로 흐르게 두는 건 열 개가
               차도 키패드를 밀어내지 않게 하려는 것 — 이 시트에서 제일 중요한
