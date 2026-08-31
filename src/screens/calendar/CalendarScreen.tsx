@@ -1,11 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
 import { fmt, parseDateStr } from '../../db/date';
 import { installmentLabel } from '../../db/installments';
 import type { ExpenseRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
-import { loadRange } from '../../db/expenses';
 import { useDateExpenses } from '../../hooks/useExpenses';
 import { useMonth } from '../../hooks/useMonth';
 import { useSettings } from '../../hooks/useSettings';
@@ -72,39 +71,20 @@ export function CalendarScreen() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
-  /** 늦게 도착한 응답이 그 사이 또 넘긴 달의 커서를 덮어쓰지 않게 한다. */
-  const jumpToken = useRef(0);
-
-  /** 그 달로 옮기고 커서를 놓는다.
+  /** 그 달로 옮기고 커서를 놓는다. 현재 달이면 오늘, 아니면 1일이다.
    *
-   *  현재 달이면 오늘. 다른 달이면 **기록이 있는 첫 날**이다. 예전에는 늘
-   *  1일이었는데, 지출이 말일 하루뿐인 달에서 "이번 달 지출 10만원"과 "이 날은
-   *  기록이 없어"가 같은 화면에 떠서 고장으로 읽혔다. 달을 넘기는 사람이
-   *  보려는 건 1일이 아니라 그 달에 뭘 썼는지다.
+   *  기록이 있는 첫 날로 옮겨봤다가 되돌렸다. 그러면 달을 넘길 때마다 커서가
+   *  다른 자리에 떨어져서, 어디를 보고 있는지 매번 다시 찾아야 한다. 1일은
+   *  어느 방향으로 넘기든 같은 자리다.
    *
-   *  useMonth의 totals를 쓰지 않고 따로 한 번 읽는 이유: 달을 막 바꾼 시점에
-   *  그 값은 아직 이전 달 것이라, 갱신을 기다리는 조건을 두면 "비어 있어서
-   *  없는 것"과 "아직 안 와서 없는 것"을 구분해야 한다. 같은 인덱스 레인지
-   *  스캔 한 번이 그 분기보다 싸다. */
+   *  그 달 지출이 말일 하루뿐이면 "이번 달 지출 10만원"과 "이 날은 기록이
+   *  없어"가 한 화면에 뜨는데, 이건 달력에 색이 든 칸이 어디인지 보면 풀린다.
+   *  커서를 옮겨서 감추는 것보다 사용자가 직접 고르게 두는 쪽을 택했다. */
   const goToMonth = useCallback(
     (year: number, month: number) => {
       setView({ year, month });
-
       const isThisMonth = year === today.getFullYear() && month === today.getMonth() + 1;
-      const first = new Date(year, month - 1, 1);
-      setSelected(fmt(isThisMonth ? today : first));
-      if (isThisMonth) return;
-
-      const token = ++jumpToken.current;
-      loadRange(fmt(first), fmt(new Date(year, month, 0)))
-        .then((rows) => {
-          if (jumpToken.current !== token) return;
-          const days = rows.map((r) => r.date).sort();
-          if (days[0]) setSelected(days[0]);
-        })
-        /* 커서를 옮기지 못했을 뿐이라 1일에 그대로 머문다. 달력 자체는
-           useMonth가 따로 그린다. */
-        .catch(() => {});
+      setSelected(fmt(isThisMonth ? today : new Date(year, month - 1, 1)));
     },
     [today],
   );
