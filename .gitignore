@@ -40,3 +40,8 @@ google-services.json
 # Upload-key password file. The keystore itself is already covered by *.jks
 # above; this holds the passwords that open it and must never be committed.
 android/keystore.properties
+
+# QA 에이전트가 브라우저를 돌릴 때마다 떨구는 접근성 트리 스냅샷. 실행할 때마다
+# 파일이 수십 개씩 새로 생기고 다음 실행이면 의미가 없다. 한 번 커밋에 딸려
+# 들어간 적이 있어(936d5eb) 여기 적어둔다.
+.playwright-mcp/
