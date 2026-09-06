@@ -4,8 +4,10 @@ import { ClearAmount } from '../../components/ClearAmount';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { InstallmentChips } from '../../components/InstallmentChips';
 import { InstallmentSheet } from '../../components/InstallmentSheet';
+import { EntrySheet } from '../../components/EntrySheet';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
+import { fmt } from '../../db/date';
 import { addExpense } from '../../db/expenses';
 import {
   InstallmentRangeError,
@@ -17,7 +19,7 @@ import { useCatalog } from '../../hooks/useCatalog';
 import { useDayExpenses } from '../../hooks/useExpenses';
 import { useVisibleRecurringRules } from '../../hooks/useRecurringRules';
 import { templateAmountText, touchTemplate } from '../../db/recurring';
-import type { RecurringRuleRecord } from '../../db/types';
+import type { ExpenseRecord, RecurringRuleRecord } from '../../db/types';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { useNow } from '../../hooks/useNow';
 import { useSettings } from '../../hooks/useSettings';
@@ -51,6 +53,9 @@ export function InputScreen() {
   const [months, setMonths] = useState(1);
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
+  /** 오늘 기록에서 탭한 줄. 그 자리에서 고칠 수 있어야 한다 — 방금 잘못 넣은
+   *  걸 고치려고 달력까지 건너가는 건 되돌리기가 아니라 수색이다. */
+  const [editing, setEditing] = useState<ExpenseRecord | null>(null);
   const [popup, setPopup] = useState<PopupState | null>(null);
   const [closing, setClosing] = useState(false);
   const exitTimer = useRef<number | undefined>(undefined);
@@ -359,7 +364,12 @@ export function InputScreen() {
               const cat = byId.get(r.categoryId);
               const pay = paymentById.get(r.paymentMethodId);
               return (
-                <div key={r.id} className={styles.row}>
+                <button
+                  key={r.id}
+                  type="button"
+                  className={styles.row}
+                  onClick={() => setEditing(r)}
+                >
                   <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>
                     {cat && <Icon path={cat.iconPath} size={15} strokeWidth={2} />}
                   </span>
@@ -372,7 +382,7 @@ export function InputScreen() {
                     {r.time} · {pay?.name}
                   </span>
                   <span className={`${styles.rowAmount} tabular`}>{won(r.amount)}</span>
-                </div>
+                </button>
               );
             })
           )}
@@ -445,6 +455,15 @@ export function InputScreen() {
             완료
           </button>
         </Sheet>
+      )}
+
+      {editing && (
+        <EntrySheet
+          record={editing}
+          date={fmt(now)}
+          onClose={() => setEditing(null)}
+          onDone={flash}
+        />
       )}
 
       {installOpen && (

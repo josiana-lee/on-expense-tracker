@@ -341,12 +341,22 @@
   color: var(--brand);
 }
 
+/* 버튼이다 — 탭하면 그 기록의 수정 시트가 열린다. 달력의 같은 줄과 생김새가
+   같은데 한쪽만 눌리면, 눌리지 않는 쪽을 사용자가 고장으로 읽는다.
+   border를 전부 지우고 위쪽 선만 되살린다. 버튼 기본 테두리가 남으면 줄마다
+   네모가 생긴다. */
 .row {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 9px 0;
-  border-top: 1px solid var(--line);
 }
 
 .rowBadge {

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Icon } from '../../components/Icon';
-import { Keypad, applyKey } from '../../components/Keypad';
-import { ClearAmount } from '../../components/ClearAmount';
-import { InstallmentChips } from '../../components/InstallmentChips';
-import { InstallmentSheet } from '../../components/InstallmentSheet';
-import { Sheet } from '../../components/Sheet';
-import { parseDateStr } from '../../db/date';
-import { addExpense, deleteExpense, updateExpense } from '../../db/expenses';
+import { Icon } from './Icon';
+import { Keypad, applyKey } from './Keypad';
+import { ClearAmount } from './ClearAmount';
+import { InstallmentChips } from './InstallmentChips';
+import { InstallmentSheet } from './InstallmentSheet';
+import { Sheet } from './Sheet';
+import { parseDateStr } from '../db/date';
+import { addExpense, deleteExpense, updateExpense } from '../db/expenses';
 import {
   InstallmentRangeError,
   addInstallment,
@@ -15,13 +15,13 @@ import {
   isInstallment,
   supportsInstallment,
   updateInstallmentGroup,
-} from '../../db/installments';
-import type { DateStr, ExpenseRecord } from '../../db/types';
-import { toMinor } from '../../db/types';
-import { useCatalog } from '../../hooks/useCatalog';
-import { useGuardedAction } from '../../hooks/useGuardedAction';
-import { useSettings } from '../../hooks/useSettings';
-import { amountSize, won } from '../../lib/format';
+} from '../db/installments';
+import type { DateStr, ExpenseRecord } from '../db/types';
+import { toMinor } from '../db/types';
+import { useCatalog } from '../hooks/useCatalog';
+import { useGuardedAction } from '../hooks/useGuardedAction';
+import { useSettings } from '../hooks/useSettings';
+import { amountSize, won } from '../lib/format';
 import styles from './EntrySheet.module.css';
 
 type Props = {

@@ -11,7 +11,7 @@ import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { useToday } from '../../hooks/useToday';
 import { dateText, won } from '../../lib/format';
-import { EntrySheet } from './EntrySheet';
+import { EntrySheet } from '../../components/EntrySheet';
 import { MonthPickerSheet } from './MonthPickerSheet';
 import { SearchScreen } from './SearchScreen';
 import styles from './CalendarScreen.module.css';
