@@ -24,7 +24,7 @@ android {
         // src/data/appInfo.ts, which is also stamped into backup files; the
         // three move together or a backup ends up claiming a version that was
         // never released.
-        versionCode 6
+        versionCode 7
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
