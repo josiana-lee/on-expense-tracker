@@ -74,6 +74,15 @@ export function App() {
   useReminderScheduler();
   useAndroidBackButton(tab, setTab);
 
+  /* 넓은 화면에서 셸 폭을 화면마다 다르게 잡기 위한 표식.
+   *
+   *  #root는 React 트리 밖(index.html의 마운트 노드)이라, CSS가 지금 어느
+   *  탭인지 알 방법이 여기 말고는 없다. base.css의 태블릿 규칙이 이 값을 본다.
+   *  main.tsx가 data-native를 붙이는 것과 같은 자리다. */
+  useEffect(() => {
+    document.documentElement.dataset.tab = tab;
+  }, [tab]);
+
   const known =
     tab === 'input' ||
     tab === 'calendar' ||

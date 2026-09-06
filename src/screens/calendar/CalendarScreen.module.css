@@ -380,3 +380,43 @@
   font-weight: 600;
   color: var(--tx2);
 }
+
+/* 태블릿·펼친 폴더블(가로) — 두 칸으로 나눈다.
+   왼쪽에 월 격자, 오른쪽에 고른 날의 기록. 폰에서 이 화면이 답답한 이유가
+   그 둘이 세로 공간을 두고 싸우는 것이라, 좌우로 벌리면 빈자리를 메우는 게
+   아니라 실제로 나아진다.
+
+   셸 폭은 base.css가 이 탭에서만 풀어준다. data-native로 거는 건 그쪽과
+   같은 이유 — 넓은 데스크톱 브라우저는 개발용 폰 프레임을 유지해야 한다. */
+@media (min-width: 800px) {
+  :root[data-native] .screen {
+    display: grid;
+    /* 달력 쪽이 조금 더 넓다. 7열 격자는 좁아지면 숫자와 금액이 겹치는데,
+       기록 목록은 좁아도 한 줄씩 읽힌다. */
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'head    head'
+      'cal     dayhead'
+      'cal     list';
+    column-gap: 4px;
+  }
+
+  :root[data-native] .head {
+    grid-area: head;
+  }
+
+  /* 위에 붙인다. 늘리면 빈 격자 아래로 카드가 길어진다. */
+  :root[data-native] .card {
+    grid-area: cal;
+    align-self: start;
+  }
+
+  :root[data-native] .dayHead {
+    grid-area: dayhead;
+  }
+
+  :root[data-native] .list {
+    grid-area: list;
+  }
+}

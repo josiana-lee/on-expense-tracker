@@ -51,3 +51,17 @@
   background: var(--warn);
   border: 1.5px solid var(--bg);
 }
+
+/* 달력 탭에서 셸이 1024px까지 넓어지는데(base.css), 탭 다섯 개가 그 폭에
+   space-around로 퍼지면 엄지가 닿지 않는 거리가 된다. 게다가 탭을 오갈 때마다
+   막대 폭이 같이 변해서 화면이 흔들린다.
+
+   폭을 묶어두면 어느 탭에서든 같은 자리에 같은 크기로 있는다. 테두리까지 함께
+   묶는 건 배경만 넓게 남으면 그 선이 탭마다 늘었다 줄었다 하기 때문이다. */
+@media (min-width: 800px) {
+  :root[data-native] .bar {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+}
