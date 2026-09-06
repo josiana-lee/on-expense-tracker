@@ -39,7 +39,9 @@ export function LicenseScreen({ onBack }: Props) {
 
       <div className={settingsStyles.subBody}>
         <p className={styles.intro}>
-          이 앱은 아래 오픈소스 소프트웨어를 사용합니다. 각 저작권자와 라이선스에 감사드립니다.
+          이 앱은 아래 오픈소스 소프트웨어를 사용합니다.
+          <br />
+          각 저작권자와 라이선스에 감사드립니다.
         </p>
 
         <div className={settingsStyles.subCard}>

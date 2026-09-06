@@ -332,7 +332,9 @@ export function SettingsScreen({ onManageCards }: Props) {
           <div className={styles.rowLabel}>
             백업 파일 복원하기
             <span className={styles.rowSub}>
-              지금 데이터를 먼저 내보낸 다음에 복원해. 중간에 뜨는 창을 취소하면 멈춰
+              지금 데이터를 먼저 내보낸 다음에 복원해.
+              <br />
+              중간에 뜨는 창을 취소하면 멈춰
             </span>
           </div>
           <span className={styles.chevron}>
