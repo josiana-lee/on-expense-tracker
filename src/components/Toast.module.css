@@ -8,7 +8,16 @@
   left: 50%;
   top: 50%;
   z-index: 30;
+  /* 폭을 글자에 맞춘다. 이게 없으면 left: 50%가 쓸 수 있는 폭을 셸의 절반으로
+     묶는다 — 절대 위치 상자의 자동 폭은 left 지점부터 오른쪽 끝까지만 보고
+     정해진다. 그래서 360px 폰에서 토스트가 180px에 갇혀 "추가했/어!"처럼 짧은
+     문장도 꺾였고, 아래 max-width: 78%에는 한 번도 닿지 않았다. */
+  width: max-content;
   max-width: 78%;
+  /* 정말 긴 문장만 꺾이는데, 그때도 글자 사이가 아니라 띄어쓰기에서 꺾는다.
+     띄어쓰기 없이 폭보다 긴 덩어리만 예외로 자른다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
   /* Frosted glass over the solid dark pill the original mock used — tints
      with whichever surface color the current theme already defines, so it
      stays correct in dark mode without a separate override. */
