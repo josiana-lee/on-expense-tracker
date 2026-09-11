@@ -1,29 +1,21 @@
 ---
 name: restore-blocked-by-share-guard
-description: Backup restore aborts silently on any browser where navigator.canShare is true but the share is dismissed — shareOrDownload returns false for both "cancelled" and "fell back to a working download"
+description: RESOLVED — the pre-restore safety-export guard now accepts a plain download, so 복원하기 runs end to end in desktop Chromium; no more need to stub navigator.canShare
 metadata:
   type: project
 ---
 
-`db/restore.ts` `safetyExportBeforeRestore()` arms a guard: if `navigator.canShare({files})` is
-true but `shareOrDownload()` returns false, it throws `RestoreAbortedError` and nothing is written.
+**Status as of 2026-09-11: fixed.** `db/restore.ts` `safetyExportBeforeRestore()` used to gate on
+`navigator.canShare` and treated `shareOrDownload() === false` as "no safety copy", so on desktop
+Chromium 복원하기 silently downloaded the pre-restore backup and then did nothing. It now judges the
+outcome (`handedOff(result)`), and `'downloaded'` counts as success — only an outright dismissal
+throws `RestoreAbortedError`.
 
-**Why this misfires:** `lib/download.ts` `shareOrDownload()` returns `false` for two different
-outcomes — the user cancelled the share sheet, *and* sharing was unavailable/failed so it fell
-back to `downloadBlob()`, which succeeded. The guard treats both as "the safety copy probably
-doesn't exist". On desktop Chromium `canShare` is true, so pressing 복원하기 downloads the
-pre-restore backup and then does nothing: sheet stays open, DB unchanged, no console error. The
-`RestoreSheet` catch calls `onDone(...)` but not `onClose()`, so the only signal is a toast.
+Re-verified 2026-09-11 by running the real round trip in-page: `buildBackupFile()` → `File` →
+`parseBackupFile()` → `restoreBackupFile()`. It completed (178 rows), Playwright logged the safety
+export as a download, and the DB came back with `presetVersion` re-reconciled. No stubbing of
+`navigator.canShare` / `navigator.share` was needed.
 
-**How to apply:** when QAing restore, don't conclude it's broken from the browser alone, and don't
-conclude it works either — the Android path (`isNative` → Capacitor Share) is a different branch
-that can't be exercised here. To test the *rest* of the restore logic, disable Web Share first:
-
-```js
-Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true });
-Object.defineProperty(navigator, 'share',    { value: undefined, configurable: true });
-```
-
-With the guard disarmed the restore itself is correct: full replace, `bootstrap()` re-seeds
-categories/payments, local `deviceId` preserved, `presetVersion` reset. See
-[[qa-verification-setup]] for feeding a backup file into the hidden `input[type=file]`.
+The Android branch (`isNative` → Capacitor Share) is still a different code path that a browser
+can't exercise — a dismissed Android share sheet aborting the restore is the case to check on
+device. See [[qa-verification-setup]].

@@ -40,9 +40,20 @@ delete exactly what was added.
 **Restoring a profile after destructive testing:** export a backup through the UI first, then feed
 it back through the hidden `input[type=file]` with a `DataTransfer`. Vite dev serves arbitrary
 local files at `/@fs/<abs path>`, so a downloaded backup can be `fetch`ed straight back into the
-page instead of being inlined. Restore aborts unless Web Share is unavailable — see
-[[restore-blocked-by-share-guard]]; `Object.defineProperty(navigator,'canShare',{value:undefined})`
-before confirming.
+page instead of being inlined. Or skip the file picker entirely and round-trip in-page:
+`buildBackupFile()` → `new File([json])` → `parseBackupFile()` → `restoreBackupFile()`, which still
+exercises the real zod validation and write path. The share guard no longer blocks this — see
+[[restore-blocked-by-share-guard]].
+
+**Catching a toast in a screenshot:** toasts live 2400ms (`TOAST_DURATION_MS`) and a tool round trip
+eats about 3s, so a click-then-screenshot pair always misses it. Schedule the click instead —
+`setTimeout(() => btn.click(), 2000)`, return immediately, then screenshot — and the shot lands
+inside the window. Re-flashing the *same* text doesn't extend it (same React `key`, exit animation
+already played). And don't read `document.elementFromPoint` over a toast as "something covers it":
+`.toast` is `pointer-events: none`, so the hit test reports whatever is underneath even though the
+toast paints on top (z-index 30 vs the sheet's 13). That combination produced a convincing false
+"the toast is hidden behind the sheet" report — cf.
+[[verify-scripted-click-bugs-with-trusted-clicks]].
 
 **Faking the clock** (KST 00:00–09:00 date-key boundary): override `window.Date`, then
 `document.dispatchEvent(new Event('visibilitychange'))` — `useNow` resyncs on that event.
@@ -65,4 +76,10 @@ between.
 a real history navigation, not a scripted click — trust what it shows. See
 [[installment-feature-regression-map]] for what it found.
 
-See [[input-screen-layout-risk]] and [[amount-overflow-hotspots]] for this project's regression traps.
+**Keep the repo clean:** Playwright MCP writes screenshots, console logs and downloads into
+`.playwright-mcp/` *inside the repo* (gitignored, but the user still doesn't want them), and a
+`filename` passed to the screenshot tool lands at the repo root. Take screenshots without a
+`filename` (they come back inline), and delete `.playwright-mcp/` before finishing.
+
+See [[input-screen-layout-risk]], [[category-pager-checks]] and [[amount-overflow-hotspots]] for
+this project's regression traps.
