@@ -9,6 +9,7 @@ import {
 } from '../../db/paymentMethods';
 import type { PaymentMethodRecord } from '../../db/types';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
+import { blurOnEnter } from '../../lib/keyboard';
 import styles from './CardSheet.module.css';
 
 type Props = {
@@ -96,6 +97,7 @@ export function CardSheet({ card, onClose, onDone }: Props) {
         onChange={(e) => setName(e.target.value)}
         placeholder="카드 이름 (예: 국민 체크카드)"
         enterKeyHint="done"
+        onKeyDown={blurOnEnter}
       />
 
       <div className={styles.kinds}>

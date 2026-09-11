@@ -6,6 +6,7 @@ import type { ExpenseRecord } from '../../db/types';
 import { useAllExpenses } from '../../hooks/useAllExpenses';
 import { useCatalog } from '../../hooks/useCatalog';
 import { shortDate, won } from '../../lib/format';
+import { blurOnEnter } from '../../lib/keyboard';
 import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './SearchScreen.module.css';
 
@@ -69,6 +70,7 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="메모, 항목, 카테고리로 검색"
             enterKeyHint="search"
+            onKeyDown={blurOnEnter}
             autoFocus
           />
           {query && (

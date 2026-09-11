@@ -22,6 +22,7 @@ import { useCatalog } from '../hooks/useCatalog';
 import { useGuardedAction } from '../hooks/useGuardedAction';
 import { useSettings } from '../hooks/useSettings';
 import { amountSize, won } from '../lib/format';
+import { blurOnEnter } from '../lib/keyboard';
 import styles from './EntrySheet.module.css';
 
 type Props = {
@@ -258,6 +259,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         onChange={(e) => setMemo(e.target.value)}
         placeholder="메모 (선택)"
         enterKeyHint="done"
+        onKeyDown={blurOnEnter}
       />
 
       <div className={styles.pays}>

@@ -6,6 +6,7 @@ import { addAccount, deleteAccount, updateAccount } from '../../db/accounts';
 import type { AccountRecord } from '../../db/types';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { won } from '../../lib/format';
+import { blurOnEnter } from '../../lib/keyboard';
 import styles from './AccountSheet.module.css';
 
 const KINDS: Array<{ value: AccountRecord['kind']; label: string }> = [
@@ -85,6 +86,7 @@ export function AccountSheet({ account, onClose, onDone }: Props) {
         onChange={(e) => setName(e.target.value)}
         placeholder="계좌 이름 (예: 농협 주거래)"
         enterKeyHint="done"
+        onKeyDown={blurOnEnter}
       />
 
       <div className={styles.kinds}>

@@ -4,6 +4,7 @@ import { Icon } from '../../components/Icon';
 import type { CategoryRecord } from '../../db/types';
 import { useShell } from '../../shell/ShellContext';
 import { won } from '../../lib/format';
+import { blurOnEnter } from '../../lib/keyboard';
 import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './CategoryPopup.module.css';
 
@@ -87,6 +88,7 @@ export function CategoryPopup({
           onChange={(e) => onMemoChange(e.target.value)}
           placeholder="메모 (선택)"
           enterKeyHint="done"
+          onKeyDown={blurOnEnter}
         />
 
         {/* Not a save — this only hands the pick back to the screen. Distinct
