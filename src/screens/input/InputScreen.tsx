@@ -348,9 +348,26 @@ export function InputScreen() {
                 setPage(Math.round(el.scrollLeft / (second.offsetLeft - first.offsetLeft)));
               }
             }}
+            onFocus={(e) => {
+              /* 키보드나 토크백으로 다음 장 아이콘에 포커스가 가도 화면은 따라오지
+                 않는다 — 브라우저가 보여주려고 미는 스크롤을 scroll-snap이 도로
+                 제자리에 붙인다. 그러면 화면 밖에 있는 것을 읽고 있게 되므로
+                 포커스가 간 장으로 직접 넘긴다. 손으로 누른 경우에는 이미 그 장이라
+                 아무 일도 일어나지 않는다. */
+              const page = e.target.parentElement;
+              const at = page ? Array.from(e.currentTarget.children).indexOf(page) : -1;
+              if (at >= 0) showPage(at);
+            }}
           >
             {pages.map((cats, i) => (
-              <div key={i} className={styles.grid}>
+              /* 걸쳐 보이는 아이콘도 아래 점도 눈으로만 말한다. 장이 여럿일 때는
+                 읽어주는 쪽에도 몇 장 중 어디인지 남긴다. */
+              <div
+                key={i}
+                className={styles.grid}
+                role={pages.length > 1 ? 'group' : undefined}
+                aria-label={pages.length > 1 ? `카테고리 ${pages.length}장 중 ${i + 1}장` : undefined}
+              >
                 {cats.map((c) => (
                   <button
                     key={c.id}
