@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
-import { MAX_HOME_CATEGORIES } from '../../data/categories';
+import { HOME_CATEGORIES_PER_PAGE } from '../../data/categories';
 import type { CategoryRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useToast } from '../../hooks/useToast';
@@ -49,7 +49,7 @@ export function CategoryManageScreen({ onBack }: Props) {
             <Icon path={INFO_ICON} size={16} stroke="currentColor" strokeWidth={2.4} />
           </span>
           <p className={styles.noteText}>
-            전체 {rows.length}개 중 입력 화면에는 최대 {MAX_HOME_CATEGORIES}개까지 보여줄 수 있어.
+            표시 중인 카테고리는 입력 화면에서 {HOME_CATEGORIES_PER_PAGE}개씩 옆으로 넘겨 볼 수 있어.
             눌러서 이름·아이콘·표시 여부를 바꾸거나 삭제할 수 있어.
           </p>
         </div>
@@ -85,9 +85,6 @@ export function CategoryManageScreen({ onBack }: Props) {
       {editing && (
         <CategorySheet
           category={editing === 'new' ? null : editing}
-          otherVisibleCount={
-            editing === 'new' ? visibleCount : visibleCount - (editing.visibleOnHome ? 1 : 0)
-          }
           onClose={() => setEditing(null)}
           onDone={flash}
         />

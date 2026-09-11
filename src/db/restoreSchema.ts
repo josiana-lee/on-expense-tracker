@@ -184,7 +184,16 @@ const tombstoneSchema = z.looseObject({
 });
 
 const metaSchema = z.looseObject({
-  key: z.enum(['deviceId', 'presetVersion', 'installedAt', 'lastBackupAt', 'lastBackupReminderAt']),
+  /* 여기 없는 키는 복원 때 조용히 버려진다. homeVisibleDefaults가 빠지면 입력
+     화면 기본 노출을 도로 끈 사람이 복원 한 번에 다시 제안받는다. */
+  key: z.enum([
+    'deviceId',
+    'presetVersion',
+    'homeVisibleDefaults',
+    'installedAt',
+    'lastBackupAt',
+    'lastBackupReminderAt',
+  ]),
   value: z.unknown(),
   updatedAt: epoch,
 });

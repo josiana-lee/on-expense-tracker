@@ -212,6 +212,9 @@ export interface TombstoneRecord {
 export type MetaKey =
   | 'deviceId'
   | 'presetVersion'
+  /** 입력 화면 기본 노출 목록을 어디까지 제안했는지. presetVersion과 따로 두는
+   *  이유는 seed.ts에 적어뒀다 — 복원이 presetVersion만 0으로 되돌린다. */
+  | 'homeVisibleDefaults'
   | 'installedAt'
   | 'lastBackupAt'
   | 'lastBackupReminderAt';

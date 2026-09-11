@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { PRESET_CATEGORIES } from '../data/categories';
-import { addCategory, updateCategory } from './categories';
+import { DEFAULT_VISIBLE, DEFAULT_VISIBLE_V1, PRESET_CATEGORIES } from '../data/categories';
+import { addCategory, setCategoryVisible, updateCategory } from './categories';
 import { db } from './db';
 import { bootstrap, reconcileCategories } from './seed';
 
@@ -57,5 +57,63 @@ describe('preset reconciliation', () => {
 
     // Nothing reconciles these, so there is no ownership to record.
     expect((await db.categories.get(id))?.customizedFields).toEqual([]);
+  });
+});
+
+describe('home grid defaults', () => {
+  /** 예전 기본값(12개)으로 쓰던 기기를 흉내 낸다 — 이번에 늘어난 넷을 끄고, 새
+   *  기본값을 제안받은 적 없는 상태로 되돌린다. */
+  async function simulateOldHomeGrid(): Promise<void> {
+    for (const key of DEFAULT_VISIBLE.filter((k) => !DEFAULT_VISIBLE_V1.includes(k))) {
+      await setCategoryVisible(key, false);
+    }
+    await db.meta.delete('homeVisibleDefaults');
+  }
+
+  async function visibleKeys(): Promise<string[]> {
+    const rows = await db.categories.toArray();
+    return rows.filter((c) => c.visibleOnHome).map((c) => c.presetKey ?? c.id);
+  }
+
+  it('starts a new install with two full pages', async () => {
+    await bootstrap();
+
+    expect((await visibleKeys()).sort()).toEqual([...DEFAULT_VISIBLE].sort());
+  });
+
+  it('moves a home grid nobody touched up to the new default', async () => {
+    await bootstrap();
+    await simulateOldHomeGrid();
+    expect(await visibleKeys()).toHaveLength(DEFAULT_VISIBLE_V1.length);
+
+    await simulatePresetBump();
+
+    expect((await visibleKeys()).sort()).toEqual([...DEFAULT_VISIBLE].sort());
+  });
+
+  it('leaves a home grid the user arranged alone', async () => {
+    await bootstrap();
+    await simulateOldHomeGrid();
+    // 하나를 끄는 순간 이 화면은 사용자의 것이다.
+    await setCategoryVisible('beauty', false);
+
+    await simulatePresetBump();
+
+    const keys = await visibleKeys();
+    expect(keys).not.toContain('cafe');
+    expect(keys).not.toContain('beauty');
+  });
+
+  it('does not offer the new defaults a second time', async () => {
+    await bootstrap();
+    /* 열여섯 개를 받아본 뒤 넷을 도로 끄면 예전 기본값과 똑같은 모양이 된다.
+       켜둔 목록만 보고 판단하면 여기서 되살아난다 — meta의 표시가 막는다. */
+    for (const key of DEFAULT_VISIBLE.filter((k) => !DEFAULT_VISIBLE_V1.includes(k))) {
+      await setCategoryVisible(key, false);
+    }
+
+    await simulatePresetBump();
+
+    expect(await visibleKeys()).toHaveLength(DEFAULT_VISIBLE_V1.length);
   });
 });

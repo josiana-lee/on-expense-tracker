@@ -1,6 +1,6 @@
 /* The flow is sized to fit one screen without scrolling — the point of the
    app is finishing an entry in three taps. But the fixed blocks alone need
-   ~730px of viewport, which a 360x640 phone does not have, so the save
+   ~675px of viewport, which a 360x640 phone does not have, so the save
    button lives outside the scrolling area and is always reachable. */
 .screen {
   display: flex;
@@ -9,18 +9,20 @@
   overflow: hidden;
 }
 
-/* The gap does the breathing now that 오늘 기록 can't swallow the slack.
-   `justify-content: space-between` spreads whatever is still left over across
-   the column instead of dropping it in one hole above the save button. */
+/* Blocks sit one gap apart; 오늘 기록 takes whatever height is left (.today). */
 .scroller {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   gap: 10px;
   padding: 20px 20px 0;
+  /* 세로로 여유 있는 화면에서만 붙는 여백. 금액 카드와 카테고리 사이가 10px이면
+     흰 카드 바로 밑에 색 동그라미가 붙어서 답답하다. 높이 700px까지는 0이라
+     이미 모자란 작은 폰(360x640)과 접은 겉화면은 그대로고, 그 위로 조금씩
+     늘다가 14px에서 멈춘다 — 늘어난 만큼은 오늘 기록에서 나온다. */
+  --breathe: clamp(0px, (100vh - 700px) * 0.12, 14px);
 }
 
 /* ── header: live clock ─────────────────────────────────────── */
@@ -70,9 +72,11 @@
 
 /* ── amount ─────────────────────────────────────────────────── */
 
-/* The primary input target, so it takes the room capping 오늘 기록 freed up
-   rather than letting it pool as slack. */
 .amountCard {
+  /* 시계와도 조금은 떨어뜨린다. 아래를 24px 벌려놓고 위만 10px이면 카드가
+     시계에 매달린 것처럼 보인다. 카테고리 쪽의 1/3만 — 시계와 금액은 "언제·
+     얼마"로 묶여 있어서 카드와 아이콘 사이만큼 벌릴 자리는 아니다. */
+  margin-top: calc(var(--breathe) / 3);
   background: var(--sf);
   border-radius: 22px;
   padding: 21px 22px 21px;
@@ -194,11 +198,86 @@
 
 /* ── categories ─────────────────────────────────────────────── */
 
+/* 두 줄씩 한 페이지, 옆으로 넘긴다. 세 줄 격자는 12개에서 막혀 있어서 더
+   켜려면 다른 걸 꺼야 했다. 줄을 하나 줄여 높이를 돌려받고, 나머지는 옆
+   페이지로 보낸다.
+
+   좌우는 본문 패딩(20px)만큼 빼내서 페이지가 화면 끝까지 밀려 나가게 하고,
+   그 20px은 안쪽 padding과 scroll-padding으로 되돌린다 — 첫 페이지는 다른
+   블록과 같은 선에서 시작하고, 넘길 때는 화면 끝에서 들어온다.
+   위아래 5px은 고른 아이콘의 테두리(outline 3px + offset 2px) 자리다. 가로
+   스크롤 상자는 세로로도 잘라서, 이만큼 없으면 윗줄 테두리가 깎인다. margin으로
+   같은 만큼 되돌려서 흐름 속 높이는 격자 그대로다. */
+.catPages {
+  display: flex;
+  /* 페이지 사이 = 열 사이. 옆 페이지 첫 열이 다섯 번째 열처럼 이어 보인다. */
+  gap: 6px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 20px;
+  overscroll-behavior-x: contain;
+  margin: -5px -20px;
+  padding: 5px 20px;
+}
+
+/* 한 페이지. 한 줄만 찬 마지막 페이지도 높이는 가장 긴 페이지를 따라가서
+   (flex의 stretch), 넘길 때 아래 결제수단 줄이 들썩이지 않는다. */
 .grid {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  /* 세게 밀어도 한 번에 한 페이지. 건너뛰면 어느 페이지에 뭐가 있었는지 놓친다. */
+  scroll-snap-stop: always;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-content: start;
   gap: 10px 6px;
+}
+
+/* 페이지가 둘 이상일 때. 페이지를 조금 좁혀서 다음 페이지 첫 열의 아이콘이
+   오른쪽 끝에 반쯤(약 22px) 걸치게 한다 — 넘길 게 더 있다는 표시다. 마지막
+   페이지에서는 거꾸로 앞 페이지 끝 열이 왼쪽에 걸친다.
+
+   89% + 17px: 걸치는 폭이 화면 폭과 상관없이 아이콘 반쯤이 되게 맞춘 값이다.
+   아이콘은 열 가운데에 놓이므로 고정 px만 빼면 넓은 화면일수록 열이 넓어져
+   아이콘이 밖으로 밀린다 — 20px을 빼면 360px 폭에선 24px이 보이지만 520px
+   폭에선 4px뿐이다. */
+.catPagesPeek .grid {
+  flex-basis: calc(89% + 17px);
+}
+
+/* 격자와 그 아래 페이지 점을 한 덩어리로 묶는다. */
+.catPager {
   flex: none;
+  margin-top: var(--breathe);
+}
+
+/* 몇 장 중 어디인지. 걸친 아이콘은 "옆에 더 있다"까지만 말하고, 몇 장이고
+   지금 어디인지는 이 점이 말한다. 페이지가 하나면 그리지 않는다. */
+.pageDots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  /* 8px이면 접은 폴더블 겉화면(411x658)에서 열이 2px 넘쳐 화면이 살짝
+     스크롤된다. 글자 아래 여백이 있어 6px로도 떨어져 보인다. */
+  margin-top: 6px;
+}
+
+.pageDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--tx2);
+  opacity: 0.3;
+  transition:
+    width 0.2s ease,
+    opacity 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.pageDotOn {
+  width: 16px;
+  background: var(--brand);
+  opacity: 1;
 }
 
 .cat {
@@ -248,6 +327,9 @@
 .paysWrap {
   position: relative;
   flex: none;
+  /* 카테고리 쪽의 1/3. 점 아래로 결제수단이 너무 붙지 않을 만큼만 — 이 줄과
+     카테고리는 같은 "어디에·무엇으로" 묶음이라 금액 카드와의 사이보다는 가깝다. */
+  margin-top: calc(var(--breathe) / 3);
 }
 
 /* 흐름 밖. 아래 카드를 밀어내지 않고 그 위에 얹힌다 — 그림자가 없으면 카드와
@@ -304,21 +386,18 @@
 
 /* ── today's records ────────────────────────────────────────── */
 
-/* Takes up the column's slack, but capped — uncapped it was the only thing
-   that could grow, so every pixel saved elsewhere just made this box taller
-   instead of giving the amount card any room.
-   Ceiling is the header plus two rows (29 + 47 × 2 + padding), which is as
-   much of the day as is worth showing here; the rest scrolls inside. The
-   floor is only the header and the empty line, because at 375×812 the column
-   is already full — without giving that back there is nothing for the amount
-   card to grow into. */
+/* Takes all the height the blocks above leave over. It used to stop at the
+   header plus two rows (128px) and spread the rest into the gaps, but once
+   the category grid dropped to two rows that only widened the gaps while
+   오늘 기록 went on cutting off its own rows. The floor is the header and the
+   empty line; on a column that is already short (360x640) it stops there and
+   the records scroll inside. */
 .today {
   background: var(--sf);
   border-radius: 20px;
   padding: 4px 16px;
   flex: 1 1 auto;
   min-height: 76px;
-  max-height: 128px;
   overflow-y: auto;
 }
 
@@ -433,21 +512,18 @@
    where six columns wouldn't fit a 50px badge; 760px tall rules out
    full-height phones, tablets and the unfolded inner screen.
 
-   The extra width pays for the missing height — twelve categories in six
-   columns is two rows instead of three, and the labels still fit at the
-   resulting column width. That leaves about 22px, taken in small amounts
-   from the gap, the top padding and the amount card rather than out of any
-   one block.
+   The extra width used to pay for the missing height — twelve categories in
+   six columns made two rows instead of three. Every screen is two rows now
+   (pages of eight), so the columns stay at four here as well; six columns of
+   eight would strand two categories on a row of their own. The rest of the
+   shortfall is taken in small amounts from the gap, the top padding and the
+   amount card rather than out of any one block.
 
    This used to also shrink the clock and fold 오늘 기록 down to its total
    line. Dropping the ad slot for the first release gave back enough height
    that neither is needed; if the slot returns, they are the first things to
    reach for again. */
 @media (min-width: 400px) and (max-height: 760px) {
-  .grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
   .scroller {
     gap: 8px;
     padding-top: 14px;

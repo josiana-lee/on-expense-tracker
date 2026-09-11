@@ -13,8 +13,8 @@ export type NewCategory = {
 };
 
 /** Starts off the home grid — turning it on is a separate, explicit step
- *  (via setCategoryVisible), so adding a category never silently evicts
- *  another one from the 12-cap or breaks it. */
+ *  (via setCategoryVisible), so adding a category never silently rearranges
+ *  the input screen someone already knows by heart. */
 export async function addCategory(input: NewCategory): Promise<ID> {
   const id = uuidv7();
   const stamp = now();

@@ -2,23 +2,20 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { CATEGORIES } from '../../data/categories';
-import { MAX_HOME_CATEGORIES } from '../../data/categories';
 import { addCategory, archiveCategory, setCategoryVisible, updateCategory } from '../../db/categories';
 import type { CategoryRecord } from '../../db/types';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
+import { blurOnEnter } from '../../lib/keyboard';
 import styles from './CategorySheet.module.css';
 
 type Props = {
   /** An existing category to edit, or null to add one. */
   category: CategoryRecord | null;
-  /** How many OTHER categories are already on the home grid — used to
-   *  enforce the 12-cap without counting this one against itself. */
-  otherVisibleCount: number;
   onClose: () => void;
   onDone: (message: string) => void;
 };
 
-export function CategorySheet({ category, otherVisibleCount, onClose, onDone }: Props) {
+export function CategorySheet({ category, onClose, onDone }: Props) {
   const editing = category !== null;
   const [name, setName] = useState(category?.name ?? '');
   const [swatch, setSwatch] = useState(
@@ -29,13 +26,9 @@ export function CategorySheet({ category, otherVisibleCount, onClose, onDone }: 
   const [visible, setVisible] = useState(category?.visibleOnHome ?? false);
   const { busy, guard } = useGuardedAction();
 
-  const toggleVisible = () => {
-    if (!visible && otherVisibleCount >= MAX_HOME_CATEGORIES) {
-      onDone(`입력 화면엔 최대 ${MAX_HOME_CATEGORIES}개까지만 표시할 수 있어. 다른 카테고리를 먼저 꺼줘.`);
-      return;
-    }
-    setVisible((v) => !v);
-  };
+  /* 입력 화면에 켤 수 있는 개수는 막지 않는다. 세 줄 격자일 땐 13번째가 줄을
+     늘려 한 화면을 넘겼지만, 이제는 다음 페이지로 넘어갈 뿐이다. */
+  const toggleVisible = () => setVisible((v) => !v);
 
   const save = () => {
     if (!name.trim()) {
@@ -95,6 +88,7 @@ export function CategorySheet({ category, otherVisibleCount, onClose, onDone }: 
           onChange={(e) => setName(e.target.value)}
           placeholder="카테고리 이름 (예: 구독료)"
           enterKeyHint="done"
+          onKeyDown={blurOnEnter}
         />
       </div>
 

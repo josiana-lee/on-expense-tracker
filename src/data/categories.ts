@@ -223,14 +223,44 @@ export const CATEGORIES: Category[] = [
   },
 ];
 
-/** The input screen's grid is 4 columns x 3 rows so the whole flow fits one
- *  screen without scrolling — the point of the app. Past this, the grid
- *  grows a row and that stops being true, so category management enforces
- *  it as a hard cap rather than a starting point. */
-export const MAX_HOME_CATEGORIES = 12;
+/** One page of the input screen's category grid: 4 columns x 2 rows. Visible
+ *  categories past this spill onto the next page, one swipe away.
+ *
+ *  The row count is the fixed part — the grid shares one screen with the
+ *  amount card, payment chips and 오늘 기록, which is the point of the app.
+ *  It used to be 4 x 3 with a hard cap of 12, so turning a thirteenth on meant
+ *  turning another off first. Dropping a row and paging the rest gave back
+ *  height and left no reason for a cap. The column count lives in
+ *  InputScreen.module.css (.grid) and has to agree with this. */
+export const HOME_CATEGORIES_PER_PAGE = 8;
 
-/** Shown on the input screen out of the box — 4 columns x 3 rows. */
+/** Shown on the input screen out of the box — two full pages. Twelve left the
+ *  second page half empty, which reads as something missing rather than as a
+ *  page. */
 export const DEFAULT_VISIBLE: string[] = [
+  'food',
+  'snack',
+  'daily',
+  'transit',
+  'clothes',
+  'culture',
+  'beauty',
+  'health',
+  'education',
+  'telecom',
+  'event',
+  'cafe',
+  'alcohol',
+  'housing',
+  'utility',
+  'etc',
+];
+
+/** What shipped as the default through 1.0.0 — the first page as it still is,
+ *  plus four on the second. Kept so an install that never touched the home
+ *  grid can be recognised and moved up to the sixteen above; see
+ *  reconcileCategories(). Never edit this list — it describes the past. */
+export const DEFAULT_VISIBLE_V1: string[] = [
   'food',
   'snack',
   'daily',
@@ -251,7 +281,7 @@ export const DEFAULT_VISIBLE: string[] = [
    pass runs — this is separate from the Dexie schema version, which only
    moves when tables or indexes change. */
 
-export const PRESET_VERSION = 1;
+export const PRESET_VERSION = 2;
 
 export type PresetCategory = {
   /** Permanent. Doubles as the DB row id, so changing one orphans existing

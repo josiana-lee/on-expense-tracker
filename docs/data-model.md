@@ -226,7 +226,7 @@ export interface CategoryRecord {
   colorHex: string;           // '#FFD9A0'
   iconPath: string;           // SVG path의 'd' 속성 문자열
   subs: string[];             // 세부항목
-  visibleOnHome: boolean;     // 홈 그리드 노출 (기본 12개만 true)
+  visibleOnHome: boolean;     // 홈 그리드 노출 (기본 16개만 true)
   sortOrder: number;
   archived: boolean;          // 삭제 대신. 과거 기록의 참조를 지키기 위해 실제 삭제는 하지 않음
   deprecated?: boolean;       // 앱 업데이트로 프리셋 카탈로그에서 빠짐
@@ -394,7 +394,7 @@ export interface TombstoneRecord {
 
 // ---------- 메타 (key-value) ----------
 export interface MetaRecord {
-  key: 'deviceId' | 'presetVersion' | 'installedAt' | 'lastBackupAt' | 'lastBackupReminderAt';
+  key: 'deviceId' | 'presetVersion' | 'homeVisibleDefaults' | 'installedAt' | 'lastBackupAt' | 'lastBackupReminderAt';
   value: unknown;
   updatedAt: Epoch;
 }
@@ -518,7 +518,7 @@ export function fmt(d: Date): DateStr {
 
 **떠 있는 위치는 지금 고른 카드 아래다.** 결제수단 줄 왼쪽 끝에 고정하면 세 번째 카드를 골랐을 때 칩이 화면 반대편에 떠 있어서 무엇에 딸린 선택인지 보이지 않는다. 몇 번째 칩인지·얼마나 넓은지·줄이 옆으로 얼마나 밀렸는지는 그려봐야 알 수 있어 CSS로는 안 되고, 재서 넣는다. 양쪽 끝에서는 본문 안으로 당긴다.
 
-**입력 탭에서는 흐름 밖에 띄운다.** 입력 탭의 스크롤러가 `justify-content: space-between`이라, flex 자식이 하나 늘어나는 순간 열 전체가 다시 배분되어 금액 카드까지 위로 밀린다. 카드를 골랐을 뿐인데 화면이 흔들리는 것으로 보인다. 결제수단 줄을 기준으로 `position: absolute`로 띄우면 아무것도 움직이지 않는다. 달력의 기록 추가에서는 흐름 안에 그대로 둔다 — 거기서 띄우면 바로 아래 숫자판 키를 덮는다.
+**입력 탭에서는 흐름 밖에 띄운다.** 입력 탭은 오늘 기록이 남는 높이를 전부 가져가는 구조라, flex 자식이 하나 늘어나는 순간 오늘 기록이 그만큼 줄어든다. 카드를 골랐을 뿐인데 화면이 흔들리는 것으로 보인다. 결제수단 줄을 기준으로 `position: absolute`로 띄우면 아무것도 움직이지 않는다. 달력의 기록 추가에서는 흐름 안에 그대로 둔다 — 거기서 띄우면 바로 아래 숫자판 키를 덮는다.
 
 **오늘 기록에서는 카테고리 이름 옆에 작은 `할부` 칩만 붙인다.** 그 줄은 이름·시각·결제수단·금액을 이미 안고 있어서, 회차 번호까지 넣으면 이름이 먼저 잘린다. 몇 회차인지는 달력에서 본다.
 
@@ -628,12 +628,13 @@ export async function reconcilePresets() {
 }
 ```
 
-핵심 규칙 4가지:
+핵심 규칙 5가지:
 
 1. **신규 프리셋은 추가한다.**
 2. **사용자가 고친 필드는 건드리지 않는다.** `customizedFields`가 필드 단위라, "이름만 바꾼 사용자"도 색상 리뉴얼은 받는다.
 3. **세부항목은 append만.** 사용자가 지운 항목을 업데이트가 되살리면 명백히 짜증나는 동작이다.
 4. **프리셋 제거 = 삭제가 아니라 `deprecated` 표시.**
+5. **기본 노출 목록이 늘어나면 손대지 않은 화면만 따라간다.** 표시 여부는 `customizedFields`로 추적하지 않으므로, 지금 켜둔 목록이 예전 기본값(`DEFAULT_VISIBLE_V1`)과 정확히 같은지로 판단한다. 같으면 한 번도 건드린 적이 없다는 뜻이라 새 기본값(16개)을 따라가고, 다르면 사용자가 꾸민 화면이라 그대로 둔다. 제안했다는 사실은 `meta.homeVisibleDefaults`에 따로 적는다 — 복원이 `meta.presetVersion`을 0으로 되돌리기 때문에, 그 값에 얹으면 사용자가 도로 끈 항목이 복원 때마다 살아난다.
 
 카테고리 편집 UI는 저장 시 바뀐 필드를 `customizedFields`에 넣어야 한다. 이걸 빠뜨리면 업데이트가 사용자 설정을 덮어쓴다 — **UI 쪽에 반드시 전달할 계약이다.**
 

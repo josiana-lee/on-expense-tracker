@@ -7,6 +7,7 @@ import { InstallmentSheet } from '../../components/InstallmentSheet';
 import { EntrySheet } from '../../components/EntrySheet';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
+import { HOME_CATEGORIES_PER_PAGE } from '../../data/categories';
 import { fmt } from '../../db/date';
 import { addExpense } from '../../db/expenses';
 import {
@@ -152,6 +153,27 @@ export function InputScreen() {
        payments가 바뀌면(카드 이름 변경·추가) 칩의 폭과 자리가 달라진다. */
   }, [canInstall, paymentId, months, payments]);
 
+  /* 카테고리는 8개씩(4열 × 2줄) 페이지로 나눠 옆으로 넘긴다. 지금 몇 번째
+     페이지인지는 스크롤 위치에서 읽는다 — 손으로 넘긴 것도 코드로 넘긴 것도
+     같은 길로 점에 반영된다. */
+  const pagerRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(0);
+  const pages = Array.from(
+    { length: Math.ceil(homeCategories.length / HOME_CATEGORIES_PER_PAGE) },
+    (_, i) =>
+      homeCategories.slice(i * HOME_CATEGORIES_PER_PAGE, (i + 1) * HOME_CATEGORIES_PER_PAGE),
+  );
+
+  const showPage = useCallback((i: number) => {
+    const pager = pagerRef.current;
+    const first = pager?.children[0] as HTMLElement | undefined;
+    const target = pager?.children[i] as HTMLElement | undefined;
+    if (!pager || !first || !target) return;
+    /* 폭에 i를 곱하지 않고 그 페이지가 놓인 자리로 간다. 옆 페이지가 걸쳐
+       보이게 페이지를 화면보다 좁혀 두어서 폭 × i는 어긋난다. 마지막 페이지는
+       더 갈 수 없는 끝에서 브라우저가 멈춘다. */
+    pager.scrollTo({ left: target.offsetLeft - first.offsetLeft, behavior: 'smooth' });
+  }, []);
 
   const openPopup = useCallback(
     (categoryId: string, el: HTMLElement) => {
@@ -227,6 +249,9 @@ export function InputScreen() {
            주로 쓰는 카드를 기본값으로 둔 사람은 이 초기화로 잃는 게 없다. */
         setStagedPaymentId(null);
         setFromTemplateId(null);
+        /* 고른 카테고리가 풀렸으니 페이지도 처음으로. 다음 지출은 늘 같은
+           자리에서 시작해야 손이 기억한다. */
+        showPage(0);
       } catch (e) {
         /* 금액이 회차 수보다 적을 때. 왜 안 되는지 말해주지 않으면 사용자는
            같은 버튼을 계속 누른다. */
@@ -244,6 +269,7 @@ export function InputScreen() {
     fromTemplateId,
     flash,
     guard,
+    showPage,
   ]);
 
   /** 저장해둔 지출을 골랐을 때. 바로 기록하지 않고 화면만 채운 뒤 시트를
@@ -262,8 +288,13 @@ export function InputScreen() {
          회차로 쪼개져서, 사용자가 고른 것과 다른 값이 저장된다. */
       setMonths(1);
       setKeypadOpen(false);
+      /* 채운 카테고리가 뒤 페이지에 있으면 거기로 넘긴다. 안 넘기면 버튼에는
+         "교육 추가!"라고 떠 있는데 화면에는 그 아이콘이 없어서, 무엇이
+         골라졌는지 확인할 길이 없다. 입력 화면에서 숨긴 카테고리면 둔다. */
+      const at = homeCategories.findIndex((c) => c.id === rule.categoryId);
+      if (at >= 0) showPage(Math.floor(at / HOME_CATEGORIES_PER_PAGE));
     },
-    [],
+    [homeCategories, showPage],
   );
 
   const popupCategory = popup ? byId.get(popup.categoryId) : undefined;
@@ -301,28 +332,58 @@ export function InputScreen() {
           </div>
         </button>
 
-        <div className={styles.grid}>
-          {homeCategories.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              className={styles.cat}
-              onClick={(e) => openPopup(c.id, e.currentTarget)}
-            >
-              <span
-                className={`${styles.catBadge} ${c.id === stagedCategoryId ? styles.catBadgeOn : ''}`}
-                style={{ background: c.colorHex }}
-              >
-                <Icon path={c.iconPath} size={26} />
-              </span>
-              <span className={styles.catName}>{c.name}</span>
-            </button>
-          ))}
+        {/* 페이지가 둘 이상이면 옆 페이지 첫 열이 오른쪽 끝에 걸쳐 보이고(넘길 게
+            더 있다), 아래 점이 몇 장 중 어디인지 알려준다. */}
+        <div className={styles.catPager}>
+          <div
+            className={`${styles.catPages} ${pages.length > 1 ? styles.catPagesPeek : ''}`}
+            ref={pagerRef}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const first = el.children[0] as HTMLElement;
+              const second = el.children[1] as HTMLElement | undefined;
+              /* 페이지 한 칸의 간격으로 나눈다. 옆 페이지가 걸치게 페이지를 화면보다
+                 좁혀 두어서 clientWidth로 나누면 뒤로 갈수록 어긋난다. */
+              if (second) {
+                setPage(Math.round(el.scrollLeft / (second.offsetLeft - first.offsetLeft)));
+              }
+            }}
+          >
+            {pages.map((cats, i) => (
+              <div key={i} className={styles.grid}>
+                {cats.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={styles.cat}
+                    onClick={(e) => openPopup(c.id, e.currentTarget)}
+                  >
+                    <span
+                      className={`${styles.catBadge} ${c.id === stagedCategoryId ? styles.catBadgeOn : ''}`}
+                      style={{ background: c.colorHex }}
+                    >
+                      <Icon path={c.iconPath} size={26} />
+                    </span>
+                    <span className={styles.catName}>{c.name}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+          {pages.length > 1 && (
+            <div className={styles.pageDots} aria-hidden="true">
+              {pages.map((_, i) => (
+                <span
+                  key={i}
+                  className={`${styles.pageDot} ${i === page ? styles.pageDotOn : ''}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* 할부 칩을 감싸는 기준. 흐름에 넣으면 이 화면이 통째로 움직인다 —
-            scroller가 space-between이라 flex 자식이 하나 늘어나는 순간 열 전체가
-            다시 배분되고, 금액 카드까지 위로 밀린다. 카드를 골랐을 뿐인데 화면이
+        {/* 할부 칩을 감싸는 기준. 흐름에 넣으면 칩이 뜨고 사라질 때마다 아래 오늘
+            기록이 그만큼 줄었다 늘었다 한다 — 카드를 골랐을 뿐인데 화면이
             흔들리는 것으로 보인다. */}
         <div className={styles.paysWrap} ref={paysWrapRef}>
           <div className={styles.pays}>

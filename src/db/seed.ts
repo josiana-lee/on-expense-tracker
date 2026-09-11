@@ -1,9 +1,26 @@
-import { PRESET_CATEGORIES, PRESET_VERSION } from '../data/categories';
+import { DEFAULT_VISIBLE_V1, PRESET_CATEGORIES, PRESET_VERSION } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
 import { db } from './db';
 import { now, uuidv7 } from './id';
 import { pruneTombstones } from './tombstones';
 import type { CategoryRecord } from './types';
+
+/** 기본 노출 목록을 어디까지 따라왔는지. presetVersion과 따로 두는 이유는 복원이
+ *  presetVersion을 0으로 되돌리기 때문이다 — 그 표시까지 같이 돌아가면, 열여섯 개를
+ *  보고 네 개를 도로 끈 사람이 복원 한 번에 다시 열여섯 개가 된다. meta는 백업에
+ *  실려 다니므로 이 키는 그 사람을 따라간다. */
+const HOME_DEFAULTS_KEY = 'homeVisibleDefaults';
+const HOME_DEFAULTS_VERSION = 2;
+
+/** 입력 화면에 켜둔 카테고리가 예전 기본값 그대로인지. 하나라도 끄거나 켰거나 직접
+ *  만든 카테고리를 올렸다면 그건 사용자가 꾸민 화면이라 손대지 않는다. */
+function isUntouchedHomeGrid(rows: CategoryRecord[]): boolean {
+  const visible = rows.filter((c) => c.visibleOnHome && !c.archived).map((c) => c.presetKey ?? c.id);
+  return (
+    visible.length === DEFAULT_VISIBLE_V1.length &&
+    DEFAULT_VISIBLE_V1.every((key) => visible.includes(key))
+  );
+}
 
 /** Folds catalogue changes into the user's copy without clobbering their edits.
  *
@@ -20,6 +37,14 @@ export async function reconcileCategories(): Promise<void> {
     const existing = await db.categories.toArray();
     const byKey = new Map(existing.filter((c) => c.presetKey).map((c) => [c.presetKey!, c]));
     const presetKeys = new Set(PRESET_CATEGORIES.map((p) => p.key));
+
+    /* 기본 노출을 12개에서 16개(4열 × 2줄 두 장)로 늘렸다. 쓰던 기기에서도 두 번째
+       장이 차야 하지만, 표시 여부는 사용자 설정이라 덮어쓸 수 없다. 그래서 지금
+       켜둔 목록이 예전 기본값과 글자 그대로 같을 때만 — 한 번도 건드린 적이 없다는
+       뜻일 때만 — 새 기본값을 따라가게 한다. */
+    const homeDefaults = (await db.meta.get(HOME_DEFAULTS_KEY))?.value as number | undefined;
+    const adoptDefaults =
+      (homeDefaults ?? 0) < HOME_DEFAULTS_VERSION && isUntouchedHomeGrid(existing);
 
     for (const p of PRESET_CATEGORIES) {
       const cur = byKey.get(p.key);
@@ -45,6 +70,9 @@ export async function reconcileCategories(): Promise<void> {
 
       const edited = new Set(cur.customizedFields);
       const patch: Partial<CategoryRecord> = { deprecated: false };
+      if (adoptDefaults && p.defaultVisibleOnHome && !cur.visibleOnHome) {
+        patch.visibleOnHome = true;
+      }
       if (!edited.has('name')) patch.name = p.name;
       if (!edited.has('colorHex')) patch.colorHex = p.colorHex;
       if (!edited.has('type')) patch.type = p.type;
@@ -73,6 +101,9 @@ export async function reconcileCategories(): Promise<void> {
     }
 
     await db.meta.put({ key: 'presetVersion', value: PRESET_VERSION, updatedAt: now() });
+    /* 따라갔든, 꾸며둔 화면이라 그냥 뒀든, 새 기본값은 한 번만 제안한다. 이 표시가
+       없으면 다음 프리셋 갱신 때 다시 켜져서 도로 끈 네 개가 계속 살아난다. */
+    await db.meta.put({ key: HOME_DEFAULTS_KEY, value: HOME_DEFAULTS_VERSION, updatedAt: now() });
   });
 }
 
