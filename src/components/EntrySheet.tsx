@@ -207,8 +207,27 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
     });
   };
 
+  /* 삭제 버튼은 제목 바로 옆이라 손이 닿기 쉬운 자리인데, 눌리는 즉시
+     지워지고 되돌릴 UI가 없다 — 할부면 회차 전체가 한 번에 사라진다.
+     새 시트나 다이얼로그 대신 같은 버튼이 한 번 더 눌러야 확정되게 한다:
+     삭제는 자주 하는 동작이 아니라서 탭 한 번 느는 게 부담스럽지 않고,
+     실수로 손이 닿았을 때는 두 번째 탭까지 가지 않는다. 3초 뒤엔 저절로
+     풀린다 — 무장된 채로 잊고 있다가 나중에 딴 데를 눌렀는데 지워지면
+     그게 더 무섭다. */
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  useEffect(() => {
+    if (!confirmingDelete) return undefined;
+    const t = window.setTimeout(() => setConfirmingDelete(false), 3000);
+    return () => window.clearTimeout(t);
+  }, [confirmingDelete]);
+
   const remove = () => {
     if (!record) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
     guard(async () => {
       try {
         if (installmentId) {
@@ -261,8 +280,13 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           </div>
         </div>
         {editing && (
-          <button type="button" className={styles.delete} onClick={remove} disabled={busy}>
-            삭제
+          <button
+            type="button"
+            className={`${styles.delete} ${confirmingDelete ? styles.deleteConfirm : ''}`}
+            onClick={remove}
+            disabled={busy}
+          >
+            {confirmingDelete ? (installment ? '회차 모두 지울까?' : '지울까?') : '삭제'}
           </button>
         )}
       </div>

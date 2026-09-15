@@ -20,6 +20,7 @@
 }
 
 .delete {
+  flex: none;
   border: 0;
   background: var(--warnSoft);
   color: var(--warn);
@@ -28,6 +29,14 @@
   font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 한 번 더 눌러야 진짜 지워지는 상태. 옅은 배경(.delete)에서 꽉 찬 색으로
+   바뀌어서 "이번엔 진짜"라는 게 손이 아니라 눈으로도 보인다. */
+.deleteConfirm {
+  background: var(--warn);
+  color: #fff;
 }
 
 /* 제목 옆의 작은 필. 입력 탭 "이 시각으로 기록돼" 도장과 같은 배합(브랜드
