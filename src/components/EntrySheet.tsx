@@ -5,6 +5,7 @@ import { ClearAmount } from './ClearAmount';
 import { InstallmentChips } from './InstallmentChips';
 import { InstallmentSheet } from './InstallmentSheet';
 import { Sheet } from './Sheet';
+import { rememberCategoryPayment } from '../db/categories';
 import { parseDateStr } from '../db/date';
 import { addExpense, deleteExpense, updateExpense } from '../db/expenses';
 import {
@@ -86,9 +87,21 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   );
 
   const categoryId = pickedCategory ?? homeCategories[0]?.id ?? 'etc';
-  const paymentId = pickedPayment ?? settings?.defaultPaymentMethodId ?? payments[0]?.id ?? '';
-
   const category = byId.get(categoryId);
+
+  /* 이 카테고리로 마지막에 낸 결제수단이 있고 아직 고를 수 있는 목록에 있으면
+     그걸 기본값으로 쓴다. 기존 기록을 고칠 때는 적용되지 않는다 —
+     pickedPayment가 record.paymentMethodId로 이미 채워져 있어서 이 자리까지
+     오지 않는다. 카드를 지워도 lastPaymentMethodId는 남을 수 있어서
+     (archivePaymentMethod가 정리하지 않는다) 목록에 있는지부터 확인한다. */
+  const rememberedPaymentId = category?.lastPaymentMethodId;
+  const rememberedPayment =
+    rememberedPaymentId && payments.some((p) => p.id === rememberedPaymentId)
+      ? rememberedPaymentId
+      : undefined;
+
+  const paymentId =
+    pickedPayment ?? rememberedPayment ?? settings?.defaultPaymentMethodId ?? payments[0]?.id ?? '';
 
   /* 할부 회차를 고칠 때는 신용카드만 고르게 한다.
    *
@@ -182,6 +195,10 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           });
           onDone(`${won(amount)}원 저장했어!`);
         }
+        /* 저장은 이미 끝났다. 기억은 다음 기본값을 위한 부가 정보라 여기서
+           실패해도 저장을 되돌리거나 실패로 알릴 일이 아니다 — InputScreen의
+           같은 호출과 계약이 같다. */
+        await rememberCategoryPayment(categoryId, paymentId).catch(() => {});
         onClose();
       } catch (e) {
         if (e instanceof InstallmentRangeError) onDone(e.message);

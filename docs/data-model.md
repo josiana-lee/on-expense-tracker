@@ -231,10 +231,15 @@ export interface CategoryRecord {
   archived: boolean;          // 삭제 대신. 과거 기록의 참조를 지키기 위해 실제 삭제는 하지 않음
   deprecated?: boolean;       // 앱 업데이트로 프리셋 카탈로그에서 빠짐
   customizedFields: string[]; // 사용자가 직접 고친 필드 이름들
+  lastPaymentMethodId?: ID;   // 이 카테고리로 마지막에 낸 결제수단. 입력 화면 기본값에 쓰임
   createdAt: Epoch;
   updatedAt: Epoch;
 }
 ```
+
+**`lastPaymentMethodId`로 결제수단 기본값을 기억한다.** 입력 탭·기록 수정 시트에서 카테고리를 고르면 결제수단 기본값이 `설정의 기본 결제수단` 대신 이 값으로 바뀐다 — 교통비는 늘 체크카드로 내는 사람도 매번 카드를 다시 누를 필요가 없어진다. `rememberCategoryPayment()`(categories.ts)가 저장이 끝난 뒤(InputScreen의 `save()`, EntrySheet의 `submit()`) 호출한다 — `addExpense` 등 지출을 쓰는 함수 안이 아니라 UI 쪽에서, `touchTemplate`과 같은 자리·같은 계약으로: 실패해도 저장 자체는 이미 끝났으니 `.catch(() => {})`로 삼킨다.
+
+카드를 삭제해도 이 필드는 정리되지 않는다(`archivePaymentMethod`가 손대지 않음 — `settings.defaultPaymentMethodId`도 같은 처지다). 그래서 읽는 쪽이 항상 지금 고를 수 있는 결제수단 목록에 있는지 확인한 뒤에만 기본값으로 쓴다; 없으면 조용히 다음 순위(설정의 기본 결제수단)로 넘어간다.
 
 **프리셋의 `id`를 `presetKey`와 같게 두는 이유:** 모든 기기에서 '식비'가 같은 id를 갖는다. 나중에 다기기 동기화를 붙일 때 프리셋 카테고리가 30개씩 중복 생성되는 사고를 원천 차단한다.
 

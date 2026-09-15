@@ -84,6 +84,13 @@ export interface CategoryRecord {
   deprecated?: boolean;
   /** 사용자가 직접 고친 필드 이름들. 여기 있는 필드는 프리셋 업데이트가 건드리지 않는다. */
   customizedFields: string[];
+  /** 이 카테고리로 마지막에 낸 결제수단. 입력 화면에서 이 카테고리를 고르면
+   *  결제수단 기본값이 여기로 바뀐다 — 교통비는 늘 체크카드로 내는 사람도
+   *  매번 카드를 다시 누를 필요가 없어진다. 삭제된 결제수단을 가리킬 수
+   *  있으므로(archivePaymentMethod는 이 필드를 정리하지 않는다) 읽는 쪽이
+   *  지금 고를 수 있는 목록에 있는지 반드시 확인한다 — 정리는 쓰는 쪽이
+   *  아니라 읽는 쪽 책임이다. */
+  lastPaymentMethodId?: ID;
   createdAt: Epoch;
   updatedAt: Epoch;
 }

@@ -77,6 +77,7 @@ const categorySchema = z.looseObject({
   archived: z.boolean(),
   deprecated: z.boolean().optional(),
   customizedFields: z.array(z.string()),
+  lastPaymentMethodId: id.optional(),
   createdAt: epoch,
   updatedAt: epoch,
 });

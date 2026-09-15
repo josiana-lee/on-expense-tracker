@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_VISIBLE, DEFAULT_VISIBLE_V1, PRESET_CATEGORIES } from '../data/categories';
-import { addCategory, setCategoryVisible, updateCategory } from './categories';
+import { addCategory, rememberCategoryPayment, setCategoryVisible, updateCategory } from './categories';
 import { db } from './db';
+import { archivePaymentMethod } from './paymentMethods';
 import { bootstrap, reconcileCategories } from './seed';
 
 /** Rewinds the marker reconcileCategories() gates on, which is what a
@@ -115,5 +116,55 @@ describe('home grid defaults', () => {
     await simulatePresetBump();
 
     expect(await visibleKeys()).toHaveLength(DEFAULT_VISIBLE_V1.length);
+  });
+});
+
+describe('rememberCategoryPayment', () => {
+  it('records the payment method used for a category', async () => {
+    await bootstrap();
+
+    await rememberCategoryPayment('food', 'hyundai');
+
+    expect((await db.categories.get('food'))?.lastPaymentMethodId).toBe('hyundai');
+  });
+
+  it('overwrites the previous memory rather than keeping the first one', async () => {
+    await bootstrap();
+
+    await rememberCategoryPayment('food', 'cash');
+    await rememberCategoryPayment('food', 'hyundai');
+
+    expect((await db.categories.get('food'))?.lastPaymentMethodId).toBe('hyundai');
+  });
+
+  it('does not bump the category updatedAt', async () => {
+    await bootstrap();
+    const before = (await db.categories.get('food'))?.updatedAt;
+
+    await rememberCategoryPayment('food', 'hyundai');
+
+    // 카테고리 자체를 고친 시각이 아니라 결제수단만 갱신된다 — 지출을 쓸
+    // 때마다 이 값이 움직이면 이름·아이콘을 실제로 언제 고쳤는지 알 수 없다.
+    expect((await db.categories.get('food'))?.updatedAt).toBe(before);
+  });
+
+  it('does not throw for a category that no longer exists', async () => {
+    await bootstrap();
+
+    await expect(rememberCategoryPayment('no-such-category', 'hyundai')).resolves.toBeUndefined();
+  });
+
+  it('does not resurface an archived payment method as a remembered default', async () => {
+    await bootstrap();
+    await rememberCategoryPayment('food', 'hyundai');
+    await archivePaymentMethod('hyundai');
+
+    const active = (await db.paymentMethods.toArray()).filter((p) => !p.archived);
+    const category = await db.categories.get('food');
+
+    // db 계층은 지운다고 정리해주지 않는다 — 화면이 "지금 고를 수 있는 목록에
+    // 있는지" 확인해야 한다는 계약을 이 테스트로 명시해둔다.
+    expect(category?.lastPaymentMethodId).toBe('hyundai');
+    expect(active.some((p) => p.id === 'hyundai')).toBe(false);
   });
 });

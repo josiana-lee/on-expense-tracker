@@ -69,6 +69,22 @@ export async function updateCategory(
   await db.categories.update(id, next);
 }
 
+/** 이 카테고리로 방금 낸 결제수단을 기억해둔다. 입력 탭·기록 수정 시트 양쪽
+ *  다 저장이 끝난 뒤 호출한다 — 지출을 쓰는 함수(addExpense·addInstallment·
+ *  updateExpense·updateInstallmentGroup) 안에 넣지 않은 건, "지출을 쓴다"와
+ *  "이걸 다음 기본값으로 삼는다"가 서로 다른 일이라서다. touchTemplate과
+ *  같은 자리, 같은 이유로 UI 쪽에서 부른다.
+ *
+ *  updatedAt을 건드리지 않는다. 저 필드는 "이 카테고리 자체를 마지막으로
+ *  고친 시각"이라, 매번 지출을 쓸 때마다 갱신되면 이름·아이콘을 정작
+ *  언제 고쳤는지가 지출 빈도에 묻혀버린다.
+ *
+ *  실패해도 지출 저장 자체를 막을 일이 아니라서 부르는 쪽이 항상
+ *  `.catch(() => {})`로 감싼다 — touchTemplate과 같은 계약이다. */
+export async function rememberCategoryPayment(categoryId: ID, paymentMethodId: ID): Promise<void> {
+  await db.categories.update(categoryId, { lastPaymentMethodId: paymentMethodId });
+}
+
 /** Archived rather than hard-deleted — same reasoning as payment methods:
  *  every expense stores categoryId directly, so removing the row would turn
  *  old records into references to nothing. useCatalog()'s byId map stays

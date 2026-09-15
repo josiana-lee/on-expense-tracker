@@ -8,6 +8,7 @@ import { EntrySheet } from '../../components/EntrySheet';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
 import { HOME_CATEGORIES_PER_PAGE } from '../../data/categories';
+import { rememberCategoryPayment } from '../../db/categories';
 import { fmt } from '../../db/date';
 import { addExpense } from '../../db/expenses';
 import {
@@ -87,8 +88,25 @@ export function InputScreen() {
   const [draftSub, setDraftSub] = useState<string | null>(null);
   const [draftMemo, setDraftMemo] = useState('');
 
+  const stagedCategory = stagedCategoryId ? byId.get(stagedCategoryId) : undefined;
+
+  /* 이 카테고리로 마지막에 낸 결제수단이 있고, 그게 아직 고를 수 있는
+     결제수단 목록에 있으면 그걸 기본값으로 쓴다. 카드를 지워도
+     lastPaymentMethodId는 그대로 남을 수 있어서(archivePaymentMethod가
+     정리하지 않는다) 목록에 있는지부터 확인한다 — 없으면 죽은 카드가
+     조용히 선택된 것처럼 보인다. */
+  const rememberedPaymentId = stagedCategory?.lastPaymentMethodId;
+  const rememberedPayment =
+    rememberedPaymentId && payments.some((p) => p.id === rememberedPaymentId)
+      ? rememberedPaymentId
+      : undefined;
+
   const paymentId =
-    stagedPaymentId ?? settings?.defaultPaymentMethodId ?? payments[0]?.id ?? null;
+    stagedPaymentId ??
+    rememberedPayment ??
+    settings?.defaultPaymentMethodId ??
+    payments[0]?.id ??
+    null;
 
   /* 할부는 신용카드에만 있다. 현금이나 체크카드로 나눠 낼 수는 없다. */
   const canInstall = supportsInstallment(paymentId ? paymentById.get(paymentId) : undefined);
@@ -232,9 +250,11 @@ export function InputScreen() {
         if (months > 1) await addInstallment({ ...common, total: Number(amount), months });
         else await addExpense({ ...common, amount: Number(amount) });
 
-        /* 지출은 이미 저장됐다. 사용 표시는 정렬용 부가 정보라 여기서
-           실패해도 저장을 되돌리거나 실패로 알릴 일이 아니다. */
+        /* 지출은 이미 저장됐다. 사용 표시도, 결제수단 기억도 정렬·기본값용
+           부가 정보라 여기서 실패해도 저장을 되돌리거나 실패로 알릴 일이
+           아니다. */
         if (fromTemplateId) await touchTemplate(fromTemplateId).catch(() => {});
+        await rememberCategoryPayment(common.categoryId, common.paymentMethodId).catch(() => {});
         flash(
           months > 1 ? `${months}개월 할부로 저장했어!` : `${won(amount)}원 저장했어!`,
         );
@@ -298,7 +318,6 @@ export function InputScreen() {
   );
 
   const popupCategory = popup ? byId.get(popup.categoryId) : undefined;
-  const stagedCategory = stagedCategoryId ? byId.get(stagedCategoryId) : undefined;
   const ctaLabel = stagedCategory
     ? `${stagedCategory.name}${stagedSub ? ` · ${stagedSub}` : ''} 추가!`
     : '추가!';
