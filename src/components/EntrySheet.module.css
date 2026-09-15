@@ -2,9 +2,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .title {
+  flex: none;
   font-size: 14px;
   font-weight: 800;
   color: var(--tx);
@@ -19,6 +28,47 @@
   font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
+}
+
+/* 제목 옆의 작은 필. 입력 탭 "이 시각으로 기록돼" 도장과 같은 배합(브랜드
+   연보라 배경 + 브랜드색 글자)이라, 안에 든 게 순수 OS 위젯이어도 이 앱의
+   말투로 보인다. */
+.dateChip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--brandSoft);
+  color: var(--brand);
+  border-radius: 999px;
+  padding: 5px 9px;
+}
+
+/* 할부 회차를 고치는 중. 잠긴 이유는 .installNote가 말한다. */
+.dateChipLocked {
+  opacity: 0.5;
+}
+
+/* 네이티브 input이라 배경·테두리를 지우고 필의 색만 물려받게 한다. 폭은
+   내용(연·월·일 숫자)만큼만 — flex:none이 없으면 빈 공간을 늘려 잡아서
+   필이 옆으로 길어진다. */
+.dateInput {
+  flex: none;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: inherit;
+  font-family: inherit;
+}
+
+/* 크롬(=안드로이드 웹뷰)이 이 자리에 자기 캘린더 아이콘을 하나 더 그린다.
+   아이콘이 둘이 되는 걸 막으려고 지운다 — 지워도 입력칸 전체가 여전히
+   눌리는 자리라 picker는 그대로 열린다. */
+.dateInput::-webkit-calendar-picker-indicator {
+  display: none;
 }
 
 .amountRow {

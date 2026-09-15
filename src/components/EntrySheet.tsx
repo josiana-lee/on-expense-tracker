@@ -25,6 +25,10 @@ import { amountSize, won } from '../lib/format';
 import { blurOnEnter } from '../lib/keyboard';
 import styles from './EntrySheet.module.css';
 
+/** TabBar의 달력 탭과 같은 path. 같은 뜻(날짜)을 가리키는 자리라 아이콘도
+ *  같은 걸 쓴다. */
+const CALENDAR_ICON = 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13H4zM4 10h16M8 3v4M16 3v4';
+
 type Props = {
   /** An existing row to edit, or null to create one on `date`. */
   record: ExpenseRecord | null;
@@ -65,6 +69,13 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   const [memo, setMemo] = useState(record?.memo ?? '');
   const { busy, guard } = useGuardedAction();
 
+  /* 날짜를 이 자리에서 바로 고친다. 전에는 새로 넣을 때든 이미 있는 기록을
+     고칠 때든 날짜를 볼 수도 바꿀 수도 없었다 — 하루치를 몰아 늦은 밤에
+     적다가 자정을 넘기면 그 뒤로 넣은 기록이 전부 다음 날로 붙었는데,
+     한 번 저장되면 고칠 방법이 없었다. updateExpense는 이미 date를 받으므로
+     막고 있던 건 이 화면뿐이었다. */
+  const [pickedDate, setPickedDate] = useState<DateStr>(record?.date ?? date);
+
   /* Defaults are derived, not seeded into state. The catalog and settings
      arrive a frame after mount, and a useState initialiser only ever runs on
      that first frame — freezing the fallbacks there left new records with no
@@ -100,6 +111,12 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   const [months, setMonths] = useState(1);
   const [installOpen, setInstallOpen] = useState(false);
   const canInstall = !editing && supportsInstallment(paymentById.get(paymentId));
+
+  /* 할부 회차는 날짜도 고칠 수 없다. 각 회차 날짜는 최초 구매일에서
+     addMonthsClamped로 계산되므로, 한 회차만 옮기면 나머지 회차와 스케줄이
+     어긋난다 — 금액을 잠근 것과 같은 이유다. 새 할부(아직 저장 전)는 여기
+     해당하지 않는다: months>1이어도 record가 없으면 installment는 false다. */
+  const dateLocked = installment;
 
   useEffect(() => {
     if (!canInstall && months > 1) setMonths(1);
@@ -140,6 +157,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             // behind in the stored row.
             memo: memo.trim() || undefined,
             paymentMethodId: paymentId,
+            date: pickedDate,
           });
           onDone('수정했어!');
         } else if (months > 1) {
@@ -150,7 +168,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             subLabel,
             memo,
             paymentMethodId: paymentId,
-            at: stampFor(date),
+            at: stampFor(pickedDate),
           });
           onDone(`${months}개월 할부로 저장했어!`);
         } else {
@@ -160,7 +178,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             subLabel,
             memo,
             paymentMethodId: paymentId,
-            at: stampFor(date),
+            at: stampFor(pickedDate),
           });
           onDone(`${won(amount)}원 저장했어!`);
         }
@@ -193,7 +211,30 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   return (
     <Sheet label={editing ? '기록 수정' : '기록 추가'} onClose={onClose}>
       <div className={styles.head}>
-        <span className={styles.title}>{editing ? '기록 수정' : '기록 추가'}</span>
+        <div className={styles.titleRow}>
+          <span className={styles.title}>{editing ? '기록 수정' : '기록 추가'}</span>
+          {/* 안은 네이티브 날짜 picker다 — 탭하면 안드로이드 기본 달력 UI가
+              그대로 뜬다. 입력 탭의 "이 시각으로 기록돼" 도장과 같은
+              필(브랜드 연보라 배경 + 브랜드색 글자) 모양으로 감싸서, 순수
+              OS 위젯의 각진 인상을 지운다. 제목 옆에 붙여 눈에 덜 띄게 둔다:
+              날짜를 고치는 건 잘못 적혔을 때만 쓰는 예외 경로라, 금액 위에
+              항상 보이는 줄로 두면 3초 입력이라는 화면의 목적과 안 맞는다.
+              value/onChange은 'YYYY-MM-DD' 문자열을 주고받고, fmt()가 만드는
+              DateStr과 형식이 같아서 변환이 필요 없다. 빈 문자열이 올 수 있는
+              경우(입력칸을 지웠을 때)는 무시해 pickedDate가 빈 값이 되지
+              않게 한다. */}
+          <div className={`${styles.dateChip} ${dateLocked ? styles.dateChipLocked : ''}`}>
+            <Icon path={CALENDAR_ICON} size={12} stroke="currentColor" strokeWidth={2.4} />
+            <input
+              type="date"
+              className={styles.dateInput}
+              value={pickedDate}
+              onChange={(e) => e.target.value && setPickedDate(e.target.value)}
+              disabled={dateLocked}
+              aria-label="날짜"
+            />
+          </div>
+        </div>
         {editing && (
           <button type="button" className={styles.delete} onClick={remove} disabled={busy}>
             삭제
@@ -214,7 +255,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           {installmentNote}
           {record?.installmentTotal !== undefined && ` · 총 ${won(record.installmentTotal)}원`}
           <br />
-          금액은 회차별로 고칠 수 없어. 나머지를 고치면 모든 회차에 함께 적용돼.
+          금액과 날짜는 회차별로 고칠 수 없어. 나머지를 고치면 모든 회차에 함께 적용돼.
         </p>
       )}
 
