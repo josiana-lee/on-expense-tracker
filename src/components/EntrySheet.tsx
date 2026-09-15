@@ -247,6 +247,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
               className={styles.dateInput}
               value={pickedDate}
               onChange={(e) => e.target.value && setPickedDate(e.target.value)}
+              /* 안드로이드에서는 이 캘린더 아이콘(picker indicator)을 눌러야만
+                 달력 UI가 뜨고, 글자 부분을 누르면 초점만 갈 뿐 아무것도 뜨지
+                 않는다 — 데스크톱 크롬과 다르다. 그 아이콘을 지운
+                 .dateInput::-webkit-calendar-picker-indicator과 맞물려서,
+                 실기기에서는 이 필을 눌러도 아무 일도 안 일어나는 것처럼
+                 보였다. showPicker()로 어디를 눌렀든 직접 열어서, 인디케이터가
+                 있든 없든 항상 뜨게 만든다. */
+              onClick={(e) => e.currentTarget.showPicker?.()}
               disabled={dateLocked}
               aria-label="날짜"
             />
