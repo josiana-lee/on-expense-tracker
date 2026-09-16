@@ -1,3 +1,4 @@
+import { tapFeedback } from '../lib/haptics';
 import styles from './Keypad.module.css';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'del'] as const;
@@ -16,7 +17,15 @@ export function Keypad({ onPress, compact }: Props) {
         <button
           key={k}
           type="button"
-          onClick={() => onPress(k)}
+          /* 진동은 여기서 울린다. 숫자판을 쓰는 화면이 일곱이고 앞으로 더
+             생길 텐데, 부르는 쪽마다 넣게 하면 언젠가 한 화면만 조용해진다 —
+             Sheet가 뒤로가기를 대신 맡는 것과 같은 이유다.
+             onPress보다 먼저 친다. 누른 결과가 무엇이든(저장이 되든 자릿수
+             제한에 막히든) 손가락에는 눌렸다는 사실만 돌려주면 된다. */
+          onClick={() => {
+            tapFeedback();
+            onPress(k);
+          }}
           aria-label={k === 'del' ? '지우기' : k}
           className={[styles.key, compact ? styles.compact : '', k === 'del' ? styles.muted : '']
             .filter(Boolean)

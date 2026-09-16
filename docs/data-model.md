@@ -385,6 +385,8 @@ export interface SettingsRecord {
   reminderEnabled: boolean;
   reminderTime?: TimeStr;
   themeMode: 'light' | 'dark' | 'system';
+  colorTheme?: ColorTheme;    // 색 팔레트. themeMode와는 별개의 축
+  hapticsEnabled?: boolean;   // 숫자판 진동. 없으면 켜짐으로 읽는다
   budgetAlertThresholds: number[]; // [0.8, 1.0]
   updatedAt: Epoch;
 }
