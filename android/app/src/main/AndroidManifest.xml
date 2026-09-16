@@ -33,4 +33,16 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- @capacitor/haptics가 자기 매니페스트에서 VIBRATE를 들여오는데, Play는
+         그걸 "진동기가 달린 기기에만 배포하라"는 뜻으로 읽는다. 진동 모터가
+         없는 기기 26대(태블릿 6·TV 3·차량 17)가 배포 대상에서 빠졌고, 업로드
+         때 "이전 버전에서 지원하던 기기를 더 이상 지원하지 않는다"는 오류로
+         나타났다.
+
+         진동은 입력의 곁다리지 조건이 아니다 — tapFeedback()은 실패를 삼키고
+         설정에는 끄는 스위치도 있어서, 진동기가 없는 기기에서도 앱은 그대로
+         돌아간다. required="false"로 그 사실을 Play에 말해준다. 권한은 그대로
+         두어야 한다: 진동기가 있는 기기에서는 여전히 필요하다. -->
+    <uses-feature android:name="android.hardware.vibrator" android:required="false" />
 </manifest>
