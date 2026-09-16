@@ -14,6 +14,8 @@ import {
   deleteInstallmentGroup,
   installmentLabel,
   isInstallment,
+  listInstallmentGroup,
+  splitInstallment,
   supportsInstallment,
   updateInstallmentGroup,
 } from '../db/installments';
@@ -56,13 +58,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
   /* 할부 회차는 혼자 고칠 수 없다. 금액을 하나만 바꾸면 회차 합이 결제
      총액과 어긋나는데, 그 상태를 화면에 설명할 방법이 없다 — 사용자는
-     달력에서 숫자가 안 맞는 것만 보게 된다. 그래서 금액은 잠그고, 나머지
+     달력에서 숫자가 안 맞는 것만 보게 된다. 그래서 회차 금액은 잠그고, 나머지
      항목은 고치되 묶음 전체에 똑같이 적용한다. 회차마다 카테고리가 다른
      할부는 읽을 수 없다. */
-  /* id를 먼저 꺼낸다. isInstallment가 타입 술어라 여기서 좁혀지고, 아래에서
-     `record.installmentId!` 같은 단언을 쓸 일이 없어진다. */
-  const installmentId = record !== null && isInstallment(record) ? record.installmentId : null;
-  const installment = installmentId !== null;
+  /* 좁힌 행을 통째로 들고 있는다. isInstallment가 타입 술어라 여기서 좁혀지고,
+     아래에서 `record.installmentMonths!` 같은 단언을 쓸 일이 없어진다. */
+  const installmentRow = record !== null && isInstallment(record) ? record : null;
+  const installmentId = installmentRow?.installmentId ?? null;
+  const installment = installmentRow !== null;
   const installmentNote = record ? installmentLabel(record) : null;
 
   const [amount, setAmount] = useState(record ? String(record.amount) : '');
@@ -117,13 +120,23 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
     ? payments.filter((p) => supportsInstallment(p) || p.id === paymentId)
     : payments;
 
-  /* 지난 날짜에 카드값을 뒤늦게 적는 경우가 있다. 입력 탭에만 할부가 있으면
-     그 사람은 여기서 총액을 통째로 넣게 되고, 달력과 카드 청구액이 다시
-     어긋난다. 수정할 때는 개월 수를 바꿀 수 없다 — 회차 구조를 바꾸는 건
-     기존 행을 다시 만드는 일이라, 지우고 새로 넣는 것과 같다. */
-  const [months, setMonths] = useState(1);
+  /* 개월 수는 고칠 때도 바꿀 수 있다. 예전엔 새로 넣을 때만 열어뒀는데, 그러면
+     3개월을 5개월로 잘못 넣은 사람이 할 수 있는 일이 "지우고 처음부터 다시"뿐이다.
+     이미 넣은 일반 지출을 뒤늦게 할부로 바꾸는 길도 같은 이유로 막혀 있었다.
+     회차 구조가 바뀌면 행을 다시 만들어야 하는 건 맞지만, 그건 앱이 대신 할 일이지
+     사용자가 손으로 지웠다 넣을 일이 아니다 — submit()이 그 경우를 처리한다. */
+  const [months, setMonths] = useState(installmentRow?.installmentMonths ?? 1);
   const [installOpen, setInstallOpen] = useState(false);
-  const canInstall = !editing && supportsInstallment(paymentById.get(paymentId));
+  const canInstall = supportsInstallment(paymentById.get(paymentId));
+
+  /* 시트의 미리보기는 총액 기준이어야 한다. 회차 금액을 넘기면 "30만원을
+     3개월로"가 아니라 "10만원을 3개월로" 나눈 값이 보인다. installmentTotal은
+     예전 백업에서 복원한 행에 없을 수 있어서, 그때는 회차 금액 × 원래 회차 수로
+     어림한다 — 나머지 몇 원 차이는 미리보기에서만 쓰인다. */
+  const installmentTotal = installmentRow
+    ? (installmentRow.installmentTotal ?? Number(amount) * installmentRow.installmentMonths)
+    : null;
+  const monthsChanged = installmentRow !== null && months !== installmentRow.installmentMonths;
 
   /* 할부 회차는 날짜도 고칠 수 없다. 각 회차 날짜는 최초 구매일에서
      addMonthsClamped로 계산되므로, 한 회차만 옮기면 나머지 회차와 스케줄이
@@ -131,9 +144,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      해당하지 않는다: months>1이어도 record가 없으면 installment는 false다. */
   const dateLocked = installment;
 
+  /* 현금·체크카드로 옮기면 할부가 조용히 풀린다. 이미 할부로 저장된 건은
+     빼둔다 — 그런 기록은 payChoices가 신용카드만 내놓아서 여기 걸릴 일이 거의
+     없지만, 복원한 데이터처럼 결제수단이 신용카드가 아닌 할부가 들어오면 열자마자
+     months가 1로 떨어져 "일시불로 바뀐다"는 예고가 뜬다. 연 적도 없는 사람에게
+     보일 경고는 아니다. */
   useEffect(() => {
-    if (!canInstall && months > 1) setMonths(1);
-  }, [canInstall, months]);
+    if (!canInstall && months > 1 && !installment) setMonths(1);
+  }, [canInstall, months, installment]);
 
   const pickCategory = (id: string) => {
     setPickedCategory(id);
@@ -153,46 +171,65 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
     guard(async () => {
       try {
-        if (installmentId) {
-          const changed = await updateInstallmentGroup(installmentId, {
-            categoryId,
-            subLabel,
-            memo: memo.trim() || undefined,
-            paymentMethodId: paymentId,
-          });
+        const common = {
+          categoryId,
+          subLabel,
+          // Undefined rather than '' so a cleared memo leaves no empty field
+          // behind in the stored row.
+          memo: memo.trim() || undefined,
+          paymentMethodId: paymentId,
+        };
+
+        if (installmentId && installmentRow && monthsChanged) {
+          /* 회차 수가 바뀌면 고칠 수 있는 게 아니다 — 회차마다 날짜와 금액이
+             달라지므로 묶음을 지우고 새로 짠다. 순서가 중요하다: 먼저 나눠보고,
+             그게 통과해야 지운다. 지운 뒤에 splitInstallment가 던지면 사용자
+             기록만 사라진다.
+             날짜 기준은 이 행이 아니라 1회차다. 2/3 회차를 열어놓고 개월 수를
+             바꿨다고 해서 구매일이 한 달 뒤로 밀리면 안 된다. */
+          const rows = await listInstallmentGroup(installmentId);
+          const anchor = rows[0]?.date ?? installmentRow.date;
+          const total =
+            installmentRow.installmentTotal ?? rows.reduce((sum, r) => sum + r.amount, 0);
+
+          if (months > 1) splitInstallment(total, months);
+          await deleteInstallmentGroup(installmentId);
+
+          if (months > 1) {
+            await addInstallment({ ...common, total, months, at: stampFor(anchor) });
+            onDone(`${months}개월 할부로 다시 나눴어`);
+          } else {
+            await addExpense({ ...common, amount: total, at: stampFor(anchor) });
+            onDone('일시불로 바꿨어');
+          }
+        } else if (installmentId) {
+          const changed = await updateInstallmentGroup(installmentId, common);
           onDone(`${changed}회차 모두 고쳤어`);
+        } else if (record && months > 1) {
+          /* 이미 넣은 일반 지출을 할부로 바꾼다. 여기 적힌 금액이 결제 총액이다 —
+             회차 금액이 아니라. 위와 같은 이유로 나눠보고 나서 지운다. */
+          const total = Number(amount);
+          splitInstallment(total, months);
+          await deleteExpense(record.id);
+          await addInstallment({ ...common, total, months, at: stampFor(pickedDate) });
+          onDone(`${months}개월 할부로 바꿨어`);
         } else if (record) {
           await updateExpense(record.id, {
+            ...common,
             amount: toMinor(Number(amount)),
-            categoryId,
-            subLabel,
-            // Undefined rather than '' so a cleared memo leaves no empty field
-            // behind in the stored row.
-            memo: memo.trim() || undefined,
-            paymentMethodId: paymentId,
             date: pickedDate,
           });
           onDone('수정했어!');
         } else if (months > 1) {
           await addInstallment({
+            ...common,
             total: Number(amount),
             months,
-            categoryId,
-            subLabel,
-            memo,
-            paymentMethodId: paymentId,
             at: stampFor(pickedDate),
           });
           onDone(`${months}개월 할부로 저장했어!`);
         } else {
-          await addExpense({
-            amount: Number(amount),
-            categoryId,
-            subLabel,
-            memo,
-            paymentMethodId: paymentId,
-            at: stampFor(pickedDate),
-          });
+          await addExpense({ ...common, amount: Number(amount), at: stampFor(pickedDate) });
           onDone(`${won(amount)}원 저장했어!`);
         }
         /* 저장은 이미 끝났다. 기억은 다음 기본값을 위한 부가 정보라 여기서
@@ -304,7 +341,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           {installmentNote}
           {record?.installmentTotal !== undefined && ` · 총 ${won(record.installmentTotal)}원`}
           <br />
-          금액과 날짜는 회차별로 고칠 수 없어. 나머지를 고치면 모든 회차에 함께 적용돼.
+          {/* 개월 수를 건드린 순간부터는 "지금 상태" 설명이 아니라 "저장하면
+              벌어질 일"을 말해야 한다. 회차가 통째로 새로 만들어지는 건
+              사용자가 저장 전에 알아야 하는 일이다. */}
+          {monthsChanged
+            ? months > 1
+              ? `저장하면 ${months}개월로 다시 나뉘어. 회차가 새로 만들어져.`
+              : '저장하면 일시불 한 건으로 합쳐져.'
+            : '회차 금액과 날짜는 따로 고칠 수 없어. 나머지를 고치면 모든 회차에 함께 적용돼.'}
         </p>
       )}
 
@@ -387,7 +431,9 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       {installOpen && (
         <InstallmentSheet
           months={months}
-          amount={amount}
+          /* 이미 할부인 건은 총액으로 미리보기를 잡는다. 화면에 적힌 금액은
+             회차 금액이라, 그대로 넘기면 "10만원을 3개월로" 나눈 값이 보인다. */
+          amount={installmentTotal !== null ? String(installmentTotal) : amount}
           onDone={setMonths}
           onClose={() => setInstallOpen(false)}
         />
