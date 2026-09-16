@@ -27,3 +27,44 @@
   border-color: var(--brand);
   color: var(--brand);
 }
+
+/* 개월 수가 들어가는 칸. 칩과 같은 테두리·반지름이라 같은 줄에서 한 묶음으로
+   읽히는데, 안쪽 숫자만 크게 잡아서 "누르는 것"이 아니라 "값이 앉는 곳"으로
+   보인다. 높이는 잡지 않는다 — .row가 stretch라 칩과 저절로 맞는다. */
+.field {
+  flex: none;
+  display: flex;
+  /* baseline이 아니라 center다. 숫자(16px)와 "개월"(12px)을 베이스라인에
+     맞추면 글자 크기 차이만큼 숫자의 윗머리가 더 솟아서, 숫자만 위로 들린
+     것처럼 보인다. 가운데로 맞춰야 둘이 한 줄에 앉는다. */
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--sf);
+  color: var(--tx2);
+  padding: 3px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 숫자판이 지금 이 칸을 치고 있다. 결제수단 칩처럼 꽉 채우지는 않고 연한
+   배경까지만 간다 — 초점 표시지 선택 표시가 아니라서, 채워버리면 바로 위
+   결제수단 줄과 같은 무게로 경쟁한다. */
+.fieldOn {
+  border-color: var(--brand);
+  background: var(--brandSoft);
+  color: var(--brand);
+}
+
+.fieldNum {
+  font-size: 16px;
+  font-weight: 800;
+  /* 한 자리에서 두 자리로 넘어갈 때 칸이 덜컥 넓어지지 않도록 두 자리 폭을
+     미리 잡아둔다. */
+  min-width: 17px;
+  text-align: right;
+}

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { applyMonthKey, splitInstallment } from '../db/installments';
-import { won } from '../lib/format';
+import { applyMonthKey, installmentPreview } from '../db/installments';
 import { ClearAmount } from './ClearAmount';
 import { Keypad } from './Keypad';
 import { Sheet } from './Sheet';
@@ -31,20 +30,7 @@ export function InstallmentSheet({ months, amount, onDone, onClose }: Props) {
      "개월 수를 넣어줘" 같은 안내는 넣지 않는다. 숫자판이 열려 있고 칸이 비어
      있으면 무엇을 하라는 건지는 보면 안다.
      자리는 비워두되 높이는 잡아둬서, 문구가 생길 때 숫자판이 밀리지 않는다. */
-  let note = '';
-  let bad = false;
-  if (n > 1 && amount) {
-    try {
-      const parts = splitInstallment(Number(amount), n);
-      note =
-        parts[0] === parts[1]
-          ? `매월 ${won(parts[1])}원씩 ${n}번 기록돼`
-          : `첫 달 ${won(parts[0])}원, 이후 ${won(parts[1])}원씩 기록돼`;
-    } catch (e) {
-      note = (e as Error).message;
-      bad = true;
-    }
-  }
+  const { text: note, bad } = installmentPreview(Number(amount), n);
 
   return (
     <Sheet label="할부 개월 수" onClose={onClose}>

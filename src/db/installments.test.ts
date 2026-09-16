@@ -8,6 +8,7 @@ import {
   applyMonthKey,
   deleteInstallmentGroup,
   installmentLabel,
+  installmentPreview,
   isInstallment,
   listInstallmentGroup,
   splitInstallment,
@@ -278,6 +279,51 @@ describe('할부 표시', () => {
     const plain = { id: 'x', amount: 5000 } as unknown as ExpenseRecord;
     expect(isInstallment(plain)).toBe(false);
     expect(installmentLabel(plain)).toBeNull();
+  });
+});
+
+/* 입력 탭의 개월 수 시트와 기록 수정 시트의 개월 칸이 같은 문장을 쓴다.
+   한쪽만 고쳐서 두 화면이 다른 말을 하는 걸 막으려고 여기서 잠가둔다. */
+describe('installmentPreview', () => {
+  it('나누어떨어지면 매월 얼마인지 말한다', () => {
+    expect(installmentPreview(300_000, 6)).toEqual({
+      text: '매월 50,000원씩 6번 기록돼',
+      bad: false,
+    });
+  });
+
+  /* 나머지는 첫 회차에 얹으므로 첫 달만 다르다. splitInstallment의 규칙을
+     문구가 그대로 따라가는지 본다 — 여기가 어긋나면 화면이 말한 금액과
+     실제로 저장되는 금액이 달라진다. */
+  it('나머지가 있으면 첫 달을 따로 말한다', () => {
+    expect(installmentPreview(100_000, 3)).toEqual({
+      text: '첫 달 33,334원, 이후 33,333원씩 기록돼',
+      bad: false,
+    });
+  });
+
+  it('일시불이면 할 말이 없다', () => {
+    expect(installmentPreview(300_000, 1)).toEqual({ text: '', bad: false });
+  });
+
+  /* 금액을 아직 안 넣은 상태. 안내 문구를 지어내지 않는다 — 숫자판이 열려
+     있고 칸이 비어 있으면 무엇을 하라는 건지는 보면 안다. */
+  it('금액이 없으면 아무 말도 하지 않는다', () => {
+    expect(installmentPreview(0, 6)).toEqual({ text: '', bad: false });
+    expect(installmentPreview(Number.NaN, 6)).toEqual({ text: '', bad: false });
+  });
+
+  /* bad는 저장 버튼을 잠그는 데 쓴다. 문구만 띄우고 버튼을 열어두면 화면에는
+     "99개월 할부"라고 적혀 있는데 저장만 실패하는 상태가 된다. */
+  it('나눌 수 없으면 왜 안 되는지를 말하고 bad를 세운다', () => {
+    expect(installmentPreview(50, 99)).toEqual({
+      text: '99개월로 나누기엔 금액이 너무 적어',
+      bad: true,
+    });
+    expect(installmentPreview(300_000, 100)).toEqual({
+      text: '할부는 2~99개월까지야',
+      bad: true,
+    });
   });
 });
 

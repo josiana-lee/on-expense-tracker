@@ -3,7 +3,6 @@ import { Icon } from './Icon';
 import { Keypad, applyKey } from './Keypad';
 import { ClearAmount } from './ClearAmount';
 import { InstallmentChips } from './InstallmentChips';
-import { InstallmentSheet } from './InstallmentSheet';
 import { Sheet } from './Sheet';
 import { rememberCategoryPayment } from '../db/categories';
 import { parseDateStr } from '../db/date';
@@ -11,8 +10,10 @@ import { addExpense, deleteExpense, updateExpense } from '../db/expenses';
 import {
   InstallmentRangeError,
   addInstallment,
+  applyMonthKey,
   deleteInstallmentGroup,
   installmentLabel,
+  installmentPreview,
   isInstallment,
   listInstallmentGroup,
   splitInstallment,
@@ -125,8 +126,20 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      이미 넣은 일반 지출을 뒤늦게 할부로 바꾸는 길도 같은 이유로 막혀 있었다.
      회차 구조가 바뀌면 행을 다시 만들어야 하는 건 맞지만, 그건 앱이 대신 할 일이지
      사용자가 손으로 지웠다 넣을 일이 아니다 — submit()이 그 경우를 처리한다. */
-  const [months, setMonths] = useState(installmentRow?.installmentMonths ?? 1);
-  const [installOpen, setInstallOpen] = useState(false);
+  /* 개월 수도 금액처럼 문자열로 들고 있는다. 반쯤 친 값이 숫자로 접히면
+     "1"에서 "12"로 가는 중간에 1개월=일시불로 읽혀서 칸이 사라진다. */
+  const [monthText, setMonthText] = useState(
+    installmentRow ? String(installmentRow.installmentMonths) : '',
+  );
+  const months = Number(monthText) || 1;
+
+  /* 숫자판 하나가 금액과 개월 수를 나눠 친다. 이 값이 지금 어느 칸을 치고
+     있는지고, 칸을 탭하면 옮겨간다.
+     개월 수를 받으려고 시트를 또 띄우지 않기 위한 구조다 — 이 화면은 이미
+     바텀시트라, 그 위에 시트를 올리면 스크림과 둥근 모서리가 두 겹이 되고
+     어느 쪽이 지금 화면인지 읽히지 않는다. 입력 탭은 화면 위에 시트가
+     하나뿐이라 거기선 시트를 그대로 쓴다. */
+  const [target, setTarget] = useState<'amount' | 'months'>('amount');
   const canInstall = supportsInstallment(paymentById.get(paymentId));
 
   /* 시트의 미리보기는 총액 기준이어야 한다. 회차 금액을 넘기면 "30만원을
@@ -138,6 +151,24 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
     : null;
   const monthsChanged = installmentRow !== null && months !== installmentRow.installmentMonths;
 
+  /* 개월 칸이 화면에 있나. 할부를 고르는 중이거나 이미 골라둔 상태일 때만
+     나온다. 이게 참일 때만 "숫자판이 어디를 치고 있는지" 표시도 켠다 —
+     칠 곳이 하나뿐이면 가리킬 것이 없다. */
+  const monthsShown = canInstall && (months > 1 || target === 'months');
+
+  /* 미리보기는 총액 기준이어야 한다. 이미 할부인 건은 화면에 적힌 금액이
+     회차 금액이라 그대로 나누면 "10만원을 3개월로" 나눈 값이 보인다. */
+  const preview = installmentPreview(installmentTotal ?? Number(amount), months);
+
+  /* 아직 안 고친 할부에는 미리보기를 띄우지 않는다. 회차 설명은 .installNote가
+     이미 하고 있어서, 같은 계산을 한 줄 밑에 한 번 더 읽히는 건 참견이다.
+     개월 수를 건드린 순간부터는 바뀔 결과를 보여줘야 하므로 그때 나온다. */
+  const showPreview = monthsShown && preview.text !== '' && (!installment || monthsChanged);
+
+  /* 나눌 수 없는 조합으로는 저장 버튼을 잠근다. 열어두면 화면에는 "3개월
+     할부"라고 적혀 있는데 저장만 실패하는 상태가 된다. */
+  const monthsBad = monthsShown && preview.bad;
+
   /* 할부 회차는 날짜도 고칠 수 없다. 각 회차 날짜는 최초 구매일에서
      addMonthsClamped로 계산되므로, 한 회차만 옮기면 나머지 회차와 스케줄이
      어긋난다 — 금액을 잠근 것과 같은 이유다. 새 할부(아직 저장 전)는 여기
@@ -148,10 +179,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      빼둔다 — 그런 기록은 payChoices가 신용카드만 내놓아서 여기 걸릴 일이 거의
      없지만, 복원한 데이터처럼 결제수단이 신용카드가 아닌 할부가 들어오면 열자마자
      months가 1로 떨어져 "일시불로 바뀐다"는 예고가 뜬다. 연 적도 없는 사람에게
-     보일 경고는 아니다. */
+     보일 경고는 아니다.
+     개월 칸이 사라지므로 숫자판도 금액으로 돌려놓는다. 안 돌려놓으면 칸은
+     없는데 숫자판만 개월 수를 치고 있는 상태가 남는다. */
   useEffect(() => {
-    if (!canInstall && months > 1 && !installment) setMonths(1);
-  }, [canInstall, months, installment]);
+    if (canInstall) return;
+    if (!installment) setMonthText('');
+    setTarget('amount');
+  }, [canInstall, installment]);
 
   const pickCategory = (id: string) => {
     setPickedCategory(id);
@@ -329,10 +364,24 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       </div>
 
       <div className={styles.amountRow}>
-        <span className={styles.name}>{subLabel || category?.name}</span>
-        <span className={`${styles.amount} tabular`} data-size={amountSize(amount)}>
-          {won(amount || '0')}원
-        </span>
+        {/* 이름과 금액이 한 덩어리로 묶여 숫자판의 표적이 된다. 개월 칸이 같이
+            떠 있을 때 탭하면 숫자판이 이쪽으로 돌아온다. 할부 회차는 금액이
+            잠겨 있어서 표적이 되지 않는다.
+            ClearAmount는 안에 못 넣는다 — 버튼 안의 버튼이라 바깥 형제로 둔다. */}
+        <button
+          type="button"
+          className={`${styles.amountMain} ${
+            monthsShown && target === 'amount' ? styles.targetOn : ''
+          }`}
+          onClick={() => setTarget('amount')}
+          disabled={installment}
+          aria-label="금액"
+        >
+          <span className={styles.name}>{subLabel || category?.name}</span>
+          <span className={`${styles.amount} tabular`} data-size={amountSize(amount)}>
+            {won(amount || '0')}원
+          </span>
+        </button>
         {amount && !installment && <ClearAmount onClear={() => setAmount('')} />}
       </div>
 
@@ -412,32 +461,46 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       {canInstall && (
         <InstallmentChips
           months={months}
-          onCash={() => setMonths(1)}
-          onOpen={() => setInstallOpen(true)}
+          /* 일시불로 되돌리면 개월 칸이 사라지므로 숫자판도 금액으로 돌려놓는다. */
+          onCash={() => {
+            setMonthText('');
+            setTarget('amount');
+          }}
+          onOpen={() => setTarget('months')}
+          field={{ text: monthText, active: target === 'months' }}
         />
       )}
 
-      {/* 할부는 금액을 잠그므로 숫자판도 뺀다. 눌러도 저장되지 않는 키패드는
-          사용자 눈에 고장으로 보인다. */}
-      {!installment && <Keypad compact onPress={(k) => setAmount((a) => applyKey(a, k))} />}
+      {showPreview && (
+        <p className={`${styles.monthNote} ${preview.bad ? styles.monthNoteBad : ''}`}>
+          {preview.text}
+        </p>
+      )}
 
-      <button type="button" className={styles.save} onClick={submit} disabled={busy}>
+      {/* 숫자판 하나가 두 칸을 나눠 친다.
+          할부 회차는 금액이 잠겨 있어서 평소엔 숫자판을 빼둔다 — 눌러도
+          저장되지 않는 키패드는 사용자 눈에 고장으로 보인다. 개월 칸을 고르면
+          그 빈자리에 들어온다. 그 화면에서 고칠 수 있는 숫자가 개월 수뿐이라
+          무엇을 치는 중인지 헷갈릴 일이 없다. */}
+      {(!installment || target === 'months') && (
+        <Keypad
+          compact
+          onPress={(k) =>
+            target === 'months'
+              ? setMonthText((t) => applyMonthKey(t, k))
+              : setAmount((a) => applyKey(a, k))
+          }
+        />
+      )}
+
+      <button
+        type="button"
+        className={styles.save}
+        onClick={submit}
+        disabled={busy || monthsBad}
+      >
         {editing ? '수정 완료' : '추가!'}
       </button>
-
-      {/* 시트 위의 시트. Sheet는 shell로 포털되고 나중에 마운트된 쪽이 DOM
-          순서에서 뒤에 오므로, z-index가 같아도 새 시트가 앞에 선다. 뒤로
-          가기도 스택의 맨 위가 가져간다. */}
-      {installOpen && (
-        <InstallmentSheet
-          months={months}
-          /* 이미 할부인 건은 총액으로 미리보기를 잡는다. 화면에 적힌 금액은
-             회차 금액이라, 그대로 넘기면 "10만원을 3개월로" 나눈 값이 보인다. */
-          amount={installmentTotal !== null ? String(installmentTotal) : amount}
-          onDone={setMonths}
-          onClose={() => setInstallOpen(false)}
-        />
-      )}
     </Sheet>
   );
 }

@@ -1,3 +1,4 @@
+import { won } from '../lib/format';
 import { addMonthsClamped, fmt, fmtTime } from './date';
 import { db } from './db';
 import { now, uuidv7 } from './id';
@@ -138,6 +139,34 @@ export function isInstallment(r: ExpenseRecord): r is InstallmentRow {
     (r.installmentMonths ?? 0) >= MIN_MONTHS &&
     (r.installmentNo ?? 0) >= 1
   );
+}
+
+/** 회차가 얼마씩 나뉘는지 한 줄로. 나눌 수 없으면 왜 안 되는지를 대신 말한다.
+ *
+ *  화면 둘이 같은 문장을 보여줘야 해서 여기 모은다 — 입력 탭의 개월 수 시트와
+ *  기록 수정 시트의 개월 칸. installmentLabel 바로 옆자리가 맞다: 할부를
+ *  사람이 읽는 말로 옮기는 일은 전부 이 파일에 있다.
+ *
+ *  `bad`는 저장을 막는 데 쓴다. 문구만 띄우고 버튼을 열어두면 화면에는
+ *  "3개월 할부"라고 적혀 있는데 저장은 실패하는 상태가 된다. */
+export function installmentPreview(
+  total: number,
+  months: number,
+): { text: string; bad: boolean } {
+  // 일시불이거나 금액이 아직 없으면 할 말이 없다. 자리만 비워둔다.
+  if (months < MIN_MONTHS || !(total > 0)) return { text: '', bad: false };
+  try {
+    const parts = splitInstallment(total, months);
+    return {
+      text:
+        parts[0] === parts[1]
+          ? `매월 ${won(parts[1])}원씩 ${months}번 기록돼`
+          : `첫 달 ${won(parts[0])}원, 이후 ${won(parts[1])}원씩 기록돼`,
+      bad: false,
+    };
+  } catch (e) {
+    return { text: (e as Error).message, bad: true };
+  }
 }
 
 /** "3개월 할부 2/3". 할부가 아니면 null. */
