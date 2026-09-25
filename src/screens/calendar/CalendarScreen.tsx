@@ -12,6 +12,7 @@ import { useToast } from '../../hooks/useToast';
 import { useToday } from '../../hooks/useToday';
 import { dateText, won } from '../../lib/format';
 import { EntrySheet } from '../../components/EntrySheet';
+import { CategorySummarySheet } from './CategorySummarySheet';
 import { MonthPickerSheet } from './MonthPickerSheet';
 import { SearchScreen } from './SearchScreen';
 import styles from './CalendarScreen.module.css';
@@ -62,13 +63,14 @@ export function CalendarScreen() {
   }));
   const [selected, setSelected] = useState(() => fmt(today));
 
-  const { totals, monthTotal } = useMonth(view.year, view.month);
+  const { totals, monthTotal, byCategory } = useMonth(view.year, view.month);
   const { records, total: dayTotal } = useDateExpenses(selected);
   const { byId, paymentById } = useCatalog();
   const { text: toast, flash } = useToast();
   /** null = closed. `{ record: null }` opens the sheet in create mode. */
   const [sheet, setSheet] = useState<{ record: ExpenseRecord | null } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
   /** 그 달로 옮기고 커서를 놓는다. 현재 달이면 오늘, 아니면 1일이다.
@@ -171,10 +173,28 @@ export function CalendarScreen() {
         {/* Sits on the grid it totals, and gets the card's full width — the
             month title and search button no longer have to share a line with
             it, which is what kept squeezing it. */}
-        <div className={styles.cardTotal}>
+        {/* 누르면 카테고리별로 쪼개서 보여준다. "이게 뭘로 이뤄졌지"는 이
+            숫자를 볼 때 드는 질문이라, 답도 여기 붙여둔다 — 예산을 세우지
+            않는 사람도 예산 탭에 들어갈 필요 없이 닿는 유일한 자리다.
+            기록이 없는 달에는 열지 않는다. 빈 목록을 띄우는 건 "여긴 아무것도
+            없다"를 굳이 한 겹 더 눌러 확인시키는 일이다. */}
+        <button
+          type="button"
+          className={styles.cardTotal}
+          onClick={() => byCategory.length > 0 && setSummaryOpen(true)}
+          disabled={byCategory.length === 0}
+          aria-label={
+            byCategory.length > 0
+              ? `이번 달 지출 ${won(monthTotal)}원, 카테고리별로 보기`
+              : `이번 달 지출 ${won(monthTotal)}원`
+          }
+        >
           <span className={styles.cardTotalLabel}>이번 달 지출</span>
           <span className={`${styles.cardTotalValue} tabular`}>{won(monthTotal)}원</span>
-        </div>
+          <span className={styles.cardTotalChevron} aria-hidden="true">
+            <Icon path={CHEVRON_RIGHT} size={13} stroke="currentColor" strokeWidth={2.4} />
+          </span>
+        </button>
         <div className={styles.dows}>
           {dows.map((d) => (
             <div key={d} className={`${styles.dow} ${d === 0 ? styles.sunday : ''}`}>
@@ -287,6 +307,17 @@ export function CalendarScreen() {
 
       {searchOpen && (
         <SearchScreen onBack={() => setSearchOpen(false)} onSelectRecord={openFromSearch} />
+      )}
+
+      {summaryOpen && (
+        <CategorySummarySheet
+          /* 달력 제목과 같은 문구를 쓴다. 시트가 어느 달을 말하는지 다시
+             읽지 않아도 되도록. */
+          periodLabel={`${view.year}년 ${view.month}월`}
+          monthTotal={monthTotal}
+          byCategory={byCategory}
+          onClose={() => setSummaryOpen(false)}
+        />
       )}
 
       {monthPickerOpen && (

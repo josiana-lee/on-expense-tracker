@@ -102,14 +102,43 @@
 /* Above the weekday row, inside the card, so the number reads as the total
    of the grid under it. Full card width — nothing shares the line, so it
    never needs to shrink. */
+/* 버튼이 됐지만 생김새는 그대로다 — 이 줄은 원래 총액을 읽는 자리고, 눌리는
+   자리라는 건 오른쪽 꺾쇠 하나로만 말한다. 테두리나 배경을 주면 달력 그리드
+   위에 버튼 하나가 얹힌 것처럼 보여서, 월 합계라는 성격이 흐려진다. */
 .cardTotal {
+  width: 100%;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
   padding: 0 4px 11px;
   margin-bottom: 10px;
+  border: 0;
   border-bottom: 1px solid var(--line);
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* 기록이 없는 달. 꺾쇠까지 같이 흐려져서 "지금은 열 게 없다"가 보인다. */
+.cardTotal:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.cardTotal:disabled .cardTotalChevron {
+  visibility: hidden;
+}
+
+/* 금액과 나란히 서도록 baseline에서 살짝 내린다. 꺾쇠는 글자가 아니라
+   도형이라 베이스라인에 그대로 두면 혼자 위로 뜬 것처럼 보인다. */
+.cardTotalChevron {
+  flex: none;
+  display: flex;
+  align-self: center;
+  color: var(--tx2);
+  margin-left: -4px;
 }
 
 .cardTotalLabel {

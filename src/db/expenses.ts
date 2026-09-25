@@ -101,3 +101,29 @@ export function groupByDate(rows: ExpenseRecord[]): Map<DateStr, DayTotals> {
 export function sumExpenses(rows: ExpenseRecord[]): Minor {
   return rows.reduce((sum, r) => (r.type === 'income' ? sum : sum + r.amount), 0) as Minor;
 }
+
+/** 카테고리별 지출 합계, 많이 쓴 순서.
+ *
+ *  "이번 달 어디에 제일 많이 썼나"에 답하는 데 필요한 전부다. 이 질문은
+ *  예산과 아무 상관이 없는데, 오랫동안 카테고리 예산을 만들어야만 답을 볼 수
+ *  있었다 — 돈을 어디 쓰는지 모르는 사람이 한도를 먼저 정할 수는 없으니
+ *  순서가 거꾸로였다.
+ *
+ *  수입을 빼는 규칙은 sumExpenses와 같다. 달력에서 "이번 달 지출" 총액 바로
+ *  아래 놓이므로, 규칙이 갈리면 합이 안 맞는 게 그 자리에서 보인다.
+ *
+ *  쓰지 않은 카테고리는 넣지 않는다. 카테고리가 서른인데 그 달에 쓴 게 셋이면
+ *  0원짜리 스물일곱 줄이 정작 큰 항목을 밀어낸다.
+ *
+ *  동점은 id로 갈라 순서를 고정한다 — 안 그러면 리렌더마다 줄이 자리를 바꾸는
+ *  것처럼 보인다. */
+export function sumByCategory(rows: ExpenseRecord[]): { categoryId: ID; spend: Minor }[] {
+  const acc = new Map<ID, number>();
+  for (const r of rows) {
+    if (r.type === 'income') continue;
+    acc.set(r.categoryId, (acc.get(r.categoryId) ?? 0) + r.amount);
+  }
+  return [...acc.entries()]
+    .map(([categoryId, spend]) => ({ categoryId, spend: spend as Minor }))
+    .sort((a, b) => b.spend - a.spend || a.categoryId.localeCompare(b.categoryId));
+}
