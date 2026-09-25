@@ -190,9 +190,15 @@ export function CalendarScreen() {
           }
         >
           <span className={styles.cardTotalLabel}>이번 달 지출</span>
-          <span className={`${styles.cardTotalValue} tabular`}>{won(monthTotal)}원</span>
-          <span className={styles.cardTotalChevron} aria-hidden="true">
-            <Icon path={CHEVRON_RIGHT} size={13} stroke="currentColor" strokeWidth={2.4} />
+          {/* 금액과 꺾쇠를 한 덩어리로 묶는다. 셋을 그냥 늘어놓으면
+              space-between이 라벨·금액·꺾쇠를 균등하게 벌려서 금액이 한가운데
+              뜨고 꺾쇠만 저 끝에 떨어진다. 아래 날짜 줄이 금액과 "+ 추가"를
+              .dayHeadRight로 묶어 오른쪽에 붙이는 것과 같은 구조로 둔다. */}
+          <span className={styles.cardTotalRight}>
+            <span className={`${styles.cardTotalValue} tabular`}>{won(monthTotal)}원</span>
+            <span className={styles.cardTotalChevron} aria-hidden="true">
+              <Icon path={CHEVRON_RIGHT} size={13} stroke="currentColor" strokeWidth={2.4} />
+            </span>
           </span>
         </button>
         <div className={styles.dows}>

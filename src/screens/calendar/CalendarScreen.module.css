@@ -131,14 +131,22 @@
   visibility: hidden;
 }
 
-/* 금액과 나란히 서도록 baseline에서 살짝 내린다. 꺾쇠는 글자가 아니라
-   도형이라 베이스라인에 그대로 두면 혼자 위로 뜬 것처럼 보인다. */
+/* 금액 + 꺾쇠 묶음. 아래 .dayHeadRight와 같은 역할이라 같은 방식으로 짠다 —
+   그쪽이 금액과 "+ 추가"를 붙여 오른쪽에 세우는 덕에 두 줄의 오른쪽 끝이
+   서로 맞는다. */
+.cardTotalRight {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 꺾쇠는 글자가 아니라 도형이라, 베이스라인에 세우면 혼자 위로 뜬 것처럼
+   보인다. 묶음 안에서 가운데로 맞춘다. */
 .cardTotalChevron {
   flex: none;
   display: flex;
-  align-self: center;
   color: var(--tx2);
-  margin-left: -4px;
 }
 
 .cardTotalLabel {
