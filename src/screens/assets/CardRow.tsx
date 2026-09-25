@@ -30,10 +30,14 @@ export function CardRow({ card, today, onTap, onMoveUp, onMoveDown, isFirst, isL
         </span>
         <div className={styles.rowMain}>
           <div className={styles.rowName}>{card.name}</div>
+          {/* 체크카드에는 설정하라고 권하지도 않는다. 설정할 것이 없는데
+              권하면, 눌러본 사람은 없는 기능을 찾아 헤매게 된다. */}
           <div className={styles.rowSub}>
             {statement.configured
               ? `매월 ${statement.paymentDay}일 결제 · 미결제 ${won(statement.unpaid)}원`
-              : '탭해서 결제 주기 설정'}
+              : card.kind === 'credit'
+                ? '탭해서 결제 주기 설정'
+                : '쓰는 즉시 빠져나가'}
           </div>
         </div>
         <span className={styles.rowValue}>

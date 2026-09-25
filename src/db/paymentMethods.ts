@@ -15,6 +15,20 @@ export async function setCardStatement(
   await db.paymentMethods.update(id, { paymentDay, statementStartDay, updatedAt: now() });
 }
 
+/** 결제 주기를 떼어낸다. 신용카드였다가 체크카드로 바꿀 때 쓴다.
+ *
+ *  값을 남겨두면 안 된다 — 화면은 kind로 걸러서 안 보여주지만, 백업 파일에는
+ *  체크카드인데 결제일이 붙은 행이 그대로 실려 나가고, 그걸 복원한 기기에서
+ *  다시 사실이 아닌 상태가 된다. Dexie의 update는 undefined를 "이 키를
+ *  지워라"로 읽으므로 필드 자체가 사라진다. */
+export async function clearCardStatement(id: ID): Promise<void> {
+  await db.paymentMethods.update(id, {
+    paymentDay: undefined,
+    statementStartDay: undefined,
+    updatedAt: now(),
+  });
+}
+
 // Rotates independently of the preset cards' own colors, so a user-added
 // card doesn't have to collide with — or be coordinated against — whichever
 // presets happen to still be active.
