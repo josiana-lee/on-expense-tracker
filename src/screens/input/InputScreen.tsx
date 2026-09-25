@@ -300,7 +300,12 @@ export function InputScreen() {
     (rule: RecurringRuleRecord) => {
       setAmount(templateAmountText(rule));
       setStagedCategoryId(rule.categoryId);
-      setStagedSub(rule.subLabel ?? null);
+      /* 고른 소분류가 없으면 템플릿 이름을 대신 남긴다.
+         이게 없어서 "넷플릭스"를 눌러 저장해도 기록에는 `문화생활`로만 남았고,
+         나중에 "넷플릭스"로 검색하면 아무것도 안 나왔다 — 이름을 붙여 저장해둔
+         이유가 통째로 사라지는 셈이다. 소분류를 골라둔 템플릿은 그 값이 이긴다:
+         그건 사용자가 이 기록을 뭐라고 부를지 직접 고른 것이다. */
+      setStagedSub(rule.subLabel ?? rule.name);
       setStagedMemo(rule.memo ?? '');
       setStagedPaymentId(rule.paymentMethodId);
       setFromTemplateId(rule.id);

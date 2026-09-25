@@ -35,7 +35,7 @@ export const MAX_RECURRING_RULES = 10;
  *  하나는 지우면 되고 하나는 다시 누르면 된다. */
 export class RecurringLimitError extends Error {
   constructor() {
-    super(`반복 지출은 ${MAX_RECURRING_RULES}개까지 만들 수 있어`);
+    super(`저장해둔 지출은 ${MAX_RECURRING_RULES}개까지 만들 수 있어`);
     this.name = 'RecurringLimitError';
   }
 }

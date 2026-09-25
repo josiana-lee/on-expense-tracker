@@ -79,7 +79,7 @@ export function RecurringRuleSheet({ rule, onClose, onDone }: Props) {
           onDone('수정했어!');
         } else {
           await addRecurringRule(input);
-          onDone('반복 지출을 추가했어!');
+          onDone('저장해둔 지출을 추가했어!');
         }
         onClose();
       } catch (e) {
@@ -106,9 +106,9 @@ export function RecurringRuleSheet({ rule, onClose, onDone }: Props) {
 
 
   return (
-    <Sheet label={editing ? '반복 지출 수정' : '반복 지출 추가'} onClose={onClose}>
+    <Sheet label={editing ? '저장해둔 지출 수정' : '저장해둔 지출 추가'} onClose={onClose}>
       <div className={styles.head}>
-        <span className={styles.title}>{editing ? '반복 지출 수정' : '반복 지출 추가'}</span>
+        <span className={styles.title}>{editing ? '저장해둔 지출 수정' : '저장해둔 지출 추가'}</span>
         {editing && (
           <button type="button" className={styles.delete} onClick={remove} disabled={busy}>
             삭제

@@ -47,7 +47,7 @@ export function RecurringManageScreen({ onBack }: Props) {
         <button type="button" className={styles.back} onClick={onBack} aria-label="뒤로">
           <Icon path={BACK_ICON} size={19} stroke="var(--tx)" strokeWidth={2.2} />
         </button>
-        <span className={styles.subTitle}>반복 지출</span>
+        <span className={styles.subTitle}>저장해둔 지출</span>
         <span className={styles.subMeta}>
           {rules.length} / {MAX_RECURRING_RULES}
         </span>
@@ -61,18 +61,18 @@ export function RecurringManageScreen({ onBack }: Props) {
           className={styles.addBtn}
           onClick={() =>
             full
-              ? flash(`반복 지출은 ${MAX_RECURRING_RULES}개까지야. 안 쓰는 걸 먼저 지워줘`)
+              ? flash(`저장해둔 지출은 ${MAX_RECURRING_RULES}개까지야. 안 쓰는 걸 먼저 지워줘`)
               : setEditing('new')
           }
           aria-disabled={full}
           data-full={full || undefined}
         >
-          + 반복 지출 추가
+          + 저장해둔 지출 추가
         </button>
 
         {rules.length === 0 ? (
           <div className={styles.subCard}>
-            <p className={styles.empty}>등록된 반복 지출이 없어</p>
+            <p className={styles.empty}>저장해둔 지출이 없어</p>
           </div>
         ) : (
           <div className={styles.subCard}>

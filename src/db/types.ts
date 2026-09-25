@@ -39,8 +39,13 @@ export interface ExpenseRecord {
   paymentMethodId: ID;
   memo?: string;
 
-  /** 반복 지출이 자동 생성한 기록에만 존재. 둘의 조합이 유니크 인덱스라
-   *  catch-up 로직이 여러 번 돌아도 중복 생성되지 않는다. */
+  /** 스케줄로 기록을 자동 생성하던 시절의 흔적. 지금은 아무도 쓰지 않는다 —
+   *  저장해둔 지출은 사용자가 탭할 때만 기록을 만들고, 그 기록에는 이 두
+   *  필드가 붙지 않는다.
+   *
+   *  둘의 조합이 유니크 인덱스였고, catch-up이 여러 번 돌아도 중복이 안
+   *  생기게 막는 역할이었다. 필드와 인덱스를 남겨둔 이유는 db.ts에 적혀
+   *  있다: 지우려면 이미 깔린 기기의 DB 버전을 올려야 하는데 얻는 게 없다. */
   recurringRuleId?: ID;
   occurrenceDate?: DateStr;
 

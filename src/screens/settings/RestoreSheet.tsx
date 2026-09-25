@@ -10,7 +10,7 @@ const TABLE_LABELS: Partial<Record<keyof ParsedRestore['validCounts'], string>> 
   paymentMethods: '결제수단',
   accounts: '계좌',
   budgets: '예산',
-  recurringRules: '반복 지출',
+  recurringRules: '저장해둔 지출',
 };
 
 type Props = {
