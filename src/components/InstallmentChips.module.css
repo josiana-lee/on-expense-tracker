@@ -28,9 +28,17 @@
   color: var(--brand);
 }
 
-/* 개월 수가 들어가는 칸. 칩과 같은 테두리·반지름이라 같은 줄에서 한 묶음으로
-   읽히는데, 안쪽 숫자만 크게 잡아서 "누르는 것"이 아니라 "값이 앉는 곳"으로
-   보인다. 높이는 잡지 않는다 — .row가 stretch라 칩과 저절로 맞는다. */
+/* 개월 수가 들어가는 칸.
+ *
+ *  처음엔 칩과 같은 알약 모양에 배경색만 달리 줬는데, 옆의 "할부" 칩과
+ *  테두리색·글자색·높이가 같고 배경만 흰색 대 아주 옅은 라벤더라 둘이 거의
+ *  같아 보였다. 나란히 붙은 알약 하나는 "골랐다", 하나는 "여길 치는 중"이라는
+ *  전혀 다른 뜻인데 그게 안 읽혔다.
+ *
+ *  그래서 칩이 아니라 입력칸처럼 생기게 한다 — 메모칸과 같은 회색 바탕에
+ *  모서리는 덜 둥글게. 알약은 고르는 것, 네모난 회색은 값이 앉는 곳이라는
+ *  구분이 앱 안에 이미 있으니 그걸 따른다. 높이는 잡지 않는다: .row가
+ *  stretch라 칩과 저절로 맞는다. */
 .field {
   flex: none;
   display: flex;
@@ -40,9 +48,9 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 2px solid var(--line);
-  border-radius: 999px;
-  background: var(--sf);
+  border: 2px solid transparent;
+  border-radius: 13px;
+  background: var(--sf2);
   color: var(--tx2);
   padding: 3px 12px;
   font-family: inherit;
@@ -51,9 +59,9 @@
   cursor: pointer;
 }
 
-/* 숫자판이 지금 이 칸을 치고 있다. 결제수단 칩처럼 꽉 채우지는 않고 연한
-   배경까지만 간다 — 초점 표시지 선택 표시가 아니라서, 채워버리면 바로 위
-   결제수단 줄과 같은 무게로 경쟁한다. */
+/* 숫자판이 지금 이 칸을 치고 있다. 결제수단 칩처럼 꽉 채우지는 않고 테두리와
+   연한 배경까지만 간다 — 초점 표시지 선택 표시가 아니라서, 채워버리면 바로
+   위 결제수단 줄과 같은 무게로 경쟁한다. */
 .fieldOn {
   border-color: var(--brand);
   background: var(--brandSoft);

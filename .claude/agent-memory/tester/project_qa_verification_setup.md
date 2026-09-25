@@ -7,20 +7,31 @@ metadata:
 
 - Dev server: `pnpm dev` on port 5173 (`.claude/launch.json`, name `dev`). `pnpm typecheck` and
   `pnpm build` run clean and are safe to use.
-- **Vitest exists** (`pnpm test`, 7 files / 37 tests, ~2s). It covers the DB layer only —
+- **Vitest exists** (12 files / 131 tests as of 2026-09-23, ~4s). It covers the DB layer only —
   tombstones, restoreSchema, restore, accounts, categories, settings, recurring. Nothing covers
   `lib/format.ts` (`amountSize`), `components/Keypad.tsx` (`applyKey`), `CalendarScreen`'s
   `cellAmount`, or `shell/useBackHandler.ts`, so a green suite says nothing about those.
 - All state is local: IndexedDB `on-expense-tracker` via Dexie. No API, so no network failure
   paths to exercise.
 
-**Browser tooling:** the `Claude_Browser` `computer` tool times out on every click with "Browser
-pane is currently hidden" — `javascript_tool` / screenshots still work there, but for anything
-interactive use the **Playwright MCP** instead. Playwright drives its own profile, so the user's
-Claude-pane IndexedDB stays untouched; check both DBs when reporting cleanup.
+**Browser tooling:** as of 2026-09-23 the `Claude_Browser` tools are enough on their own —
+`preview_start` (name `dev`) + `resize_window` mobile + `javascript_tool` drives the whole app, and
+a `computer` `left_click` by coordinate *does* land (re-verified on the EntrySheet amount button).
+An older note said `computer` clicks always time out with "Browser pane is currently hidden"; that
+was environment-specific, so try a real click before reaching for the Playwright MCP. Scripted
+`.click()` is still the faster and more reliable default — see
+[[verify-scripted-click-bugs-with-trusted-clicks]] for when to double-check one.
 
-**Reading records during a test:** `await import('/src/db/db.ts')` inside the Claude browser gets
-blocked by the permission classifier. Use the raw read-only IndexedDB API:
+**Driving the app from its own modules:** `await import('/src/db/expenses.ts')`,
+`'/src/db/db.ts'`, `'/src/db/backup.ts'`, `'/src/lib/csv.ts'` and even
+`'/src/screens/calendar/CalendarScreen.tsx'` (for `cellAmount`) all resolve fine in the Claude
+browser — an older note claiming the permission classifier blocks `/src/db/db.ts` is wrong. This is
+the fast way to seed a realistic month of data through the real write path
+(`addExpense({..., at: new Date(...)})` back-dates a row) and to unit-probe pure helpers in the
+live page. Watch the category ids: they're `transit`, `event`, `telecom`, `housing`, `device`… — a
+typo'd `categoryId` silently renders a nameless, colourless row rather than erroring.
+
+**Reading records without importing:** raw read-only IndexedDB API also works:
 
 ```js
 new Promise((resolve) => {
@@ -55,8 +66,17 @@ toast paints on top (z-index 30 vs the sheet's 13). That combination produced a 
 "the toast is hidden behind the sheet" report — cf.
 [[verify-scripted-click-bugs-with-trusted-clicks]].
 
-**Faking the clock** (KST 00:00–09:00 date-key boundary): override `window.Date`, then
-`document.dispatchEvent(new Event('visibilitychange'))` — `useNow` resyncs on that event.
+**Faking the clock** (KST 00:00–09:00 date-key boundary, or jumping to next month to see what
+carries over): subclass `window.Date` with a fixed offset, then
+`document.dispatchEvent(new Event('visibilitychange'))` — both `useNow` and `useToday` resync on
+that event, so 달력/예산/자산 all follow. Keep the original on `window.__RealDate` and put it back
+afterwards. Jumping to 10/5 is how the "budgets don't carry into the next month" behaviour is
+demonstrated rather than argued.
+
+**Running the suite:** `pnpm test` needs Node ≥20 (package.json says so, pnpm only warns). Under
+the default Node 18 on this machine every worker dies with `ERR_REQUIRE_ESM` from
+jsdom 30 → html-encoding-sniffer and it looks like the suite is broken. Run
+`PATH="$HOME/.nvm/versions/node/v24.16.0/bin:$PATH" npx vitest run` — 12 files / 131 tests, ~4s.
 
 **Can't be tested in headless Chromium:** `Notification.requestPermission()` never resolves, so the
 설정 → 알람 toggle hangs with no feedback. That's the harness, not the app (Android uses the native

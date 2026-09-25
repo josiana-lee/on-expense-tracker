@@ -140,6 +140,19 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      어느 쪽이 지금 화면인지 읽히지 않는다. 입력 탭은 화면 위에 시트가
      하나뿐이라 거기선 시트를 그대로 쓴다. */
   const [target, setTarget] = useState<'amount' | 'months'>('amount');
+
+  /* 개월 칸을 막 잡았을 때는 첫 숫자가 기존 값을 밀어낸다. 3개월을 6개월로
+     바꾸려고 6을 누르면 36개월이 되는 걸 막는다 — 칸을 탭하는 건 숫자를
+     덧붙이겠다는 게 아니라 바꾸겠다는 뜻이다. 이어서 누르는 숫자는 정상으로
+     붙으므로 1→2로 12개월도 그대로 된다.
+     지우기는 예외다. 기존 값을 한 자씩 지우려는 것이므로 밀어내지 않는다. */
+  const [monthsPristine, setMonthsPristine] = useState(true);
+
+  const aimAtMonths = () => {
+    setTarget('months');
+    setMonthsPristine(true);
+  };
+
   const canInstall = supportsInstallment(paymentById.get(paymentId));
 
   /* 시트의 미리보기는 총액 기준이어야 한다. 회차 금액을 넘기면 "30만원을
@@ -162,8 +175,12 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
 
   /* 아직 안 고친 할부에는 미리보기를 띄우지 않는다. 회차 설명은 .installNote가
      이미 하고 있어서, 같은 계산을 한 줄 밑에 한 번 더 읽히는 건 참견이다.
-     개월 수를 건드린 순간부터는 바뀔 결과를 보여줘야 하므로 그때 나온다. */
-  const showPreview = monthsShown && preview.text !== '' && (!installment || monthsChanged);
+     개월 수를 건드린 순간부터는 바뀔 결과를 보여줘야 하므로 그때 나온다.
+     개월 칸을 잡고 있는 동안에도 내놓는다. 숫자판 바로 위에 붙는 한 줄이라,
+     작은 화면에서 금액 밑줄이 스크롤 밖으로 밀려나도 지금 무엇을 치고 있는지는
+     여기서 읽힌다. */
+  const showPreview =
+    monthsShown && preview.text !== '' && (target === 'months' || !installment || monthsChanged);
 
   /* 나눌 수 없는 조합으로는 저장 버튼을 잠근다. 열어두면 화면에는 "3개월
      할부"라고 적혀 있는데 저장만 실패하는 상태가 된다. */
@@ -370,8 +387,11 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             ClearAmount는 안에 못 넣는다 — 버튼 안의 버튼이라 바깥 형제로 둔다. */}
         <button
           type="button"
+          /* 할부 회차는 금액이 잠겨 있다. 밑줄은 "여기를 치는 중"이라는
+             뜻이라, 누를 수도 없고 숫자판도 없는 칸에 켜두면 고칠 수 있다는
+             거짓말이 된다 — 시트를 열자마자 그 상태였다. */
           className={`${styles.amountMain} ${
-            monthsShown && target === 'amount' ? styles.targetOn : ''
+            monthsShown && target === 'amount' && !installment ? styles.targetOn : ''
           }`}
           onClick={() => setTarget('amount')}
           disabled={installment}
@@ -382,7 +402,18 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             {won(amount || '0')}원
           </span>
         </button>
-        {amount && !installment && <ClearAmount onClear={() => setAmount('')} />}
+        {/* 금액을 지우는 건 "이제 금액을 치겠다"는 가장 분명한 의사표시다.
+            숫자판을 같이 돌려놓지 않으면, 지우고 친 숫자가 개월 칸으로 들어가
+            금액은 0원인 채 "98개월"이 되고, 저장하면 "금액부터 입력해줘"만
+            반복되는 상태에 갇힌다. */}
+        {amount && !installment && (
+          <ClearAmount
+            onClear={() => {
+              setAmount('');
+              setTarget('amount');
+            }}
+          />
+        )}
       </div>
 
       {installment && (
@@ -466,7 +497,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             setMonthText('');
             setTarget('amount');
           }}
-          onOpen={() => setTarget('months')}
+          onOpen={aimAtMonths}
           field={{ text: monthText, active: target === 'months' }}
         />
       )}
@@ -485,11 +516,14 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       {(!installment || target === 'months') && (
         <Keypad
           compact
-          onPress={(k) =>
-            target === 'months'
-              ? setMonthText((t) => applyMonthKey(t, k))
-              : setAmount((a) => applyKey(a, k))
-          }
+          onPress={(k) => {
+            if (target !== 'months') {
+              setAmount((a) => applyKey(a, k));
+              return;
+            }
+            setMonthText((t) => applyMonthKey(monthsPristine && k !== 'del' ? '' : t, k));
+            setMonthsPristine(false);
+          }}
         />
       )}
 
