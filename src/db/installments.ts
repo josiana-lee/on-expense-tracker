@@ -214,20 +214,22 @@ export async function updateInstallmentGroup(
  *  그 상태를 화면에 설명할 방법이 없다 — "3개월 할부 1/3"과 "3/3"만 남은
  *  달력은 사용자가 읽을 수 없다. 지우려면 결제 자체를 지우는 것이다.
  *
- *  회차마다 툼스톤이 남으므로 휴지통에서 되살릴 때도 회차가 보존된다. */
+ *  회차마다 툼스톤이 하나씩 남는다. 되살리기 위한 게 아니라(그런 화면은
+ *  없다) 지워졌다는 사실을 회차 단위로 남겨두는 것이다. */
 export async function deleteInstallmentGroup(installmentId: ID): Promise<number> {
   const stamp = now();
   /* deleteWithTombstone을 회차마다 부르지 않는다. 그러면 트랜잭션이 회차 수만큼
-     따로 커밋돼서 도중에 끊기면 반쪽 묶음이 남는다 — 툼스톤은 지운 행 전체를
-     payload로 복사하므로 저장공간이 빠듯한 기기에서 실패가 나는 지점이 정확히
-     여기다. 그 함수를 트랜잭션으로 감쌀 수도 없다: 안에서 동적 import를
+     따로 커밋돼서 도중에 끊기면 반쪽 묶음이 남는다 — 24개월 할부라면 열두
+     회차만 사라진 상태로 멈출 수 있고, 그걸 화면에 설명할 방법이 없다.
+     그 함수를 트랜잭션으로 감쌀 수도 없다: 안에서 동적 import를
      await하는데, Dexie 트랜잭션 안에서 네이티브 프라미스를 기다리면 트랜잭션이
      비활성으로 끝난다. */
   return db.transaction('rw', db.expenses, db.tombstones, async () => {
     const rows = await db.expenses.filter((r) => r.installmentId === installmentId).toArray();
     await db.expenses.bulkDelete(rows.map((r) => r.id));
+    // deleteWithTombstone과 같은 이유로 내용은 복사하지 않는다.
     await db.tombstones.bulkPut(
-      rows.map((r) => ({ id: r.id, table: 'expenses', deletedAt: stamp, payload: r })),
+      rows.map((r) => ({ id: r.id, table: 'expenses', deletedAt: stamp })),
     );
     return rows.length;
   });

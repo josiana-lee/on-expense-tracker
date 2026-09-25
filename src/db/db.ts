@@ -60,9 +60,15 @@ export async function deleteWithTombstone(
 ): Promise<void> {
   const { now } = await import('./id');
   await db.transaction('rw', db[table], db.tombstones, async () => {
+    /* 읽어오는 건 있는지 확인하려는 것뿐이다. 없는 id로 툼스톤을 만들면,
+       지운 적 없는 행이 지워진 것으로 기록된다.
+       내용은 복사하지 않는다 — payload는 휴지통/실행취소 화면만을 위한
+       것이었는데 그걸 만들지 않기로 했다. 지우면 지워지고, 다시 필요하면
+       사용자가 다시 적는다. 안 쓰는 사본을 30일씩 들고 있으면 백업 파일마다
+       그게 같이 실려 나가고 복원하면 같이 들어온다. */
     const row = await db[table].get(id);
     if (!row) return;
     await db[table].delete(id);
-    await db.tombstones.put({ id, table, deletedAt: now(), payload: row });
+    await db.tombstones.put({ id, table, deletedAt: now() });
   });
 }
