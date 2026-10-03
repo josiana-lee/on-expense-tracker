@@ -45,6 +45,9 @@
 .dateChip {
   flex: none;
   display: flex;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
   align-items: center;
   gap: 4px;
   background: var(--brandSoft);
@@ -58,26 +61,17 @@
   opacity: 0.5;
 }
 
-/* 네이티브 input이라 배경·테두리를 지우고 필의 색만 물려받게 한다. 폭은
-   내용(연·월·일 숫자)만큼만 — flex:none이 없으면 빈 공간을 늘려 잡아서
-   필이 옆으로 길어진다. */
-.dateInput {
+/* 달력이 이 필에 매달린다. 필 자체는 제목 줄 안에서 흐르고, 팝오버만
+   여기서 기준을 잡는다. */
+.dateAnchor {
+  position: relative;
   flex: none;
-  min-width: 0;
-  border: 0;
-  background: none;
-  padding: 0;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: inherit;
-  font-family: inherit;
 }
 
-/* 크롬(=안드로이드 웹뷰)이 이 자리에 자기 캘린더 아이콘을 하나 더 그린다.
-   아이콘이 둘이 되는 걸 막으려고 지운다 — 지워도 입력칸 전체가 여전히
-   눌리는 자리라 picker는 그대로 열린다. */
-.dateInput::-webkit-calendar-picker-indicator {
-  display: none;
+.dateText {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .amountRow {

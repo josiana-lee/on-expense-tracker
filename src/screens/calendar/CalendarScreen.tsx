@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
-import { fmt, parseDateStr } from '../../db/date';
+import { fmt, monthGrid, parseDateStr } from '../../db/date';
 import { installmentLabel } from '../../db/installments';
 import type { ExpenseRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -107,24 +107,12 @@ export function CalendarScreen() {
     setSheet({ record });
   };
 
-  const dows = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => (weekStartDay + i) % 7),
-    [weekStartDay],
+  /* 격자 계산은 monthGrid가 갖고 있다. 날짜 피커가 같은 함수를 쓰므로 주
+     시작요일이 한쪽에만 반영되는 일이 없다. */
+  const { dows, cells } = useMemo(
+    () => monthGrid(view.year, view.month, weekStartDay),
+    [view, weekStartDay],
   );
-
-  const cells = useMemo(() => {
-    const firstDow = new Date(view.year, view.month - 1, 1).getDay();
-    const lead = (firstDow - weekStartDay + 7) % 7;
-    const daysInMonth = new Date(view.year, view.month, 0).getDate();
-
-    const out: Array<{ key: string; date: DateCell | null }> = [];
-    for (let i = 0; i < lead; i++) out.push({ key: `blank-${i}`, date: null });
-    for (let n = 1; n <= daysInMonth; n++) {
-      const d = new Date(view.year, view.month - 1, n);
-      out.push({ key: fmt(d), date: { n, dateKey: fmt(d), dow: d.getDay() } });
-    }
-    return out;
-  }, [view, weekStartDay]);
 
   const todayKey = fmt(today);
 
@@ -344,4 +332,3 @@ export function CalendarScreen() {
   );
 }
 
-type DateCell = { n: number; dateKey: string; dow: number };

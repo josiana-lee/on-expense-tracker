@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Keypad, applyKey } from './Keypad';
 import { ClearAmount } from './ClearAmount';
+import { DatePicker } from './DatePicker';
 import { InstallmentChips } from './InstallmentChips';
 import { Sheet } from './Sheet';
 import { rememberCategoryPayment } from '../db/categories';
@@ -80,6 +81,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      한 번 저장되면 고칠 방법이 없었다. updateExpense는 이미 date를 받으므로
      막고 있던 건 이 화면뿐이었다. */
   const [pickedDate, setPickedDate] = useState<DateStr>(record?.date ?? date);
+  const [dateOpen, setDateOpen] = useState(false);
 
   /* Defaults are derived, not seeded into state. The catalog and settings
      arrive a frame after mount, and a useState initialiser only ever runs on
@@ -338,34 +340,35 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       <div className={styles.head}>
         <div className={styles.titleRow}>
           <span className={styles.title}>{editing ? '기록 수정' : '기록 추가'}</span>
-          {/* 안은 네이티브 날짜 picker다 — 탭하면 안드로이드 기본 달력 UI가
-              그대로 뜬다. 입력 탭의 "이 시각으로 기록돼" 도장과 같은
-              필(브랜드 연보라 배경 + 브랜드색 글자) 모양으로 감싸서, 순수
-              OS 위젯의 각진 인상을 지운다. 제목 옆에 붙여 눈에 덜 띄게 둔다:
-              날짜를 고치는 건 잘못 적혔을 때만 쓰는 예외 경로라, 금액 위에
-              항상 보이는 줄로 두면 3초 입력이라는 화면의 목적과 안 맞는다.
-              value/onChange은 'YYYY-MM-DD' 문자열을 주고받고, fmt()가 만드는
-              DateStr과 형식이 같아서 변환이 필요 없다. 빈 문자열이 올 수 있는
-              경우(입력칸을 지웠을 때)는 무시해 pickedDate가 빈 값이 되지
-              않게 한다. */}
-          <div className={`${styles.dateChip} ${dateLocked ? styles.dateChipLocked : ''}`}>
-            <Icon path={CALENDAR_ICON} size={12} stroke="currentColor" strokeWidth={2.4} />
-            <input
-              type="date"
-              className={styles.dateInput}
-              value={pickedDate}
-              onChange={(e) => e.target.value && setPickedDate(e.target.value)}
-              /* 안드로이드에서는 이 캘린더 아이콘(picker indicator)을 눌러야만
-                 달력 UI가 뜨고, 글자 부분을 누르면 초점만 갈 뿐 아무것도 뜨지
-                 않는다 — 데스크톱 크롬과 다르다. 그 아이콘을 지운
-                 .dateInput::-webkit-calendar-picker-indicator과 맞물려서,
-                 실기기에서는 이 필을 눌러도 아무 일도 안 일어나는 것처럼
-                 보였다. showPicker()로 어디를 눌렀든 직접 열어서, 인디케이터가
-                 있든 없든 항상 뜨게 만든다. */
-              onClick={(e) => e.currentTarget.showPicker?.()}
+          {/* 날짜 필. 제목 옆에 붙여 눈에 덜 띄게 둔다 — 날짜를 고치는 건
+              잘못 적혔을 때만 쓰는 예외 경로라, 금액 위에 항상 보이는 줄로
+              두면 3초 입력이라는 화면의 목적과 안 맞는다.
+
+              전에는 안에 `<input type="date">`가 들어 있었다. 탭하면 OS가
+              칠하는 다이얼로그가 떴는데, 동글동글한 앱 한가운데에 각진
+              초록색 사각형이 나타났고 시트 위에 또 창이 뜨는 모양이었다.
+              CSS가 닿지 않는 화면이라 고칠 방법이 그걸 안 쓰는 것뿐이었다.
+              DatePicker가 필 바로 아래에 달력을 펼친다. */}
+          <div className={styles.dateAnchor}>
+            <button
+              type="button"
+              className={`${styles.dateChip} ${dateLocked ? styles.dateChipLocked : ''}`}
+              onClick={() => setDateOpen((v) => !v)}
               disabled={dateLocked}
-              aria-label="날짜"
-            />
+              aria-label={`날짜 ${pickedDate}`}
+              aria-expanded={dateOpen}
+            >
+              <Icon path={CALENDAR_ICON} size={12} stroke="currentColor" strokeWidth={2.4} />
+              <span className={styles.dateText}>{pickedDate.replace(/-/g, '. ')}.</span>
+            </button>
+
+            {dateOpen && !dateLocked && (
+              <DatePicker
+                value={pickedDate}
+                onPick={setPickedDate}
+                onClose={() => setDateOpen(false)}
+              />
+            )}
           </div>
         </div>
         {editing && (

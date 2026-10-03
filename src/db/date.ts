@@ -105,3 +105,31 @@ export function addMonthsClamped(date: DateStr, months: number): DateStr {
   shifted.setDate(Math.min(day, lastDay));
   return fmt(shifted);
 }
+
+/** 한 달치 격자. 요일 머리글 순서와, 앞을 빈칸으로 채운 날짜 칸들.
+ *
+ *  달력 화면과 날짜 피커가 같은 격자를 그린다. 계산을 두 벌 두면 주 시작요일
+ *  설정이 한쪽에만 반영되는 순간이 오고, 그러면 같은 앱 안에서 두 달력이 서로
+ *  다른 요일로 시작한다 — 사용자가 어느 쪽을 믿어야 할지 알 수 없는 상태다. */
+export type MonthCell = { n: number; dateKey: DateStr; dow: number };
+
+export function monthGrid(
+  year: number,
+  month1to12: number,
+  weekStartDay: number,
+): { dows: number[]; cells: Array<{ key: string; date: MonthCell | null }> } {
+  const dows = Array.from({ length: 7 }, (_, i) => (weekStartDay + i) % 7);
+
+  const firstDow = new Date(year, month1to12 - 1, 1).getDay();
+  // 1일이 머리글 몇 칸 뒤에 오는지. 주 시작요일이 바뀌면 이 값이 따라 움직인다.
+  const lead = (firstDow - weekStartDay + 7) % 7;
+  const daysInMonth = new Date(year, month1to12, 0).getDate();
+
+  const cells: Array<{ key: string; date: MonthCell | null }> = [];
+  for (let i = 0; i < lead; i++) cells.push({ key: `blank-${i}`, date: null });
+  for (let n = 1; n <= daysInMonth; n++) {
+    const d = new Date(year, month1to12 - 1, n);
+    cells.push({ key: fmt(d), date: { n, dateKey: fmt(d), dow: d.getDay() } });
+  }
+  return { dows, cells };
+}

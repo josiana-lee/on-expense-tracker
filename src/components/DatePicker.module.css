@@ -1,0 +1,161 @@
+/* 바깥을 받는 투명한 판. 어둡게 덮지 않는 이유는 DatePicker.tsx에 적어뒀다. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+/* 달력 탭의 .card와 같은 배합 — 같은 표면색, 같은 22px 모서리. 다른 건
+   그림자뿐이고, 그건 이 달력이 얹혀 있기 때문이다: 카드는 바닥에 놓인
+   것이라 2px, 이건 떠 있는 것이라 더 멀리 번진다. */
+.popover {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 21;
+  width: 282px;
+  max-width: calc(100vw - 32px);
+  background: var(--sf);
+  border-radius: 22px;
+  padding: 12px 12px 14px;
+  box-shadow: 0 14px 38px rgba(12, 16, 30, 0.22);
+  /* 날짜 필에서 자라난다. CategoryPopup이 쓰는 것과 같은 popIn인데,
+     원점을 위쪽 끝으로 옮겨서 가운데가 아니라 필에서 내려온다. */
+  transform-origin: 28px top;
+  animation: pickerIn 0.28s var(--spring);
+}
+
+/* 말풍선 꼭지. 필 가운데를 가리킨다. */
+.tail {
+  position: absolute;
+  top: -5px;
+  left: 24px;
+  width: 12px;
+  height: 12px;
+  background: var(--sf);
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+
+@keyframes pickerIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 모션을 끈 사람에게는 자라나지 않고 그냥 나타난다. */
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 8px;
+}
+
+.title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.nav {
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  display: flex;
+  color: var(--tx2);
+  cursor: pointer;
+}
+
+/* 아래 격자는 달력 탭 그대로다 — 7열, gap 2px, 같은 글자 크기와 무게.
+   칸만 50px에서 36px로 줄였고, 모서리도 같은 비율로 13px→11px. */
+.dows {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+
+.dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+/* 요일 머리글의 일요일. 달력 탭이 하드코딩해 쓰는 바로 그 값이다 — 토큰이
+   아니라 두 곳에 같은 숫자가 적히지만, 일요일 빨강은 테마를 따라 변하면 안
+   되는 색이다. */
+.sunday {
+  color: #e48a8a;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.day {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  transition: transform 0.12s var(--spring-hard);
+}
+
+.day:active {
+  transform: scale(0.88);
+}
+
+.blank {
+  height: 36px;
+}
+
+.dayNum {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+/* .dayNum 뒤에 와야 한다. 둘 다 클래스 하나짜리라 명시도가 같고, 그러면
+   나중에 적힌 쪽이 이긴다 — 앞에 뒀더니 일요일이 검은색으로 나왔다. */
+.sundayNum {
+  color: #e48a8a;
+}
+
+/* 고른 날. 달력 탭의 선택 표시와 같다. */
+.selected {
+  background: var(--brandSoft);
+}
+
+.selected .dayNum {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+/* 오늘. 동그라미로 채우지 않고 숫자에 밑줄을 긋는다 — 달력 탭이 쓰는 신호와
+   같아야, 거기서 한 번 익힌 사람이 여기서 다시 배우지 않는다. 채움은 "고른
+   날" 하나만 쓰는 표시로 남겨둔다. */
+.today .dayNum {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
