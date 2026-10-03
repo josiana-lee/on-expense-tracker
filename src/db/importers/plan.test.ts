@@ -93,6 +93,62 @@ describe('planImport', () => {
     expect(plan.unmatched.map((u) => u.name)).toEqual(['식비']);
   });
 
+  /* 하위 분류를 그대로 물으면 쓰는 만큼 질문이 는다(어느 앱의 기본 지출 분류는 하위가
+     38개고 그중 9개만 저절로 맞는다). 하위가 우리 카테고리와 맞을 때만 하위로 두고,
+     아니면 상위로 묶는다. */
+  describe('하위 분류', () => {
+    const CATS2 = [...CATS, cat('snack', '간식'), cat('comm', '통신비')];
+    const plan = (rows: GroupedRow[], cats = CATS2) =>
+      planImport({ source: 'x', rows, income: 0, skipped: 0 }, cats, PAYS);
+
+    it('하위가 우리 카테고리와 맞으면 하위로 간다', () => {
+      const p = plan([row({ categoryName: '간식', parentName: '🍜 식비' })]);
+      expect(p.rows[0].categoryName).toBe('간식');
+      expect(p.matched.get('간식')).toBe('snack');
+    });
+
+    it('하위는 안 맞고 상위가 맞으면 상위로 간다', () => {
+      const p = plan([row({ categoryName: '외식', parentName: '🍜 식비' })]);
+      expect(p.rows[0].categoryName).toBe('🍜 식비');
+      expect(p.matched.get('🍜 식비')).toBe('food');
+      expect(p.unmatched).toHaveLength(0);
+    });
+
+    /* 이게 이 규칙의 목적이다. 택시·대중교통·주유가 각각 질문이 되면 안 된다. */
+    it('둘 다 안 맞으면 상위 이름으로 한 번만 묻는다', () => {
+      const p = plan([
+        row({ categoryName: '택시', parentName: '🚖 교통/차량' }),
+        row({ categoryName: '택시', parentName: '🚖 교통/차량' }),
+        row({ categoryName: '대중교통', parentName: '🚖 교통/차량' }),
+      ]);
+      expect(p.unmatched).toEqual([{ name: '🚖 교통/차량', count: 3 }]);
+    });
+
+    /* "식비 > 기타"가 우리 기타에 맞았다고 기타로 보내면 식비라는 단서를 버린다. */
+    it('하위가 기타에만 맞으면 상위를 더 좋은 단서로 본다', () => {
+      const p = plan([row({ categoryName: '기타', parentName: '🍜 식비' })]);
+      expect(p.rows[0].categoryName).toBe('🍜 식비');
+      expect(p.matched.get('🍜 식비')).toBe('food');
+    });
+
+    it('상위가 없는 기록은 그대로 둔다', () => {
+      const p = plan([row({ categoryName: '택시' })]);
+      expect(p.rows[0].categoryName).toBe('택시');
+      expect(p.unmatched).toEqual([{ name: '택시', count: 1 }]);
+    });
+
+    it('보관된 카테고리에 맞은 하위는 맞은 것으로 치지 않는다', () => {
+      const archived = [...CATS, { ...cat('snack', '간식'), archived: true } as CategoryRecord];
+      const p = plan([row({ categoryName: '간식', parentName: '🍜 식비' })], archived);
+      expect(p.rows[0].categoryName).toBe('🍜 식비');
+    });
+
+    it('상위 이름은 행에 남기지 않는다', () => {
+      const p = plan([row({ categoryName: '외식', parentName: '🍜 식비' })]);
+      expect('parentName' in p.rows[0]).toBe(false);
+    });
+  });
+
   describe('결제수단', () => {
     it('이름이 같으면 쓰던 것을 쓴다', () => {
       const plan = planImport({ source: 'x', rows: [row()], income: 0, skipped: 0 }, CATS, PAYS);

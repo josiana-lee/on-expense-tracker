@@ -11,7 +11,7 @@ const SCHEMA = `
   CREATE TABLE INOUTCOME (AID INTEGER PRIMARY KEY, uid TEXT, assetUid TEXT, ctgUid TEXT,
     ZCONTENT VARCHAR, ZDATE VARCHAR, DO_TYPE VARCHAR, ZMONEY VARCHAR, IS_DEL INTEGER,
     CARD_DIVIDE_MONTH_STR VARCHAR, cardDivideUid TEXT);
-  CREATE TABLE ZCATEGORY (ID INTEGER PRIMARY KEY, uid TEXT, NAME TEXT, TYPE INTEGER);
+  CREATE TABLE ZCATEGORY (ID INTEGER PRIMARY KEY, uid TEXT, NAME TEXT, TYPE INTEGER, pUid TEXT);
   CREATE TABLE ASSETS (ID INTEGER PRIMARY KEY, uid TEXT, NIC_NAME TEXT, groupUid TEXT);
   CREATE TABLE ASSETGROUP (DEVICE_ID INTEGER PRIMARY KEY, uid TEXT, ACC_GROUP_NAME TEXT, TYPE INTEGER);
 
@@ -58,6 +58,10 @@ const tx = (
     CARD_DIVIDE_MONTH_STR, cardDivideUid) VALUES
     ('${v.asset}','${v.ctg}','${v.content}','${v.ms}','${v.doType}','${v.money}',${v.del},'${v.str}','${v.divUid}')`;
 };
+
+/* 하위 분류. 실제 파일에서 최상위는 pUid가 '0'이고 하위는 상위의 uid를 가진다. */
+const CHILDREN = `INSERT INTO ZCATEGORY (uid, NAME, TYPE, pUid) VALUES
+  ('c-trans','🚖 교통/차량',1,'0'), ('c-taxi','택시',1,'c-trans'), ('c-snack','간식',1,'c-food')`;
 
 describe('isMmbak', () => {
   it('필요한 표와 열이 다 있으면 알아본다', () => {
@@ -122,6 +126,39 @@ describe('parseMmbak', () => {
 
   it('금액 문자열 "50000.0"을 정수로 읽는다', () => {
     expect(parseMmbak(db(tx({ money: '50000.0' }))).rows[0].amount).toBe(50000);
+  });
+
+  /* 하위 분류를 쓴 기록은 그 하위 이름과 상위 이름을 같이 넘긴다. 어느 쪽을 쓸지는
+     우리 카테고리를 봐야 정해져서 plan이 고른다. */
+  describe('하위 분류', () => {
+    it('하위 분류를 쓴 기록은 하위를 분류로, 상위를 parentName으로 넘긴다', () => {
+      const [row] = parseMmbak(db(CHILDREN, tx({ ctg: 'c-taxi', content: '이동 택시' }))).rows;
+      expect(row.categoryName).toBe('택시');
+      expect(row.parentName).toBe('🚖 교통/차량');
+      expect(row.label).toBe('이동 택시');
+    });
+
+    it('최상위 분류를 쓴 기록에는 parentName이 없다', () => {
+      const [row] = parseMmbak(db(CHILDREN, tx())).rows;
+      expect(row.categoryName).toBe('🍜 식비');
+      expect(row.parentName).toBeUndefined();
+    });
+
+    it('내역이 비면 하위 분류 이름이 내역이 된다', () => {
+      const [row] = parseMmbak(db(CHILDREN, tx({ ctg: 'c-taxi', content: '' }))).rows;
+      expect(row.label).toBe('택시');
+    });
+
+    /* 상위 분류 열이 없는 판의 파일이 "알아볼 수 없는 파일"이 되면 안 된다. */
+    it('상위 분류 열이 없는 파일도 읽는다', () => {
+      const old = new SQL.Database();
+      old.run(SCHEMA.replace(', pUid TEXT', ''));
+      old.run(tx());
+      expect(isMmbak(old as unknown as SqlDb)).toBe(true);
+      const [row] = parseMmbak(old as unknown as SqlDb).rows;
+      expect(row.categoryName).toBe('🍜 식비');
+      expect(row.parentName).toBeUndefined();
+    });
   });
 
   describe('수입과 지출', () => {

@@ -243,6 +243,22 @@ describe('runImport', () => {
     expect(saved[0].memo).toBe('할부 1/2회차');
   });
 
+  /* plan이 하위를 상위로 묶으면 행의 분류 이름도 바뀐다. 커밋이 원래 이름으로 찾으면
+     맞은 카테고리를 못 찾아 기록이 사라진다. */
+  it('하위가 안 맞아 상위로 묶인 기록도 상위의 카테고리로 저장된다', async () => {
+    const p = await planOf(
+      parse([
+        row({ categoryName: '외식', parentName: '식비', label: '점심' }),
+        row({ categoryName: '간식', parentName: '식비', label: '과자' }),
+      ]),
+    );
+    const out = await runImport(p, new Map());
+    expect(out.added).toBe(2);
+    const saved = await db.expenses.toArray();
+    expect(saved.find((r) => r.subLabel === '점심')?.categoryId).toBe('food');
+    expect(saved.find((r) => r.subLabel === '과자')?.categoryId).toBe('snack');
+  });
+
   it('원본이 시각을 주면 그 시각으로, 안 주면 00:00으로 넣는다', async () => {
     const p = await planOf(
       parse([row({ time: '22:47' }), row({ date: '2026-01-02' as ImportParse['rows'][number]['date'] })]),

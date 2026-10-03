@@ -27,6 +27,9 @@ export type ImportPlan = {
   installmentGroups: number;
 };
 
+/** 우리 카테고리 중 "기타". 맞았다고 해서 무엇인지 알려주지 않는 분류다. */
+const CATCH_ALL = 'etc';
+
 /** 비교할 때만 쓰는 모양으로 깎는다.
  *
  *  편한가계부는 분류명 앞에 이모지를 붙인다("🍜 식비"). 글자 그대로 비교하면
@@ -51,7 +54,7 @@ export function planImport(
   categories: CategoryRecord[],
   payments: PaymentMethodRecord[],
 ): ImportPlan {
-  const rows = groupInstallments(parse.rows);
+  const grouped = groupInstallments(parse.rows);
 
   /* 보관·삭제된 것에는 짝짓지 않는다. 지워진 카테고리에 새 기록을 붙이면
      달력에 이름 없는 줄이 생긴다. */
@@ -76,6 +79,20 @@ export function planImport(
     if (!payByKey.has(k)) payByKey.set(k, p.id);
     if (p.kind === 'cash' && !cashId) cashId = p.id;
   }
+
+  /* 하위 분류를 쓴 기록은 하위가 우리 카테고리와 맞을 때만 하위로 두고, 아니면 상위로
+     묶는다. 하위 38개를 그대로 물으면 쓰는 만큼 질문이 늘고(9개만 저절로 맞는다),
+     상위로 묶으면 최대 8개다. 하위가 맞는 경우(통신비, 운동, 여행…)는 상위보다 정확해서
+     하위가 이긴다.
+     "기타"는 예외다. 우리 기타에 맞았다는 건 아무 말도 안 한 것이라, 상위가 더 좋은
+     단서다 — "식비 > 기타"가 식비가 아니라 기타로 가면 알려준 정보를 버린 것이다. */
+  const rows = grouped.map((r) => {
+    if (!r.parentName) return r;
+    const own = catByKey.get(key(r.categoryName));
+    if (own && own !== CATCH_ALL) return r;
+    const { parentName, ...rest } = r;
+    return { ...rest, categoryName: parentName };
+  });
 
   const matched = new Map<string, ID>();
   const missing = new Map<string, number>();

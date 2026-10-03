@@ -25,14 +25,18 @@ const REQUIRED: Record<string, string[]> = {
   ASSETGROUP: ['uid', 'TYPE'],
 };
 
+function columnsOf(db: SqlDb, table: string): Set<string> | null {
+  const info = db.exec(`PRAGMA table_info(${table})`)[0];
+  if (!info) return null;
+  const nameAt = info.columns.indexOf('name');
+  return new Set(info.values.map((r) => String(r[nameAt])));
+}
+
 export function isMmbak(db: SqlDb): boolean {
   try {
     return Object.entries(REQUIRED).every(([table, cols]) => {
-      const info = db.exec(`PRAGMA table_info(${table})`)[0];
-      if (!info) return false;
-      const nameAt = info.columns.indexOf('name');
-      const have = new Set(info.values.map((r) => String(r[nameAt])));
-      return cols.every((c) => have.has(c));
+      const have = columnsOf(db, table);
+      return have !== null && cols.every((c) => have.has(c));
     });
   } catch {
     return false;
@@ -57,11 +61,16 @@ const clean = (s: string) => s.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200
 const INSTALMENT = /\((\d+)\/(\d+)\)/;
 
 export function parseMmbak(db: SqlDb): ImportParse {
+  /* 상위 분류 열(pUid)은 필수로 두지 않는다. 없는 판의 파일이 "알아볼 수 없는 파일"이
+     되는 것보다, 상위 없이 하위(또는 최상위) 이름만으로 읽는 편이 낫다. */
+  const hasParent = columnsOf(db, 'ZCATEGORY')?.has('pUid') ?? false;
   const res = db.exec(`
     SELECT i.ZDATE, i.ZMONEY, i.DO_TYPE, i.ZCONTENT, i.CARD_DIVIDE_MONTH_STR, i.cardDivideUid,
-           c.NAME AS cname, c.TYPE AS ctype, a.NIC_NAME AS aname, g.TYPE AS gtype
+           c.NAME AS cname, c.TYPE AS ctype, ${hasParent ? 'pc.NAME' : 'NULL'} AS pname,
+           a.NIC_NAME AS aname, g.TYPE AS gtype
     FROM INOUTCOME i
     LEFT JOIN ZCATEGORY c ON c.uid = i.ctgUid
+    ${hasParent ? 'LEFT JOIN ZCATEGORY pc ON pc.uid = c.pUid' : ''}
     LEFT JOIN ASSETS a ON a.uid = i.assetUid
     LEFT JOIN ASSETGROUP g ON g.uid = a.groupUid
     WHERE COALESCE(i.IS_DEL, 0) = 0
@@ -76,7 +85,7 @@ export function parseMmbak(db: SqlDb): ImportParse {
   const col = {
     date: at('ZDATE'), money: at('ZMONEY'), doType: at('DO_TYPE'), content: at('ZCONTENT'),
     inst: at('CARD_DIVIDE_MONTH_STR'), divUid: at('cardDivideUid'), cname: at('cname'),
-    ctype: at('ctype'), aname: at('aname'), gtype: at('gtype'),
+    ctype: at('ctype'), pname: at('pname'), aname: at('aname'), gtype: at('gtype'),
   };
 
   for (const r of res.values) {
@@ -103,9 +112,10 @@ export function parseMmbak(db: SqlDb): ImportParse {
     const ctype = r[col.ctype] == null ? NaN : Number(r[col.ctype]);
     const isExpense = doType === 1 && ctype === 1;
     const isIncome = doType === 0 && ctype === 0;
-    /* 수입은 넣지 않고 센다(types.ts) — 이 앱은 지출만 다룬다. 표본에는 수입이
-       없어서 이 판정은 추정인데, 틀려도 "수입 N건"이라는 안내가 어긋날 뿐
-       기록이 잘못 들어가지는 않는다. */
+    /* 수입은 넣지 않고 센다(types.ts) — 이 앱은 지출만 다룬다. 구분값은 표본으로
+       확인했다: 0은 수입(분류 종류도 0), 1은 지출, 3·4는 이체의 출금·입금이다.
+       이체 행에는 분류가 없어서 위의 둘 어디에도 안 걸리고 건너뛴다. 이체 수수료는
+       금액 0원인 지출 행이 따로 붙는데 위에서 금액 0으로 걸러진다. */
     if (isIncome) {
       income++;
       continue;
@@ -122,6 +132,8 @@ export function parseMmbak(db: SqlDb): ImportParse {
       continue;
     }
     const categoryName = String(r[col.cname] ?? '') || '분류 없음';
+    // 최상위 분류는 pUid가 '0'이라 짝이 없어 비어 있다.
+    const parentName = r[col.pname] == null ? '' : String(r[col.pname]);
     const content = String(r[col.content] ?? '').trim();
 
     let installment: ImportRow['installment'];
@@ -147,6 +159,7 @@ export function parseMmbak(db: SqlDb): ImportParse {
       time: fmtTime(d),
       amount,
       categoryName,
+      ...(parentName ? { parentName } : {}),
       label: content || clean(categoryName) || undefined,
       paymentName: hasAsset ? assetName : '현금',
       paymentKind: hasAsset ? kindOf(r[col.gtype] == null ? null : Number(r[col.gtype])) : 'cash',
