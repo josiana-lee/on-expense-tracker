@@ -53,5 +53,5 @@ export const APP_INFO = {
 
   /** Bumped by hand at release; also stamped into backup files by
    *  db/backup.ts's APP_VERSION, which should move with it. */
-  version: '1.2.1',
+  version: '1.2.2',
 } as const;
