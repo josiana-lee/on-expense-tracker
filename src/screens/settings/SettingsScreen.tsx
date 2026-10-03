@@ -364,7 +364,9 @@ export function SettingsScreen({ onManageCards }: Props) {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json,.csv,.mmbak,application/json,text/csv"
+        /* accept를 두지 않는다. 파일을 이름이 아니라 내용으로 알아보는데, 힌트를
+           걸어두면 .mmbak처럼 안드로이드가 종류를 모르는 확장자가 목록에서
+           빠질 수 있다. 고를 수 없는 파일은 알아볼 기회도 없다. */
         style={{ display: 'none' }}
         onChange={onFileChosen}
       />

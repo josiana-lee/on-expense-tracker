@@ -1,4 +1,4 @@
-import type { DateStr, TxType } from '../types';
+import type { DateStr, TimeStr, TxType } from '../types';
 
 /** 어떤 가계부에서 왔든 이 모양으로 바꾼 뒤에 공통 경로를 탄다.
  *
@@ -11,6 +11,8 @@ import type { DateStr, TxType } from '../types';
  *  때문이다 — 읽는 쪽이 멋대로 정하면 그 결정이 화면에 보이지 않는다. */
 export type ImportRow = {
   date: DateStr;
+  /** 원본에 시각이 있으면. 없으면 비워두고, 커밋이 00:00으로 채운다. */
+  time?: TimeStr;
   /** 원 단위 정수. 쉼표·통화 기호는 읽는 쪽에서 이미 떼어냈다. */
   amount: number;
   type: TxType;

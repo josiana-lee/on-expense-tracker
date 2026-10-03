@@ -1,4 +1,6 @@
 import { parseCsv } from './csv';
+import { isMmbak, parseMmbak } from './mmbak';
+import { openSqlite } from './sqlite';
 import { isWeple, parseWeple } from './weple';
 import type { ImportParse } from './types';
 
@@ -28,11 +30,7 @@ export type Detected =
  *  누르기 전에 보여야 한다. */
 export async function detectFile(file: File): Promise<Detected> {
   const head = await file.slice(0, SQLITE_MAGIC.length).text();
-  if (head === SQLITE_MAGIC) {
-    throw new UnknownFileError(
-      'SQLite 백업 파일이네. 아직 읽을 준비가 안 됐어 — 다음 업데이트를 기다려줘',
-    );
-  }
+  if (head === SQLITE_MAGIC) return detectSqlite(file);
 
   const text = await file.text();
   const trimmed = text.trimStart();
@@ -44,6 +42,26 @@ export async function detectFile(file: File): Promise<Detected> {
   if (isWeple(header)) return { kind: 'import', parse: parseWeple(text) };
 
   throw new UnknownFileError(
-    '무슨 파일인지 모르겠어. 지금은 백업 파일과 CSV를 읽을 수 있어',
+    '무슨 파일인지 모르겠어. 지금은 백업 파일, CSV, SQLite 파일을 읽을 수 있어',
   );
+}
+
+/* SQLite는 파일이 아니라 데이터베이스라서 열어봐야 무슨 앱의 것인지 안다. 열고
+   나면 닫는다 — 읽은 결과는 이미 평범한 객체로 꺼냈고, 메모리에 올려둔 파일
+   사본은 이 함수 밖에서 쓸 데가 없다. */
+async function detectSqlite(file: File): Promise<Detected> {
+  let db;
+  try {
+    db = await openSqlite(new Uint8Array(await file.arrayBuffer()));
+  } catch {
+    throw new UnknownFileError('SQLite 파일을 열지 못했어. 파일이 깨졌을 수 있어');
+  }
+  try {
+    if (!isMmbak(db)) {
+      throw new UnknownFileError('이 SQLite 파일은 읽을 수 없는 형식이야');
+    }
+    return { kind: 'import', parse: parseMmbak(db) };
+  } finally {
+    db.close();
+  }
 }

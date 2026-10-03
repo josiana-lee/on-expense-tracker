@@ -1,0 +1,191 @@
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { beforeAll, describe, expect, it } from 'vitest';
+import initSqlJs, { type Database } from 'sql.js';
+
+import { isMmbak, parseMmbak, type SqlDb } from './mmbak';
+
+/* 실제 파일의 스키마 중 읽는 열만 옮겼다. 통째로 옮기지 않은 이유는 나머지
+   열(동기화·위치·문자 원문 등)이 어댑터와 상관없어서다. */
+const SCHEMA = `
+  CREATE TABLE INOUTCOME (AID INTEGER PRIMARY KEY, uid TEXT, assetUid TEXT, ctgUid TEXT,
+    ZCONTENT VARCHAR, ZDATE VARCHAR, DO_TYPE VARCHAR, ZMONEY VARCHAR, IS_DEL INTEGER,
+    CARD_DIVIDE_MONTH_STR VARCHAR, cardDivideUid TEXT);
+  CREATE TABLE ZCATEGORY (ID INTEGER PRIMARY KEY, uid TEXT, NAME TEXT, TYPE INTEGER);
+  CREATE TABLE ASSETS (ID INTEGER PRIMARY KEY, uid TEXT, NIC_NAME TEXT, groupUid TEXT);
+  CREATE TABLE ASSETGROUP (DEVICE_ID INTEGER PRIMARY KEY, uid TEXT, ACC_GROUP_NAME TEXT, TYPE INTEGER);
+
+  INSERT INTO ASSETGROUP (uid, ACC_GROUP_NAME, TYPE) VALUES
+    ('1','은행',1), ('2','카드',2), ('3','체크카드',3), ('11','현금',11);
+  INSERT INTO ASSETS (uid, NIC_NAME, groupUid) VALUES
+    ('a-card','삼성카드','2'), ('a-chk','국민체크','3'), ('a-cash','현금','11'), ('a-bank','우리은행','1');
+  INSERT INTO ZCATEGORY (uid, NAME, TYPE) VALUES
+    ('c-food','🍜 식비',1), ('c-pay','월급',0), ('c-x','이체분류',1);
+`;
+
+// 2026-10-03 12:00:17 KST. 날짜는 로컬 기준으로 읽으므로 시각을 한낮에 둬서 시간대가
+// 달라도 같은 날이 되게 한다.
+const MS = Date.UTC(2026, 9, 3, 3, 0, 17);
+
+let SQL: Awaited<ReturnType<typeof initSqlJs>>;
+
+beforeAll(async () => {
+  /* wasm을 직접 읽어 넘긴다. jsdom 환경에서는 sql.js가 웹으로 착각해 파일 경로
+     대신 fetch를 쓰려 하는데, 바이너리를 주면 어느 쪽이든 상관없다. */
+  const require = createRequire(import.meta.url);
+  const wasm = readFileSync(require.resolve('sql.js/dist/sql-wasm.wasm'));
+  SQL = await initSqlJs({ wasmBinary: wasm.buffer.slice(wasm.byteOffset, wasm.byteOffset + wasm.byteLength) as ArrayBuffer });
+});
+
+function db(...inserts: string[]): Database & SqlDb {
+  const d = new SQL.Database();
+  d.run(SCHEMA);
+  for (const sql of inserts) d.run(sql);
+  return d as Database & SqlDb;
+}
+
+const tx = (
+  p: Partial<{
+    asset: string; ctg: string; content: string; ms: number; doType: number | string;
+    money: string; del: number; str: string; divUid: string;
+  }> = {},
+) => {
+  const v = {
+    asset: 'a-card', ctg: 'c-food', content: '김밥', ms: MS, doType: 1, money: '7400.0',
+    del: 0, str: '', divUid: '', ...p,
+  };
+  return `INSERT INTO INOUTCOME (assetUid, ctgUid, ZCONTENT, ZDATE, DO_TYPE, ZMONEY, IS_DEL,
+    CARD_DIVIDE_MONTH_STR, cardDivideUid) VALUES
+    ('${v.asset}','${v.ctg}','${v.content}','${v.ms}','${v.doType}','${v.money}',${v.del},'${v.str}','${v.divUid}')`;
+};
+
+describe('isMmbak', () => {
+  it('필요한 표와 열이 다 있으면 알아본다', () => {
+    expect(isMmbak(db())).toBe(true);
+  });
+
+  /* SQLite 파일이라고 다 이 앱의 것은 아니다. 표가 없는 파일을 읽으려 들면
+     쿼리가 터지거나, 더 나쁘게는 비슷한 이름의 다른 표를 읽는다. */
+  it('다른 SQLite 파일은 알아보지 못한다', () => {
+    const other = new SQL.Database();
+    other.run('CREATE TABLE notes (id INTEGER, body TEXT)');
+    expect(isMmbak(other as unknown as SqlDb)).toBe(false);
+  });
+
+  it('표는 있어도 열이 모자라면 알아보지 못한다', () => {
+    const half = new SQL.Database();
+    half.run('CREATE TABLE INOUTCOME (AID INTEGER)');
+    half.run('CREATE TABLE ZCATEGORY (uid TEXT)');
+    half.run('CREATE TABLE ASSETS (uid TEXT)');
+    half.run('CREATE TABLE ASSETGROUP (uid TEXT)');
+    expect(isMmbak(half as unknown as SqlDb)).toBe(false);
+  });
+});
+
+describe('parseMmbak', () => {
+  it('한 건을 우리 모양으로 바꾼다', () => {
+    const [row] = parseMmbak(db(tx())).rows;
+    expect(row).toMatchObject({
+      amount: 7400,
+      type: 'expense',
+      categoryName: '🍜 식비',
+      label: '김밥',
+      paymentName: '삼성카드',
+      paymentKind: 'credit',
+    });
+    expect(row.date).toBe('2026-10-03');
+  });
+
+  /* 원본이 밀리초 시각을 갖고 있다. 버리면 하루치가 전부 00:00이 된다. */
+  it('날짜에 든 시각을 살린다', () => {
+    const [row] = parseMmbak(db(tx())).rows;
+    expect(row.time).toMatch(/^\d{2}:\d{2}$/);
+  });
+
+  it('삭제된 기록은 읽지 않고, 못 읽은 줄로도 세지 않는다', () => {
+    const out = parseMmbak(db(tx(), tx({ del: 1 })));
+    expect(out.rows).toHaveLength(1);
+    // 사용자가 직접 지운 것이라 "못 읽었다"고 알릴 일이 아니다.
+    expect(out.skipped).toBe(0);
+  });
+
+  it('금액 문자열 "50000.0"을 정수로 읽는다', () => {
+    expect(parseMmbak(db(tx({ money: '50000.0' }))).rows[0].amount).toBe(50000);
+  });
+
+  describe('수입과 지출', () => {
+    it('구분값과 분류 종류가 둘 다 수입이면 수입으로 받는다', () => {
+      const [row] = parseMmbak(db(tx({ ctg: 'c-pay', doType: 0 }))).rows;
+      expect(row.type).toBe('income');
+    });
+
+    /* 구분값이 0·1이 아닌 건 이체 같은 것이다. 뜻을 모르는 값을 지출로 치면
+       이체가 지출로 들어가 같은 돈이 두 번 센다. */
+    it('뜻을 모르는 구분값은 건너뛰고 센다', () => {
+      const out = parseMmbak(db(tx({ doType: 3 }), tx()));
+      expect(out.rows).toHaveLength(1);
+      expect(out.skipped).toBe(1);
+    });
+
+    /* 둘이 어긋나면 어느 쪽이 맞는지 모른다. 틀린 방향으로 넣는 것보다
+       빼고 알리는 편이 낫다. */
+    it('구분값과 분류 종류가 어긋나면 건너뛴다', () => {
+      const out = parseMmbak(db(tx({ doType: 1, ctg: 'c-pay' })));
+      expect(out.rows).toHaveLength(0);
+      expect(out.skipped).toBe(1);
+    });
+  });
+
+  describe('결제수단 종류', () => {
+    const kind = (asset: string) => parseMmbak(db(tx({ asset }))).rows[0].paymentKind;
+
+    it('자산 그룹으로 정한다', () => {
+      expect(kind('a-card')).toBe('credit');
+      expect(kind('a-chk')).toBe('debit');
+      expect(kind('a-cash')).toBe('cash');
+      // 은행 계좌에서 나간 돈은 체크카드처럼 바로 빠진다.
+      expect(kind('a-bank')).toBe('debit');
+    });
+
+    /* 자산을 안 쓰는 사람의 기록은 전부 자산이 비어 있다. 건너뛰면 그 사람은
+       한 건도 못 가져온다. 현금으로 두는 건 가정이지만 가장 덜 틀린 가정이다. */
+    it('자산이 없는 기록은 현금으로 둔다', () => {
+      const [row] = parseMmbak(db(tx({ asset: 'ghost' }))).rows;
+      expect(row.paymentKind).toBe('cash');
+      expect(row.paymentName).toBe('현금');
+    });
+  });
+
+  describe('할부', () => {
+    const inst = (n: number) =>
+      tx({ content: '이어폰', str: `(${n}/3)`, divUid: 'D1', money: '200000.0', ms: MS + n * 86_400_000 * 31 });
+
+    it('(n/m)과 묶음 ID로 할부를 읽는다', () => {
+      const { rows } = parseMmbak(db(inst(1), inst(2), inst(3)));
+      expect(rows.map((r) => r.installment?.no)).toEqual([1, 2, 3]);
+      expect(rows.every((r) => r.installment?.months === 3)).toBe(true);
+      // 묶음 ID가 적혀 있으니 이름이나 카드로 짐작하지 않는다.
+      expect(new Set(rows.map((r) => r.installment?.groupKey)).size).toBe(1);
+    });
+
+    it('이름은 회차 표기 없이 그대로 둔다', () => {
+      expect(parseMmbak(db(inst(1))).rows[0].label).toBe('이어폰');
+    });
+
+    it('할부가 아닌 기록에는 할부 정보가 없다', () => {
+      expect(parseMmbak(db(tx())).rows[0].installment).toBeUndefined();
+    });
+  });
+
+  describe('못 읽는 줄', () => {
+    it('금액이 없거나 0인 줄은 건너뛴다', () => {
+      const out = parseMmbak(db(tx({ money: '0.0' }), tx({ money: 'abc' }), tx()));
+      expect(out.rows).toHaveLength(1);
+      expect(out.skipped).toBe(2);
+    });
+
+    it('내역이 비면 분류명(이모지 뗀)을 이름으로 쓴다', () => {
+      expect(parseMmbak(db(tx({ content: '' }))).rows[0].label).toBe('식비');
+    });
+  });
+});

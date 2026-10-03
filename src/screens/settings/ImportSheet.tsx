@@ -135,7 +135,7 @@ export function ImportSheet({ plan, onClose, onDone }: Props) {
 
       {plan.skipped > 0 && (
         <div className={styles.warnBox}>
-          {plan.skipped}건은 날짜나 금액이 비어 있어서 못 읽었어.
+          {plan.skipped}건은 읽지 못했어. 날짜나 금액이 없거나, 이체처럼 지출·수입이 아닌 기록이야.
         </div>
       )}
 
