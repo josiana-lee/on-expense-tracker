@@ -6,6 +6,10 @@ import { emailBackup, icloudBackup } from '../../db/backup';
 import { exportExpensesCsv } from '../../db/exportCsv';
 import type { ParsedRestore } from '../../db/restore';
 import { parseBackupFile, RestoreFormatError } from '../../db/restore';
+import { db } from '../../db/db';
+import { detectFile, UnknownFileError } from '../../db/importers/detect';
+import { planImport, type ImportPlan } from '../../db/importers/plan';
+import { ImportSheet } from './ImportSheet';
 import { DEFAULT_REMINDER_TIME, setReminder, updateSettings } from '../../db/settings';
 import { useBackupOverdue } from '../../hooks/useBackupOverdue';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -49,6 +53,7 @@ export function SettingsScreen({ onManageCards }: Props) {
   const icloudExport = useGuardedAction();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restoreData, setRestoreData] = useState<ParsedRestore | null>(null);
+  const [importData, setImportData] = useState<ImportPlan | null>(null);
   const backupOverdue = useBackupOverdue();
 
   const exportCsv = () => {
@@ -87,20 +92,33 @@ export function SettingsScreen({ onManageCards }: Props) {
     });
   };
 
-  const pickRestoreFile = () => {
+  const pickFile = () => {
     fileInputRef.current?.click();
   };
 
-  const onRestoreFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /* 입구가 하나다. 우리 백업이든 다른 가계부 파일이든 여기로 들어오고, 무엇인지는
+     앱이 내용을 보고 가른다 — 사용자가 "내 파일은 어느 쪽이지"를 먼저 알아야 하는
+     구조는 갈아타러 온 사람에게 첫 벽이 된다. 덮어쓰기냐 더하기냐는 각자의
+     미리보기가 말해준다. */
+  const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
 
     try {
-      const parsed = await parseBackupFile(file);
-      setRestoreData(parsed);
+      const found = await detectFile(file);
+      if (found.kind === 'backup') {
+        setRestoreData(await parseBackupFile(file));
+        return;
+      }
+      const [categories, payments] = await Promise.all([
+        db.categories.toArray(),
+        db.paymentMethods.toArray(),
+      ]);
+      setImportData(planImport(found.parse, categories, payments));
     } catch (err) {
-      flash(err instanceof RestoreFormatError ? err.message : '백업 파일을 읽지 못했어');
+      if (err instanceof UnknownFileError || err instanceof RestoreFormatError) flash(err.message);
+      else flash('파일을 읽지 못했어');
     }
   };
 
@@ -324,17 +342,17 @@ export function SettingsScreen({ onManageCards }: Props) {
           </span>
         </button>
 
-        <button type="button" className={styles.row} onClick={pickRestoreFile}>
+        <button type="button" className={styles.row} onClick={pickFile}>
           {/* 복원 도중 지금 데이터를 먼저 내보내는데, 그때 위와 같은 공유
               시트가 뜬다. 거기서 취소하면 복원이 멈춘다 — 시트를 처음 보는
               사람은 "복원한다더니 왜 공유?" 하고 취소하기 쉽다. 시트가 뜨기
               전에 미리 말해두면 그 취소가 안 일어난다. */}
           <div className={styles.rowLabel}>
-            백업 파일 복원하기
+            파일에서 불러오기
             <span className={styles.rowSub}>
-              지금 데이터를 먼저 내보낸 다음에 복원해.
+              온:On 백업이나 위플 가계부 CSV를 넣으면 알아서 알아봐.
               <br />
-              중간에 뜨는 창을 취소하면 멈춰
+              무슨 일이 생기는지는 넣고 나서 알려줄게
             </span>
           </div>
           <span className={styles.chevron}>
@@ -346,9 +364,9 @@ export function SettingsScreen({ onManageCards }: Props) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="application/json"
+        accept=".json,.csv,.mmbak,application/json,text/csv"
         style={{ display: 'none' }}
-        onChange={onRestoreFileChosen}
+        onChange={onFileChosen}
       />
 
       {/* The licence and version rows are always here, so the section always
@@ -452,6 +470,10 @@ export function SettingsScreen({ onManageCards }: Props) {
           value={settings?.defaultPaymentMethodId ?? null}
           onClose={() => setSheet(null)}
         />
+      )}
+
+      {importData && (
+        <ImportSheet plan={importData} onClose={() => setImportData(null)} onDone={flash} />
       )}
 
       {restoreData && (

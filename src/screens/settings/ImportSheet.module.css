@@ -1,0 +1,139 @@
+.title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.hint {
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+.card {
+  margin-top: 14px;
+  background: var(--sf2);
+  border-radius: 16px;
+  padding: 2px 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowLabel {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.rowValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+.warnBox {
+  margin-top: 12px;
+  background: var(--warnSoft);
+  color: var(--warn);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cancel {
+  flex: 1;
+  height: 50px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--sf2);
+  color: var(--tx);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 복원은 덮어쓰기라 경고색이지만, 가져오기는 더하기다 — 기존 기록이 사라지지
+   않으므로 같은 빨강을 쓰면 겁을 과장하게 된다. */
+.confirm {
+  flex: 1.4;
+  height: 50px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s var(--spring-hard);
+}
+
+.confirm:active {
+  transform: scale(0.97);
+}
+
+.cancel:disabled,
+.confirm:disabled {
+  opacity: 0.55;
+}
+
+.sectionTitle {
+  margin: 18px 2px 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+/* 분류 이름과 건수를 한 덩어리로. 건수는 "이걸 신경 쓸 값어치가 있나"를
+   정하는 숫자라 이름 바로 옆에 붙어야 한다. */
+.mapName {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.mapCount {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--tx2);
+}
+
+/* 네이티브 select다. 안드로이드가 자기 목록을 띄우는데, 카테고리가 서른이라
+   우리가 만든 목록보다 OS 쪽이 훑기 편하다 — 날짜 피커와 반대 판단이고,
+   이유는 거기선 모양이 전부였고 여기선 길이가 전부라서다. */
+.select {
+  flex: none;
+  max-width: 46%;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sf);
+  color: var(--tx);
+  padding: 7px 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
