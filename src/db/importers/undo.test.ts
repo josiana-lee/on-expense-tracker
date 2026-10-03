@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { db } from '../db';
 import { addExpense } from '../expenses';
+import { addRecurringRule } from '../recurring';
 import { bootstrap } from '../seed';
+import { updateSettings } from '../settings';
 import { runImport } from './commit';
 import { planImport } from './plan';
 import { keepImport, readLastImport, undoImport } from './undo';
@@ -80,6 +82,36 @@ describe('가져온 기록 되돌리기', () => {
     await addExpense({ amount: 100, categoryId: 'food', paymentMethodId: lotte.id });
 
     const out = await undoImport(last!);
+
+    expect(out.removedPayments).toBe(0);
+    expect(await db.paymentMethods.get(lotte.id)).toBeDefined();
+  });
+
+  /* 이 앱은 카드를 지우지 않고 보관한다. 되돌리기가 처음으로 하드 삭제를 하는데,
+     기본 결제수단이 그 카드였다면 설정이 죽은 id를 가리키고, 입력 화면은 그 값을
+     확인하지 않아서 결제수단 없는 지출이 저장됐다. 쓰는 곳이 있으면 지우지 않는다. */
+  it('기본 결제수단으로 정한 카드는 지우지 않는다', async () => {
+    await importFile(TWO);
+    const lotte = (await db.paymentMethods.toArray()).find((p) => p.name === '롯데카드')!;
+    await updateSettings({ defaultPaymentMethodId: lotte.id });
+
+    const out = await undoImport((await readLastImport())!);
+
+    expect(out.removedPayments).toBe(0);
+    expect(await db.paymentMethods.get(lotte.id)).toBeDefined();
+  });
+
+  it('저장해둔 지출이 쓰는 카드는 지우지 않는다', async () => {
+    await importFile(TWO);
+    const lotte = (await db.paymentMethods.toArray()).find((p) => p.name === '롯데카드')!;
+    await addRecurringRule({
+      name: '구독',
+      amount: 9900,
+      categoryId: 'food',
+      paymentMethodId: lotte.id,
+    });
+
+    const out = await undoImport((await readLastImport())!);
 
     expect(out.removedPayments).toBe(0);
     expect(await db.paymentMethods.get(lotte.id)).toBeDefined();

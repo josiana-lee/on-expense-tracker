@@ -58,22 +58,32 @@ export type UndoResult = {
  *  한 트랜잭션이다. 기록만 지우고 카드가 남거나 그 반대로 멈추면 어느 쪽도
  *  설명할 수 없다. */
 export async function undoImport(last: LastImport): Promise<UndoResult> {
-  return db.transaction('rw', db.expenses, db.paymentMethods, db.meta, async () => {
-    const removed = await db.expenses.filter((r) => r.importId === last.id).delete();
+  return db.transaction(
+    'rw',
+    [db.expenses, db.paymentMethods, db.settings, db.recurringRules, db.meta],
+    async () => {
+      const removed = await db.expenses.filter((r) => r.importId === last.id).delete();
 
-    /* 가져오기가 만든 카드만, 그리고 이제 쓰는 기록이 없을 때만. 되돌린 뒤에
-       그 카드로 직접 적은 기록이 있으면 카드를 지우는 순간 그 기록이 결제수단 없는
-       줄이 된다. */
-    let removedPayments = 0;
-    for (const id of last.createdPaymentIds) {
-      const stillUsed = await db.expenses.filter((r) => r.paymentMethodId === id).count();
-      if (stillUsed === 0 && (await db.paymentMethods.get(id))) {
-        await db.paymentMethods.delete(id);
-        removedPayments++;
+      /* 가져오기가 만든 카드만, 그리고 **쓰는 곳이 하나도 없을 때만.** 쓰는 곳은 셋이다:
+         기록, 기본 결제수단 설정, 저장해둔 지출. 앱은 카드를 지우지 않고 보관하는데
+         이 되돌리기가 처음으로 하드 삭제를 한다 — 기본 결제수단이 그 카드였으면 설정이
+         죽은 id를 가리키고, 입력 화면은 그 값을 확인하지 않아서 결제수단 없는 지출이
+         저장됐다. */
+      const defaultId = (await db.settings.get('app'))?.defaultPaymentMethodId;
+      const ruleIds = new Set((await db.recurringRules.toArray()).map((r) => r.paymentMethodId));
+
+      let removedPayments = 0;
+      for (const id of last.createdPaymentIds) {
+        const stillUsed = await db.expenses.filter((r) => r.paymentMethodId === id).count();
+        const used = stillUsed > 0 || defaultId === id || ruleIds.has(id);
+        if (!used && (await db.paymentMethods.get(id))) {
+          await db.paymentMethods.delete(id);
+          removedPayments++;
+        }
       }
-    }
 
-    await db.meta.delete(KEY);
-    return { removed, removedPayments };
-  });
+      await db.meta.delete(KEY);
+      return { removed, removedPayments };
+    },
+  );
 }
