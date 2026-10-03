@@ -67,6 +67,11 @@
   font-weight: 600;
   color: var(--tx2);
   line-height: 1.45;
+  /* 한글은 기본값이 글자 사이 어디서든 꺾어서 "읽 / 어줘"처럼 단어가 잘린다.
+     띄어쓰기에서만 꺾는다. 토스트와 같은 처방이고, 폭보다 긴 덩어리만
+     overflow-wrap이 예외로 자른다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .rowValue {
