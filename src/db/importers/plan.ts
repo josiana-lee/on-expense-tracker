@@ -33,8 +33,11 @@ export type ImportPlan = {
  *  공백만 떼면 대부분 그냥 맞는다 — 가계부들이 쓰는 분류 이름이 원래 거기서
  *  거기다. */
 function key(name: string): string {
+  /* 이모지 본체와 그 꼬리(변형 선택자 FE0F, 결합자 200D)만 뗀다.
+     처음엔 \p{Emoji_Component}를 썼는데 그 속성은 숫자 0-9와 #, *까지
+     포함한다 — "스터디1"과 "스터디2"가 같은 이름이 되어 한 카테고리에 섞인다. */
   return name
-    .replace(/[\p{Extended_Pictographic}\p{Emoji_Component}]/gu, '')
+    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '')
     .replace(/\s+/g, '')
     .toLowerCase();
 }

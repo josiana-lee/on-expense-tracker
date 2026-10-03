@@ -38,6 +38,23 @@ describe('planImport', () => {
     expect(plan.matched.get('🍜 식비')).toBe('food');
   });
 
+  /* 이모지를 뗄 때 숫자까지 지우면 "스터디1"과 "스터디2"가 같은 이름이 되어
+     한 카테고리에 섞인다. \p{Emoji_Component}는 0-9와 #, *을 포함한다. */
+  it('이름에 든 숫자는 지우지 않는다', () => {
+    const cats2 = [cat('s1', '스터디1'), cat('s2', '스터디2')];
+    const plan = planImport(
+      {
+        source: 'x',
+        rows: [row({ categoryName: '스터디2' }), row({ categoryName: '🍜 스터디1' })],
+        skipped: 0,
+      },
+      cats2,
+      PAYS,
+    );
+    expect(plan.matched.get('스터디2')).toBe('s2');
+    expect(plan.matched.get('🍜 스터디1')).toBe('s1');
+  });
+
   it('못 맞춘 분류는 많이 쓴 순서로 모아 둔다', () => {
     const plan = planImport(
       {
