@@ -137,3 +137,9 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+/* 되돌리기는 지우는 일이다. 가져오기의 브랜드색 확정 버튼과 같은 모양에 색만
+   복원 시트와 같은 경고색을 쓴다. */
+.danger {
+  background: var(--warn);
+}

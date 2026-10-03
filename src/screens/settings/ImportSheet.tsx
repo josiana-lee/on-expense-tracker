@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Sheet } from '../../components/Sheet';
 import { runImport, type CategoryChoice } from '../../db/importers/commit';
+import { readLastImport, type LastImport } from '../../db/importers/undo';
 import type { ImportPlan } from '../../db/importers/plan';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
@@ -15,6 +16,8 @@ type Props = {
   plan: ImportPlan;
   onClose: () => void;
   onDone: (message: string) => void;
+  /** 기록이 들어간 뒤. 호출한 쪽이 이 시트를 닫고 "두고 갈지 되돌릴지"를 물어본다. */
+  onImported: (last: LastImport) => void;
 };
 
 /** 다른 가계부 파일을 가져오기 전에 보여주는 화면.
@@ -25,7 +28,7 @@ type Props = {
  *  짝지을 분류만 묻는다. 저절로 맞은 것(실제 파일에서 92%)은 보여주지도 않는다 —
  *  확인할 것이 스물세 줄이면 아무도 안 읽고, 그러면 정작 골라야 하는 열 줄이
  *  묻힌다. */
-export function ImportSheet({ plan, onClose, onDone }: Props) {
+export function ImportSheet({ plan, onClose, onDone, onImported }: Props) {
   const { categories } = useCatalog();
   const { busy, guard } = useGuardedAction();
   const [progress, setProgress] = useState<number | null>(null);
@@ -52,13 +55,17 @@ export function ImportSheet({ plan, onClose, onDone }: Props) {
         const choices: CategoryChoice = new Map(
           plan.unmatched.map((u) => [u.name, choice[u.name] === SKIP ? null : choice[u.name]]),
         );
-        const out = await runImport(plan, choices, (done) => setProgress(done));
-        onDone(
-          out.skipped > 0
-            ? `${out.added}건 가져왔어! ${out.skipped}건은 건너뛰었어`
-            : `${out.added}건 가져왔어!`,
-        );
-        onClose();
+        await runImport(plan, choices, (done) => setProgress(done));
+        /* 성공 문구를 토스트로 던지고 닫지 않는다. 5천 건이 들어온 뒤에 "이게
+           아니었네"가 되면 손으로 지울 수가 없어서, 바로 두고 갈지 되돌릴지
+           고르는 화면으로 넘긴다. 한 건도 안 들어갔으면 되돌릴 것이 없다. */
+        const last = await readLastImport();
+        if (last) {
+          onImported(last);
+        } else {
+          onDone('가져온 기록이 없어');
+          onClose();
+        }
       } catch {
         onDone('가져오지 못했어. 다시 시도해줘');
       } finally {

@@ -206,6 +206,10 @@ export interface ExpenseRecord {
   recurringRuleId?: ID;
   occurrenceDate?: DateStr;
 
+  // 다른 가계부 파일에서 가져온 기록이면, 같은 가져오기끼리 같은 값. 되돌리기가
+  // "이 가져오기에서 온 것만" 지우는 표시다. 손으로 적은 기록에는 없다.
+  importId?: ID;
+
   createdAt: Epoch;           // 불변
   updatedAt: Epoch;
 }
@@ -400,7 +404,7 @@ export interface TombstoneRecord {
 
 // ---------- 메타 (key-value) ----------
 export interface MetaRecord {
-  key: 'deviceId' | 'presetVersion' | 'homeVisibleDefaults' | 'installedAt' | 'lastBackupAt' | 'lastBackupReminderAt';
+  key: 'deviceId' | 'presetVersion' | 'homeVisibleDefaults' | 'lastImport' | 'installedAt' | 'lastBackupAt' | 'lastBackupReminderAt';
   value: unknown;
   updatedAt: Epoch;
 }
@@ -535,6 +539,17 @@ export function fmt(d: Date): DateStr {
 **이자·수수료는 계산하지 않는다.** 무이자 할부를 전제로 원금만 나눈다. 유이자 할부는 카드사·기간별 수수료율이 필요한데, 그 값을 사용자가 입력하게 하면 3초 입력이 무너진다.
 
 ---
+
+### 4-6. 가져오기와 되돌리기
+
+다른 가계부의 파일(CSV, SQLite)을 읽어 **더한다.** 복원과 달리 기존 기록을 지우지 않는다 — 복원은 이 앱을 되돌리는 일이고, 가져오기는 다른 앱을 옮겨오는 일이다.
+
+- **표시:** 가져온 기록은 전부 같은 `importId`를 단다. 인덱스가 아니라서 Dexie 버전은 올리지 않았고, 찾는 건 되돌릴 때 한 번뿐이라 훑어서 한다.
+- **되돌리기 정보:** `meta.lastImport`에 `{ id, at, count, createdPaymentIds }` 하나만 둔다. 새로 가져오면 이 줄이 새 것으로 바뀌고, 앞의 가져오기는 표시만 남은 채 되돌릴 길이 없어진다 — 되돌리고 싶은 순간은 보통 방금 한 것에 대해서다.
+- **무엇을 지우나:** `importId`가 같은 기록 전부와, 그 가져오기가 **새로 만든** 결제수단 중 이제 쓰는 기록이 없는 것. 가져오기 전에 있던 기록, 가져온 뒤에 직접 적은 기록, 원래 있던 카드는 건드리지 않는다. 한 트랜잭션이다.
+- **툼스톤은 남기지 않는다.** 툼스톤은 "지워졌다"와 "본 적 없다"를 가르려는 것이고, 이 기록들은 사용자가 지운 것이 아니라 없던 일로 하는 것이다. 5천 건에 5천 줄을 더 쌓으면 백업 파일만 커진다.
+- **언제 사라지나:** 결과 화면에서 "이대로 쓸게"나 "되돌리기"를 고르면 `lastImport`가 지워진다. 고르지 않고 닫으면 설정에 "가져온 기록 되돌리기" 줄이 남는다 — 마음이 바뀌는 건 결과를 달력에서 살펴본 뒤일 수 있어서다.
+- **복원과의 관계:** 복원이 기록을 통째로 바꾸면 표시만 남고 기록이 없을 수 있다. 그때 되돌리기는 오류 없이 "지울 기록이 없었어"로 끝나고 표시를 정리한다.
 
 ## 5. 집계 전략: 롤업 테이블을 만들지 않는다
 

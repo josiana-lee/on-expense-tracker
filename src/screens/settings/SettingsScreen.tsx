@@ -10,6 +10,9 @@ import { db } from '../../db/db';
 import { detectFile, UnknownFileError } from '../../db/importers/detect';
 import { planImport, type ImportPlan } from '../../db/importers/plan';
 import { ImportSheet } from './ImportSheet';
+import { ImportUndoSheet } from './ImportUndoSheet';
+import type { LastImport } from '../../db/importers/undo';
+import { useLastImport } from '../../hooks/useLastImport';
 import { DEFAULT_REMINDER_TIME, setReminder, updateSettings } from '../../db/settings';
 import { useBackupOverdue } from '../../hooks/useBackupOverdue';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -54,6 +57,8 @@ export function SettingsScreen({ onManageCards }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restoreData, setRestoreData] = useState<ParsedRestore | null>(null);
   const [importData, setImportData] = useState<ImportPlan | null>(null);
+  const [undoData, setUndoData] = useState<{ last: LastImport; fresh: boolean } | null>(null);
+  const lastImport = useLastImport();
   const backupOverdue = useBackupOverdue();
 
   const exportCsv = () => {
@@ -355,6 +360,31 @@ export function SettingsScreen({ onManageCards }: Props) {
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
         </button>
+
+        {/* 가져온 직후 "이대로 쓸게"도 "되돌리기"도 안 고르고 닫았을 때만 남는다.
+            마음이 바뀌는 건 결과를 달력에서 한참 살펴본 뒤일 수 있어서, 시트가
+            열려 있는 동안에만 되돌릴 수 있으면 부족하다. 고르는 순간 사라진다. */}
+        {lastImport && (
+          <button
+            type="button"
+            className={styles.row}
+            onClick={() => setUndoData({ last: lastImport, fresh: false })}
+          >
+            <div className={styles.rowLabel}>
+              가져온 기록 되돌리기
+              <span className={styles.rowSub}>
+                {new Date(lastImport.at).toLocaleDateString('ko-KR', {
+                  month: 'long',
+                  day: 'numeric',
+                })}
+                에 가져온 {lastImport.count.toLocaleString()}건
+              </span>
+            </div>
+            <span className={styles.chevron}>
+              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+            </span>
+          </button>
+        )}
       </div>
 
       <input
@@ -471,7 +501,24 @@ export function SettingsScreen({ onManageCards }: Props) {
       )}
 
       {importData && (
-        <ImportSheet plan={importData} onClose={() => setImportData(null)} onDone={flash} />
+        <ImportSheet
+          plan={importData}
+          onClose={() => setImportData(null)}
+          onDone={flash}
+          onImported={(last) => {
+            setImportData(null);
+            setUndoData({ last, fresh: true });
+          }}
+        />
+      )}
+
+      {undoData && (
+        <ImportUndoSheet
+          last={undoData.last}
+          fresh={undoData.fresh}
+          onClose={() => setUndoData(null)}
+          onDone={flash}
+        />
       )}
 
       {restoreData && (

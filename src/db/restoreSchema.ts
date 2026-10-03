@@ -60,6 +60,7 @@ const expenseSchema = z.looseObject({
      돈을 지우는 셈이다. 정수·양수만 확인하고, 실제 한도는 입력 쪽이 건다. */
   installmentMonths: z.number().int().min(1).optional(),
   installmentTotal: minor.optional(),
+  importId: id.optional(),
   createdAt: epoch,
   updatedAt: epoch,
 });
@@ -191,6 +192,7 @@ const metaSchema = z.looseObject({
     'deviceId',
     'presetVersion',
     'homeVisibleDefaults',
+    'lastImport',
     'installedAt',
     'lastBackupAt',
     'lastBackupReminderAt',

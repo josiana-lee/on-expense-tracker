@@ -67,6 +67,12 @@ export interface ExpenseRecord {
   /** 나눠 담기 전 결제 총액. 회차 금액을 다 더하면 이 값이 된다. */
   installmentTotal?: Minor;
 
+  /** 다른 가계부 파일에서 가져온 기록이면, 같은 가져오기에서 나온 기록끼리 같은
+   *  값이다. 되돌리기가 "이 가져오기에서 온 것만" 지울 수 있게 하는 표시이고,
+   *  손으로 적은 기록에는 없다. 인덱스가 아니라서 Dexie 버전은 올리지 않았다 —
+   *  찾는 건 몇 번 안 되고, 그때 훑으면 된다. */
+  importId?: ID;
+
   createdAt: Epoch;
   updatedAt: Epoch;
 }
@@ -233,6 +239,8 @@ export type MetaKey =
    *  이유는 seed.ts에 적어뒀다 — 복원이 presetVersion만 0으로 되돌린다. */
   | 'homeVisibleDefaults'
   | 'installedAt'
+  /** 마지막 가져오기의 되돌리기 정보 — importers/undo.ts. 한 번에 하나만 둔다. */
+  | 'lastImport'
   | 'lastBackupAt'
   | 'lastBackupReminderAt';
 

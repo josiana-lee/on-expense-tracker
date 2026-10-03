@@ -4,6 +4,7 @@ import { addPaymentMethod } from '../paymentMethods';
 import type { ExpenseRecord, ID, Minor } from '../types';
 import { toMinor } from '../types';
 import type { ImportPlan } from './plan';
+import { saveLastImport } from './undo';
 
 /** 사용자가 고른 것. 원본 분류명 → 우리 카테고리 id, 또는 null(안 가져옴).
  *
@@ -16,6 +17,8 @@ export type ImportResult = {
   added: number;
   skipped: number;
   createdPayments: number;
+  /** 이 가져오기에서 나온 기록에 붙은 표시. 되돌리기가 이걸로 찾는다. */
+  importId: ID;
 };
 
 /* 한 번에 넣는 행 수. 5천 건을 한 덩어리로 밀어 넣으면 그동안 화면이 멎는다.
@@ -35,15 +38,20 @@ export async function runImport(
 ): Promise<ImportResult> {
   /* 없는 결제수단을 먼저 만든다. 기록보다 앞서야 붙일 id가 생긴다. */
   const paymentId = new Map<string, ID>();
-  let createdPayments = 0;
+  const createdPaymentIds: ID[] = [];
   for (const [name, target] of plan.payments) {
     if ('id' in target) {
       paymentId.set(name, target.id);
     } else {
-      paymentId.set(name, await addPaymentMethod(target.create));
-      createdPayments++;
+      const id = await addPaymentMethod(target.create);
+      paymentId.set(name, id);
+      // 되돌릴 때 이 카드들을 같이 치우려고 기억해 둔다.
+      createdPaymentIds.push(id);
     }
   }
+
+  // 이번 가져오기에서 나온 기록은 전부 같은 표시를 단다.
+  const importId = uuidv7();
 
   const stamp = now();
   const rows: ExpenseRecord[] = [];
@@ -70,6 +78,7 @@ export async function runImport(
       subLabel: r.label,
       paymentMethodId: payment,
       memo: r.memo?.trim() || undefined,
+      importId,
       ...(r.installmentId
         ? {
             installmentId: r.installmentId,
@@ -93,5 +102,12 @@ export async function runImport(
     await new Promise((r) => setTimeout(r, 0));
   }
 
-  return { added: rows.length, skipped, createdPayments };
+  /* 한 건도 안 들어갔으면 되돌릴 것이 없다. 표시를 남기면 설정에 "0건 되돌리기"가
+     뜬다. 이때 새로 만든 카드는 쓰는 기록이 없는 채로 남는데, 그건 사용자가 카드
+     관리에서 지우면 된다 — 모든 행을 "가져오지 않기"로 고른 사람이 상대다. */
+  if (rows.length > 0) {
+    await saveLastImport({ id: importId, at: stamp, count: rows.length, createdPaymentIds });
+  }
+
+  return { added: rows.length, skipped, createdPayments: createdPaymentIds.length, importId };
 }
