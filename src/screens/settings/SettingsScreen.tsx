@@ -36,6 +36,8 @@ import styles from './SettingsScreen.module.css';
 
 const CHEVRON = 'M9 5l7 7-7 7';
 const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
+/** 불러오기가 읽는 형식. 앱 이름이 아니라 파일 형식으로 적는다. */
+const IMPORT_FORMATS = ['백업 파일', 'CSV', 'SQLite', 'mmbak'];
 
 type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | 'colorTheme' | null;
 type Sub = 'categories' | 'recurring' | 'licenses' | null;
@@ -363,13 +365,21 @@ export function SettingsScreen({ onManageCards }: Props) {
         </button>
 
         <button type="button" className={styles.row} onClick={pickFile}>
-          {/* 복원 도중 지금 데이터를 먼저 내보내는데, 그때 위와 같은 공유
-              시트가 뜬다. 거기서 취소하면 복원이 멈춘다 — 시트를 처음 보는
-              사람은 "복원한다더니 왜 공유?" 하고 취소하기 쉽다. 시트가 뜨기
-              전에 미리 말해두면 그 취소가 안 일어난다. */}
+          {/* 부제 두 줄: 무엇을 가져오는지, 어떤 형식인지. 앱 이름을 쓰지 않는 대신
+              사용자가 자기 파일의 확장자와 맞춰볼 수 있게 형식을 칩으로 적는다 — 글줄
+              속에 섞인 확장자는 안 읽히지만 칩은 훑어서 자기 것을 찾는다. 우리 백업과
+              다른 가계부 파일이 같은 입구라 둘 다 적는다. */}
           <div className={styles.rowLabel}>
             파일에서 불러오기
             <span className={styles.rowSub}>다른 가계부 파일도 가져올 수 있어</span>
+            <span className={styles.formatLine}>
+              <span className={styles.formatLabel}>형식</span>
+              {IMPORT_FORMATS.map((f) => (
+                <span key={f} className={styles.formatChip}>
+                  {f}
+                </span>
+              ))}
+            </span>
           </div>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
