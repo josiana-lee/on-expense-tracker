@@ -7,7 +7,7 @@ import { exportExpensesCsv } from '../../db/exportCsv';
 import type { ParsedRestore } from '../../db/restore';
 import { parseBackupFile, RestoreFormatError } from '../../db/restore';
 import { db } from '../../db/db';
-import { detectFile, UnknownFileError } from '../../db/importers/detect';
+import { DetectError, detectFile } from '../../db/importers/detect';
 import { planImport, type ImportPlan } from '../../db/importers/plan';
 import { ImportSheet } from './ImportSheet';
 import { ImportUndoSheet } from './ImportUndoSheet';
@@ -126,7 +126,7 @@ export function SettingsScreen({ onManageCards }: Props) {
       ]);
       setImportData(planImport(found.parse, categories, payments));
     } catch (err) {
-      if (err instanceof UnknownFileError || err instanceof RestoreFormatError) flash(err.message);
+      if (err instanceof DetectError || err instanceof RestoreFormatError) flash(err.message);
       else flash('파일을 읽지 못했어');
     }
   };
