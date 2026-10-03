@@ -1,44 +1,55 @@
 import { db } from '../db';
-import { now } from '../id';
-import { forgetImportedFile } from './imported';
 import type { Epoch, ID } from '../types';
+import { forgetImportedFile, readImportedFiles } from './imported';
 
-/** 마지막 가져오기에 대해 되돌릴 때 필요한 것. meta에 한 줄만 둔다.
- *
- *  한 번에 하나만 되돌릴 수 있다. 새로 가져오면 이 줄이 새 것으로 바뀌고, 앞의
- *  가져오기는 기록에 표시만 남은 채 되돌릴 길이 없어진다 — 되돌릴 대상이 여럿이면
- *  화면이 "어느 것을?"을 물어야 하는데, 하나를 되돌리고 싶은 순간은 보통 방금
- *  한 것에 대해서다. */
+/** 가져오기 한 번이 남긴 것 중 되돌릴 때 필요한 것. */
 export type LastImport = {
   id: ID;
   at: Epoch;
   count: number;
-  /** 이 가져오기가 새로 만든 결제수단. 되돌릴 때 같이 치운다. */
+  /** 이 가져오기가 새로 만든 결제수단. 되돌릴 때 쓰는 곳이 없으면 같이 치운다. */
   createdPaymentIds: ID[];
 };
 
-const KEY = 'lastImport';
+/** "가져온 기록" 목록의 한 줄. */
+export type ImportEntry = LastImport & {
+  /** 지금 남아 있는 기록의 합계(원). */
+  spend: number;
+};
 
-export async function readLastImport(): Promise<LastImport | null> {
-  const row = await db.meta.get(KEY);
-  const v = row?.value as Partial<LastImport> | undefined;
-  // 형식이 이상하면 없는 것으로 친다. 복원한 백업에서 올 수 있는 값이다.
-  if (!v || typeof v.id !== 'string' || typeof v.count !== 'number') return null;
-  return {
-    id: v.id,
-    at: Number(v.at) || 0,
-    count: v.count,
-    createdPaymentIds: Array.isArray(v.createdPaymentIds) ? v.createdPaymentIds : [],
-  };
-}
+/** 가져온 기록을 가져오기별로 묶어서, 새것부터 돌려준다.
+ *
+ *  **기록에 붙은 `importId`에서 만든다.** 가져온 기록은 전부 표시를 달고 있어서, 따로
+ *  목록을 저장하지 않아도 어떤 가져오기가 몇 건 남아 있는지 알 수 있다. 되돌리기 정보를
+ *  한 줄만 두던 때는 두 번째로 가져오면 첫 번째를 되돌릴 길이 없어졌는데, 같은 파일을
+ *  실수로 두 번 넣었을 때 정작 되돌리고 싶은 건 첫 번째였다.
+ *
+ *  건수와 합계는 **지금 남아 있는 것**을 센다. 가져온 뒤에 몇 건을 지웠으면 그만큼 줄어
+ *  있고, 전부 지웠으면 목록에서 사라진다. 카드 정보와 가져온 시각은 `importedFiles`에서
+ *  보태고, 거기 없으면(그 항목이 생기기 전에 가져온 것) 기록의 생성 시각으로 대신한다. */
+export async function listImports(): Promise<ImportEntry[]> {
+  const known = new Map((await readImportedFiles()).map((e) => [e.importId, e]));
+  const groups = new Map<ID, { count: number; spend: number; firstAt: Epoch }>();
 
-export async function saveLastImport(last: LastImport): Promise<void> {
-  await db.meta.put({ key: KEY, value: last, updatedAt: now() });
-}
+  await db.expenses
+    .filter((r) => !!r.importId)
+    .each((r) => {
+      const g = groups.get(r.importId!) ?? { count: 0, spend: 0, firstAt: r.createdAt };
+      g.count += 1;
+      g.spend += r.amount;
+      if (r.createdAt < g.firstAt) g.firstAt = r.createdAt;
+      groups.set(r.importId!, g);
+    });
 
-/** 되돌리기를 그만둔다 — "이대로 쓸게". 기록은 그대로고 표시만 지운다. */
-export async function keepImport(): Promise<void> {
-  await db.meta.delete(KEY);
+  return [...groups.entries()]
+    .map(([id, g]) => ({
+      id,
+      at: known.get(id)?.at ?? g.firstAt,
+      count: g.count,
+      spend: g.spend,
+      createdPaymentIds: known.get(id)?.createdPaymentIds ?? [],
+    }))
+    .sort((a, b) => b.at - a.at);
 }
 
 export type UndoResult = {
@@ -58,7 +69,7 @@ export type UndoResult = {
  *
  *  한 트랜잭션이다. 기록만 지우고 카드가 남거나 그 반대로 멈추면 어느 쪽도
  *  설명할 수 없다. */
-export async function undoImport(last: LastImport): Promise<UndoResult> {
+export async function undoImport(last: Pick<LastImport, 'id' | 'createdPaymentIds'>): Promise<UndoResult> {
   return db.transaction(
     'rw',
     [db.expenses, db.paymentMethods, db.settings, db.recurringRules, db.meta],
@@ -86,7 +97,6 @@ export async function undoImport(last: LastImport): Promise<UndoResult> {
       /* 되돌렸으면 그 파일은 다시 가져올 수 있어야 한다. 항목이 남아 있으면 지운 기록을
          "이미 가져온 파일"이라고 막는다. */
       await forgetImportedFile(last.id);
-      await db.meta.delete(KEY);
       return { removed, removedPayments };
     },
   );

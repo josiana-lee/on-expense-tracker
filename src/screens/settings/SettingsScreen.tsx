@@ -14,8 +14,9 @@ import { ImportSheet } from './ImportSheet';
 import { ImportUndoSheet } from './ImportUndoSheet';
 import { RestoreUndoSheet } from './RestoreUndoSheet';
 import { useRestoreCopy } from '../../hooks/useRestoreCopy';
-import type { LastImport } from '../../db/importers/undo';
-import { useLastImport } from '../../hooks/useLastImport';
+import type { ImportEntry, LastImport } from '../../db/importers/undo';
+import { useImports } from '../../hooks/useImports';
+import { ImportHistorySheet } from './ImportHistorySheet';
 import { DEFAULT_REMINDER_TIME, setReminder, updateSettings } from '../../db/settings';
 import { useBackupOverdue } from '../../hooks/useBackupOverdue';
 import { useCatalog } from '../../hooks/useCatalog';
@@ -62,8 +63,9 @@ export function SettingsScreen({ onManageCards }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [restoreData, setRestoreData] = useState<ParsedRestore | null>(null);
   const [importData, setImportData] = useState<ImportPlan | null>(null);
-  const [undoData, setUndoData] = useState<{ last: LastImport; fresh: boolean } | null>(null);
-  const lastImport = useLastImport();
+  const [undoData, setUndoData] = useState<{ last: LastImport | ImportEntry; fresh: boolean } | null>(null);
+  const imports = useImports();
+  const [historyOpen, setHistoryOpen] = useState(false);
   const restoreCopy = useRestoreCopy();
   const [restoreUndo, setRestoreUndo] = useState<{ fresh: boolean } | null>(null);
   const backupOverdue = useBackupOverdue();
@@ -397,23 +399,21 @@ export function SettingsScreen({ onManageCards }: Props) {
           </span>
         </button>
 
-        {/* 가져온 직후 "이대로 쓸게"도 "되돌리기"도 안 고르고 닫았을 때만 남는다.
-            마음이 바뀌는 건 결과를 달력에서 한참 살펴본 뒤일 수 있어서, 시트가
-            열려 있는 동안에만 되돌릴 수 있으면 부족하다. 고르는 순간 사라진다. */}
-        {lastImport && (
-          <button
-            type="button"
-            className={styles.row}
-            onClick={() => setUndoData({ last: lastImport, fresh: false })}
-          >
+        {/* 가져온 기록이 하나라도 남아 있으면 항상 있다. 되돌릴 수 있는 게 마지막 하나뿐이고
+            "이대로 쓸게"를 누르면 사라지던 때는, 같은 파일을 실수로 두 번 넣으면 첫 번째를
+            지울 길이 없었다. 기록에 붙은 표시에서 목록을 만들어서, 마음이 바뀌는 시점이
+            언제든 이 줄에서 그 가져오기만 되돌린다. */}
+        {imports && imports.length > 0 && (
+          <button type="button" className={styles.row} onClick={() => setHistoryOpen(true)}>
             <div className={styles.rowLabel}>
               가져온 기록 되돌리기
               <span className={styles.rowSub}>
-                {new Date(lastImport.at).toLocaleDateString('ko-KR', {
-                  month: 'long',
-                  day: 'numeric',
-                })}
-                에 가져온 {lastImport.count.toLocaleString()}건
+                {imports.length === 1
+                  ? `${new Date(imports[0].at).toLocaleDateString('ko-KR', {
+                      month: 'long',
+                      day: 'numeric',
+                    })}에 가져온 ${imports[0].count.toLocaleString()}건`
+                  : `${imports.length}번 가져왔어. 골라서 되돌릴 수 있어`}
               </span>
             </div>
             <span className={styles.chevron}>
@@ -569,6 +569,17 @@ export function SettingsScreen({ onManageCards }: Props) {
           onImported={(last) => {
             setImportData(null);
             setUndoData({ last, fresh: true });
+          }}
+        />
+      )}
+
+      {historyOpen && (
+        <ImportHistorySheet
+          entries={imports ?? []}
+          onClose={() => setHistoryOpen(false)}
+          onPick={(entry) => {
+            setHistoryOpen(false);
+            setUndoData({ last: entry, fresh: false });
           }}
         />
       )}

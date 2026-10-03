@@ -7,7 +7,7 @@ import { parseWeple } from './weple';
 import { planImport } from './plan';
 import { runImport } from './commit';
 import { findImportedFile } from './imported';
-import { readLastImport } from './undo';
+import { listImports } from './undo';
 import type { ImportParse } from './types';
 
 const HEAD = '사용자,거래일,수입/지출,금액,분류,하위 분류,내역,지불,카드,메모';
@@ -154,7 +154,7 @@ describe('runImport', () => {
 
       expect(await db.expenses.count()).toBe(before.e);
       expect(await db.paymentMethods.count()).toBe(before.p);
-      expect(await readLastImport()).toBeNull();
+      expect(await listImports()).toEqual([]);
     });
 
     it('실패한 뒤 다시 시도하면 중복 없이 한 번만 들어간다', async () => {
@@ -187,7 +187,7 @@ describe('runImport', () => {
        "방금 가져왔어!"로 뜨고, 거기서 되돌리면 엉뚱한 걸 지웠다. */
     it('한 건도 안 들어갔으면 null이고, 이전 정보는 건드리지 않는다', async () => {
       await runImport(await plan(file('내 가계부,2026-01-01,지출,"1,000",식비,,가,현금,현금,')), new Map());
-      const first = await readLastImport();
+      const first = await listImports();
 
       const second = await runImport(
         await plan(file('내 가계부,2026-01-02,지출,"1,000",카드대금,,갚음,현금,현금,')),
@@ -195,7 +195,7 @@ describe('runImport', () => {
       );
 
       expect(second.last).toBeNull();
-      expect(await readLastImport()).toEqual(first);
+      expect(await listImports()).toEqual(first);
     });
   });
 

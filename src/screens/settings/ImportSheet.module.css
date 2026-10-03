@@ -148,3 +148,32 @@
 .danger {
   background: var(--warn);
 }
+
+/* 가져온 기록 목록의 한 줄. 줄 전체가 버튼이라 누르면 그 가져오기를 되돌릴지 묻는다. */
+.pick {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--tx2);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.pick:last-child {
+  border-bottom: 0;
+}
+
+.pickMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pickSub {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+}

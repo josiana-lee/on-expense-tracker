@@ -38,10 +38,10 @@ export async function fingerprintOf(bytes: ArrayBuffer): Promise<string | undefi
   }
 }
 
-async function read(): Promise<ImportedFile[]> {
+/** 남겨둔 항목 전부. 복원한 백업에서 올 수 있는 값이라 모양을 믿지 않는다. */
+export async function readImportedFiles(): Promise<ImportedFile[]> {
   const v = (await db.meta.get(KEY))?.value;
   if (!Array.isArray(v)) return [];
-  // 복원한 백업에서 올 수 있는 값이라 모양을 믿지 않는다.
   return v
     .filter((e) => e && typeof e.importId === 'string')
     .map((e) => ({
@@ -59,7 +59,7 @@ async function read(): Promise<ImportedFile[]> {
  *  기록이 사라진 경우엔 항목만 남는다 — 그걸로 막으면 이미 없는 기록을 "이미 있다"고
  *  우기는 셈이다. */
 export async function findImportedFile(hash: string): Promise<ImportedFile | null> {
-  const same = (await read()).filter((e) => e.hash === hash).reverse();
+  const same = (await readImportedFiles()).filter((e) => e.hash === hash).reverse();
   for (const e of same) {
     if (await db.expenses.filter((r) => r.importId === e.importId).first()) return e;
   }
@@ -69,7 +69,7 @@ export async function findImportedFile(hash: string): Promise<ImportedFile | nul
 /** 가져오기와 **같은 트랜잭션 안에서** 부른다. 기록은 들어갔는데 파일 기록이 안
  *  남으면 같은 파일을 또 넣을 수 있다. */
 export async function rememberImportedFile(entry: ImportedFile): Promise<void> {
-  const next = [...(await read()).filter((e) => e.importId !== entry.importId), entry].slice(
+  const next = [...(await readImportedFiles()).filter((e) => e.importId !== entry.importId), entry].slice(
     -MAX_ENTRIES,
   );
   await db.meta.put({ key: KEY, value: next, updatedAt: now() });
@@ -77,7 +77,7 @@ export async function rememberImportedFile(entry: ImportedFile): Promise<void> {
 
 /** 가져오기를 되돌렸다. 그 파일은 다시 가져올 수 있어야 한다. */
 export async function forgetImportedFile(importId: ID): Promise<void> {
-  const all = await read();
+  const all = await readImportedFiles();
   const next = all.filter((e) => e.importId !== importId);
   if (next.length === all.length) return;
   await db.meta.put({ key: KEY, value: next, updatedAt: now() });

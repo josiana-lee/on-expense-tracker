@@ -1,5 +1,5 @@
 import { Sheet } from '../../components/Sheet';
-import { keepImport, undoImport, type LastImport } from '../../db/importers/undo';
+import { undoImport, type LastImport } from '../../db/importers/undo';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import styles from './ImportSheet.module.css';
 
@@ -7,7 +7,7 @@ type Props = {
   last: LastImport;
   /** 방금 가져온 직후인지. 문구만 달라진다. */
   fresh: boolean;
-  /** 고르지 않고 닫는 길. 되돌리기 줄은 설정에 남는다. */
+  /** 고르지 않고 닫는 길. 되돌리기는 설정의 "가져온 기록"에서 언제든 할 수 있다. */
   onClose: () => void;
   onDone: (message: string) => void;
 };
@@ -15,9 +15,9 @@ type Props = {
 /** 가져온 기록을 두고 갈지 되돌릴지 고르는 화면.
  *
  *  가져오기는 더하기만 하므로 5천 건이 들어온 뒤에 "이게 아니었네"가 되면 손으로
- *  지울 수가 없다. 그래서 가져온 직후 이 화면이 뜨고, 고르지 않고 닫아도 설정에
- *  줄이 남는다 — 사용자가 마음을 바꾸는 건 결과를 달력에서 한참 살펴본 뒤일 수
- *  있어서, 이 시트가 열려 있는 동안만 되돌릴 수 있으면 부족하다. */
+ *  지울 수가 없다. 그래서 가져온 직후 이 화면이 뜨고, 나중에도 설정의 "가져온 기록"
+ *  목록에서 같은 화면으로 되돌릴 수 있다 — 마음을 바꾸는 건 결과를 달력에서 한참
+ *  살펴본 뒤일 수 있어서다. 그래서 "이대로 쓸게"는 아무것도 기억시키지 않고 닫기만 한다. */
 export function ImportUndoSheet({ last, fresh, onClose, onDone }: Props) {
   const { busy, guard } = useGuardedAction();
   const when = new Date(last.at).toLocaleString('ko-KR', {
@@ -26,18 +26,6 @@ export function ImportUndoSheet({ last, fresh, onClose, onDone }: Props) {
     hour: '2-digit',
     minute: '2-digit',
   });
-
-  const keep = () => {
-    guard(async () => {
-      try {
-        await keepImport();
-        onClose();
-      } catch {
-        // 지워지지 않았는데 닫으면 설정에 줄이 그대로 남아서 눌렀는데 안 된 것처럼 보인다.
-        onDone('처리하지 못했어. 다시 시도해줘');
-      }
-    });
-  };
 
   const undo = () => {
     guard(async () => {
@@ -74,8 +62,8 @@ export function ImportUndoSheet({ last, fresh, onClose, onDone }: Props) {
       </div>
 
       <div className={styles.actions}>
-        <button type="button" className={styles.cancel} onClick={keep} disabled={busy}>
-          이대로 쓸게
+        <button type="button" className={styles.cancel} onClick={onClose} disabled={busy}>
+          {fresh ? '이대로 쓸게' : '그대로 두기'}
         </button>
         <button type="button" className={`${styles.confirm} ${styles.danger}`} onClick={undo} disabled={busy}>
           되돌리기

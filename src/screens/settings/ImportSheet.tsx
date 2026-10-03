@@ -5,7 +5,6 @@ import type { LastImport } from '../../db/importers/undo';
 import type { ImportPlan } from '../../db/importers/plan';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
-import { useLastImport } from '../../hooks/useLastImport';
 import { won } from '../../lib/format';
 import styles from './ImportSheet.module.css';
 
@@ -32,9 +31,6 @@ type Props = {
 export function ImportSheet({ plan, onClose, onDone, onImported }: Props) {
   const { categories } = useCatalog();
   const { busy, guard } = useGuardedAction();
-  /* 아직 고르지 않은 앞 가져오기. 되돌릴 수 있는 건 마지막 하나뿐이라, 새로 가져오면
-     그것은 조용히 되돌릴 수 없게 된다. */
-  const pending = useLastImport();
 
   /* 고를 수 있는 카테고리는 쓰고 있는 것만. 보관하거나 없앤 것에 새 기록을 붙이면
      달력에 이름 없는 줄이 생긴다. */
@@ -176,13 +172,6 @@ export function ImportSheet({ plan, onClose, onDone, onImported }: Props) {
         지금 기록은 그대로 두고 더해져. 전에 넣은 기록과 겹치는 파일이면 겹친 만큼 두 번
         들어가니까 조심해줘.
       </div>
-
-      {pending && (
-        <div className={styles.warnBox}>
-          앞서 가져온 {pending.count.toLocaleString()}건은 아직 되돌릴 수 있어. 지금 가져오면
-          그건 되돌릴 수 없게 되고, 이번에 가져온 것만 되돌릴 수 있어.
-        </div>
-      )}
 
       <div className={styles.actions}>
         <button type="button" className={styles.cancel} onClick={close} disabled={busy}>

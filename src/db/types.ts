@@ -239,7 +239,8 @@ export type MetaKey =
    *  이유는 seed.ts에 적어뒀다 — 복원이 presetVersion만 0으로 되돌린다. */
   | 'homeVisibleDefaults'
   | 'installedAt'
-  /** 마지막 가져오기의 되돌리기 정보 — importers/undo.ts. 한 번에 하나만 둔다. */
+  /** v18까지 쓰던 "마지막 가져오기" 한 줄. 이제 쓰지 않는다(목록은 기록에 붙은 importId에서
+   *  만든다). 옛 백업에 들어 있을 수 있어서 복원이 버리지 않게 남겨둔다. */
   | 'lastImport'
   /** 가져온 파일들의 지문 — importers/imported.ts. 같은 파일을 또 넣지 않게 알아보는 용도. */
   | 'importedFiles'
