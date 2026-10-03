@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ExpenseRecord } from '../db/types';
-import { compactTitle, detailText, rowText } from './rowText';
+import { compactRow, detailText, rowText } from './rowText';
 
 const rec = (over: Partial<ExpenseRecord> = {}) =>
   ({
@@ -135,25 +135,46 @@ describe('rowText', () => {
     }
   });
 
-  /* 입력 화면 "오늘 기록"은 한 줄뿐이라 아래 줄이 없다. 메모가 없을 때 세부항목이 사라지면
-     안 된다. */
-  describe('compactTitle (한 줄짜리 목록)', () => {
-    it('메모도 세부항목도 없으면 카테고리', () => {
-      expect(compactTitle(rec(), '식비')).toBe('식비');
+  /* 입력 화면 "오늘 기록"은 한 줄뿐이다. 세부항목은 시각·결제수단 줄에 붙고, 제목은 달력과 같다.
+     예전에는 "카테고리 › 세부항목"을 제목에 붙여서 메모가 있는 기록은 세부항목이 안 보였다. */
+  describe('compactRow (한 줄짜리 목록)', () => {
+    it('메모도 세부항목도 없으면 제목은 카테고리, 세부항목 없음', () => {
+      expect(compactRow(rec(), '식비')).toEqual({ title: '식비' });
     });
 
-    it('메모가 없고 세부항목이 있으면 "카테고리 › 세부항목"', () => {
-      expect(compactTitle(rec({ subLabel: '점심' }), '식비')).toBe('식비 › 점심');
+    it('메모가 없고 세부항목이 있으면 제목은 카테고리, 세부항목은 따로', () => {
+      expect(compactRow(rec({ subLabel: '점심' }), '식비')).toEqual({ title: '식비', sub: '점심' });
     });
 
-    it('메모가 있으면 메모', () => {
-      expect(compactTitle(rec({ subLabel: '점심', memo: '추어탕' }), '식비')).toBe('추어탕');
+    /* 이게 이 모양의 이유다. 메모가 제목이어도 세부항목이 같이 보인다. */
+    it('메모가 있어도 세부항목은 따로 보인다', () => {
+      expect(compactRow(rec({ subLabel: '점심', memo: '추어탕' }), '식비')).toEqual({
+        title: '추어탕',
+        sub: '점심',
+      });
     });
 
-    it('가져온 기록은 내역 그대로', () => {
-      expect(compactTitle(rec({ importId: 'imp', subLabel: '퍼릿 자동화장실' }), '반려동물')).toBe(
-        '퍼릿 자동화장실',
-      );
+    it('메모만 있으면 제목은 메모', () => {
+      expect(compactRow(rec({ memo: '팀 점심' }), '식비')).toEqual({ title: '팀 점심' });
+    });
+
+    it('가져온 기록은 내역 그대로, 세부항목은 없다', () => {
+      expect(compactRow(rec({ importId: 'imp', subLabel: '퍼릿 자동화장실' }), '반려동물')).toEqual({
+        title: '퍼릿 자동화장실',
+      });
+    });
+
+    /* 입력한 메모와 세부항목은 제목이나 sub 어디엔가 반드시 보여야 한다. */
+    describe('입력한 메모·세부항목은 어디엔가 보인다', () => {
+      for (const memo of [undefined, '추어탕']) {
+        for (const subLabel of [undefined, '점심']) {
+          it(`직접 메모=${memo ? '있음' : '없음'} 세부항목=${subLabel ? '있음' : '없음'}`, () => {
+            const row = compactRow(rec({ memo, subLabel }), '식비');
+            const shown = `${row.title} | ${row.sub ?? ''}`;
+            for (const v of [memo, subLabel]) if (v) expect(shown).toContain(v);
+          });
+        }
+      }
     });
   });
 

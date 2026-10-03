@@ -75,16 +75,26 @@ export function rowText(
   return { title, detail };
 }
 
-/** 입력 화면 "오늘 기록"처럼 줄이 하나뿐인 곳의 이름.
+/** 입력 화면 "오늘 기록"처럼 **줄이 하나뿐인** 곳의 글.
  *
- *  아래 줄이 없어서 세부항목이 보일 자리가 없다. 메모가 없을 땐 제목이 카테고리라서 세부항목이
- *  사라지므로 "카테고리 › 세부항목"으로 한 줄에 붙인다. 메모가 있으면 메모만 보인다 — 이 줄은
- *  원래 메모를 안 보였고, 카테고리는 앞의 동그란 아이콘 색이 말해준다. */
-export function compactTitle(r: ExpenseRecord, categoryName: string | undefined): string {
+ *  이 목록은 기기 화면 높이에 따라 보이는 줄 수가 크게 달라서 두 줄로 늘리지 않는다. 대신
+ *  윗줄(제목)은 달력과 같고, 달력의 아랫줄에 있던 세부항목을 **시각·결제수단 줄에 붙인다.**
+ *  "카테고리 › 세부항목"을 제목에 붙이면 메모가 있는 기록에서는 세부항목이 아예 안 보였다.
+ *
+ *  - 직접 입력: 제목은 메모, 없으면 카테고리. 세부항목은 제목이 아닐 때 `sub`로 따로 준다.
+ *  - 가져온 기록: 제목은 내역 그대로, `sub`는 없다.
+ *
+ *  카테고리 이름은 제목이 메모일 때 글자로는 안 보이고 앞의 동그란 아이콘 색이 말해준다. */
+export type CompactRow = {
+  title: string;
+  /** 시각·결제수단 앞에 붙일 세부항목. 없으면 undefined. */
+  sub?: string;
+};
+
+export function compactRow(r: ExpenseRecord, categoryName: string | undefined): CompactRow {
   const { title } = rowText(r, categoryName, undefined);
-  const category = categoryName ?? '';
-  if (!r.importId && !r.memo && r.subLabel && title === category) return `${category} › ${r.subLabel}`;
-  return title;
+  const sub = !r.importId && r.subLabel && r.subLabel !== title ? r.subLabel : undefined;
+  return { title, ...(sub ? { sub } : {}) };
 }
 
 /** 아래 줄을 글자로만. 화면 읽기와 테스트용이다. */
