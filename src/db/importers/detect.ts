@@ -2,8 +2,8 @@ import { parseCsv } from './csv';
 import { isWeple, parseWeple } from './weple';
 import type { ImportParse } from './types';
 
-/** SQLite 파일은 반드시 이 열여섯 바이트로 시작한다. 확장자는 앱마다 제멋대로라
- *  — 편한가계부는 백업을 `.mmbak`으로, 메일로 보낼 땐 `.sqlite`로 준다 —
+/** SQLite 파일은 반드시 이 열여섯 바이트로 시작한다. 확장자는 앱마다 제멋대로고
+ *  — 같은 데이터베이스를 `.mmbak`으로도 `.sqlite`로도 내려주는 앱이 있다 —
  *  이름이 아니라 내용으로 가른다. */
 const SQLITE_MAGIC = 'SQLite format 3\0';
 
@@ -30,7 +30,7 @@ export async function detectFile(file: File): Promise<Detected> {
   const head = await file.slice(0, SQLITE_MAGIC.length).text();
   if (head === SQLITE_MAGIC) {
     throw new UnknownFileError(
-      '편한가계부 백업 파일이네. 아직 읽을 수 있는 준비가 안 됐어 — 다음 업데이트를 기다려줘',
+      'SQLite 백업 파일이네. 아직 읽을 준비가 안 됐어 — 다음 업데이트를 기다려줘',
     );
   }
 
@@ -44,6 +44,6 @@ export async function detectFile(file: File): Promise<Detected> {
   if (isWeple(header)) return { kind: 'import', parse: parseWeple(text) };
 
   throw new UnknownFileError(
-    '어느 가계부 파일인지 모르겠어. 지금은 온:On 백업과 위플 가계부 CSV를 읽을 수 있어',
+    '무슨 파일인지 모르겠어. 지금은 백업 파일과 CSV를 읽을 수 있어',
   );
 }

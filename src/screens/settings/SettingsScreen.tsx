@@ -350,7 +350,7 @@ export function SettingsScreen({ onManageCards }: Props) {
           <div className={styles.rowLabel}>
             파일에서 불러오기
             <span className={styles.rowSub}>
-              온:On 백업이나 위플 가계부 CSV를 넣으면 알아서 알아봐.
+              백업 파일이나 CSV를 넣으면 알아서 알아봐.
               <br />
               무슨 일이 생기는지는 넣고 나서 알려줄게
             </span>

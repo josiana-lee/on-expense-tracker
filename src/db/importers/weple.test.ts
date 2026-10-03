@@ -130,8 +130,10 @@ describe('parseWeple', () => {
       expect(out.skipped).toBe(3);
     });
 
-    it('출처 이름을 알려준다', () => {
-      expect(parseWeple(file()).source).toBe('위플 가계부');
+    /* 화면에 보이는 건 형식 이름뿐이다. 어느 앱 파일인지 알아보긴 하지만
+       그 앱 이름을 우리 화면에 띄우지는 않는다. */
+    it('출처는 앱 이름이 아니라 형식으로 말한다', () => {
+      expect(parseWeple(file()).source).toBe('CSV');
     });
   });
 });

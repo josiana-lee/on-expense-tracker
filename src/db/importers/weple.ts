@@ -2,7 +2,11 @@ import type { DateStr } from '../types';
 import { parseCsv } from './csv';
 import type { ImportParse, ImportRow } from './types';
 
-const SOURCE = '위플 가계부';
+/* 화면에 보이는 이름은 형식만 말한다. 어느 앱에서 나온 파일인지 알아보긴
+   하지만 그 앱 이름을 우리 화면에 박지는 않는다 — 남의 상표고, 그쪽이 이름을
+   바꾸면 우리 문구가 틀린 말이 된다. 파일 이름(weple.ts)은 우리끼리 쓰는
+   것이라 상관없다. */
+const SOURCE = 'CSV';
 
 /** 위플 CSV의 열 이름. 이 이름들이 **다 있으면** 위플로 친다.
  *

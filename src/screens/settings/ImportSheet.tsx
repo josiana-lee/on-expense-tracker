@@ -69,7 +69,7 @@ export function ImportSheet({ plan, onClose, onDone }: Props) {
 
   return (
     <Sheet label="가져오기" onClose={onClose}>
-      <div className={styles.title}>{plan.source}에서 가져오기</div>
+      <div className={styles.title}>{plan.source} 파일에서 가져오기</div>
       <div className={styles.hint}>
         {plan.from} ~ {plan.to}
       </div>
