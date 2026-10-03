@@ -52,9 +52,12 @@ export async function readRestoreCopy(): Promise<RestoreCopy | null> {
  *  틀린 파일로 한 번 복원하고 곧바로 맞는 파일로 또 복원하는 건 자연스러운
  *  순서다. 두 번째 사본이 첫 번째를 덮으면 "복원 전"이 틀린 파일의 내용이 되어,
  *  정작 지키려던 원래 데이터가 영영 사라진다. 사본은 사용자가 "이대로 쓸게"나
- *  "되돌리기"를 고를 때까지 맨 처음 것을 지킨다. */
-export async function saveRestoreCopy(): Promise<void> {
-  if (await copyDb.copies.get(SLOT)) return;
+ *  "되돌리기"를 고를 때까지 맨 처음 것을 지킨다.
+ *
+ *  **새로 만들었으면 true, 이미 있어서 그대로 뒀으면 false.** 복원이 중간에 실패했을
+ *  때 방금 만든 사본만 치우려면 누가 만든 것인지 알아야 한다. */
+export async function saveRestoreCopy(): Promise<boolean> {
+  if (await copyDb.copies.get(SLOT)) return false;
 
   const file = await buildBackupFile();
   await copyDb.copies.put({
@@ -63,6 +66,7 @@ export async function saveRestoreCopy(): Promise<void> {
     expenses: file.counts.expenses,
     json: JSON.stringify(file),
   });
+  return true;
 }
 
 /** 되돌릴 때 복원 경로에 넘길 파일. 없으면 null. */

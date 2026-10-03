@@ -13,7 +13,7 @@ import {
   RestoreFormatError,
   undoRestore,
 } from './restore';
-import { copyDb, readRestoreCopy } from './restoreCopy';
+import { copyDb, readRestoreCopy, saveRestoreCopy } from './restoreCopy';
 import {
   addRecurringRule,
   isTemplateVisible,
@@ -349,6 +349,44 @@ describe('pre-restore copy', () => {
     );
 
     expect(await db.expenses.toArray()).toEqual(before);
+  });
+
+  /* 덮어쓰기 트랜잭션이 실패하면 데이터는 그대로인데 방금 만든 사본이 남는다.
+     설정에 "복원 전으로 되돌리기"가 뜨는데 되돌릴 것이 지금과 같다. */
+  it('덮어쓰기가 실패하면 방금 만든 사본은 치운다', async () => {
+    await bootstrap();
+    await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
+    const before = await db.expenses.toArray();
+    // 복원은 db.table(이름)으로 쓰는데, 트랜잭션 안에서는 db.expenses와 다른 객체다.
+    // 인스턴스가 아니라 Table 클래스에 건다.
+    vi.spyOn(Object.getPrototypeOf(db.expenses), 'bulkPut').mockRejectedValue(new Error('boom'));
+
+    await expect(restoreBackupFile(await parse([expenseRow()]))).rejects.toThrow();
+
+    expect(await db.expenses.toArray()).toEqual(before);
+    expect(await readRestoreCopy()).toBeNull();
+  });
+
+  it('덮어쓰기가 실패해도 앞 복원의 사본은 그대로 둔다', async () => {
+    await bootstrap();
+    await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
+    await restoreBackupFile(await parse([expenseRow({ id: 'first', amount: 111 })]));
+    const kept = await readRestoreCopy();
+    // 복원은 db.table(이름)으로 쓰는데, 트랜잭션 안에서는 db.expenses와 다른 객체다.
+    // 인스턴스가 아니라 Table 클래스에 건다.
+    vi.spyOn(Object.getPrototypeOf(db.expenses), 'bulkPut').mockRejectedValue(new Error('boom'));
+
+    await expect(
+      restoreBackupFile(await parse([expenseRow({ id: 'second', amount: 222 })])),
+    ).rejects.toThrow();
+
+    expect(await readRestoreCopy()).toEqual(kept);
+  });
+
+  it('사본을 새로 만들었는지 알려준다', async () => {
+    await bootstrap();
+    expect(await saveRestoreCopy()).toBe(true);
+    expect(await saveRestoreCopy()).toBe(false);
   });
 
   it('돌아갈 사본이 없으면 아무 일도 하지 않는다', async () => {

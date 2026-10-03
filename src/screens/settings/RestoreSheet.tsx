@@ -2,6 +2,7 @@ import { Sheet } from '../../components/Sheet';
 import type { ParsedRestore } from '../../db/restore';
 import { RestoreAbortedError, restoreBackupFile } from '../../db/restore';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
+import { useRestoreCopy } from '../../hooks/useRestoreCopy';
 import styles from './RestoreSheet.module.css';
 
 const TABLE_LABELS: Partial<Record<keyof ParsedRestore['validCounts'], string>> = {
@@ -23,6 +24,10 @@ type Props = {
 
 export function RestoreSheet({ parsed, onClose, onDone, onRestored }: Props) {
   const { busy, guard } = useGuardedAction();
+  /* 앞 복원의 사본이 아직 남아 있으면 이번에는 새 사본을 만들지 않는다 — 틀린 파일로
+     복원하고 곧바로 맞는 파일로 또 복원했을 때 원래 데이터를 지키려는 것이다. 그러면
+     "지금 데이터를 사본으로 남겨둘게"는 사실이 아니다. 지금 데이터는 남지 않는다. */
+  const existingCopy = useRestoreCopy();
 
   const totalSkipped = Object.values(parsed.skippedCounts).reduce((sum, n) => sum + n, 0);
   const exportedLabel = new Date(parsed.exportedAt).toLocaleString('ko-KR', {
@@ -79,8 +84,13 @@ export function RestoreSheet({ parsed, onClose, onDone, onRestored }: Props) {
       )}
 
       <div className={styles.warnBox}>
-        복원하면 지금 기기에 있는 모든 데이터가 이 백업 내용으로 완전히 바뀌어. 지금 데이터는
-        앱 안에 사본으로 남겨둘게. 마음에 안 들면 복원하기 전으로 되돌릴 수 있어.
+        복원하면 지금 기기에 있는 모든 데이터가 이 백업 내용으로 완전히 바뀌어.{' '}
+        {existingCopy
+          ? `${new Date(existingCopy.takenAt).toLocaleDateString('ko-KR', {
+              month: 'long',
+              day: 'numeric',
+            })}에 남겨둔 사본이 이미 있어서, 지금 데이터는 사본으로 남지 않아. 되돌리면 그때 상태로 가.`
+          : '지금 데이터는 앱 안에 사본으로 남겨둘게. 마음에 안 들면 복원하기 전으로 되돌릴 수 있어.'}
       </div>
 
       <div className={styles.actions}>

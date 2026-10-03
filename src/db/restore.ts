@@ -161,14 +161,22 @@ export async function restoreBackupFile(parsed: ParsedRestore): Promise<number> 
      덮어쓰지 않고 멈춘다. 이 시점엔 아무것도 쓰이지 않았다.
      예전에는 공유창으로 파일을 저장하게 했는데, 그 창을 닫으면 복원이 멈춰서
      처음 보는 사람이 자주 닫았다. 앱 안 사본은 묻지 않고 바로 진행한다. */
+  let created: boolean;
   try {
-    await saveRestoreCopy();
+    created = await saveRestoreCopy();
   } catch {
     throw new RestoreAbortedError(
       '복원 전 사본을 남기지 못해서 멈췄어. 데이터는 그대로야. 저장 공간을 확인하고 다시 시도해줘',
     );
   }
-  return replaceAll(parsed);
+  /* 덮어쓰기가 실패하면 데이터는 그대로인데(트랜잭션이다) 방금 만든 사본이 남는다.
+     설정에 "복원 전으로 되돌리기" 줄이 뜨는데 되돌릴 것이 지금과 같다 — 복원한 적이
+     없는 사람에게 복원을 되돌리라는 줄이다. 이번에 만든 사본만 치운다. 이미 있던
+     사본은 그 앞 복원의 것이라 건드리지 않는다. */
+  return replaceAll(
+    parsed,
+    created ? () => discardRestoreCopy().catch(() => undefined) : undefined,
+  );
 }
 
 /** 사본이 가리키는 복원 전 상태로 돌아간다. 사본이 없으면 null.
@@ -191,7 +199,22 @@ export async function keepRestore(): Promise<void> {
   await discardRestoreCopy();
 }
 
-async function replaceAll(parsed: ParsedRestore): Promise<number> {
+/** @param onNotApplied 표를 바꾸는 트랜잭션이 실패해서 **아무것도 바뀌지 않았을 때**만
+ *  불린다. 그 뒤 bootstrap이 실패한 경우는 데이터가 이미 바뀐 뒤라 부르지 않는다. */
+async function replaceAll(
+  parsed: ParsedRestore,
+  onNotApplied?: () => Promise<unknown>,
+): Promise<number> {
+  try {
+    await writeTables(parsed);
+  } catch (err) {
+    await onNotApplied?.();
+    throw err;
+  }
+  return finishRestore(parsed);
+}
+
+async function writeTables(parsed: ParsedRestore): Promise<void> {
   // Belongs to *this install*, not to the backup: it identifies this device,
   // and two devices restored from one file must not end up sharing it.
   const localDeviceId = (await db.meta.get('deviceId'))?.value;
@@ -214,7 +237,9 @@ async function replaceAll(parsed: ParsedRestore): Promise<number> {
       await db.meta.put({ key: 'deviceId', value: localDeviceId, updatedAt: now() });
     }
   });
+}
 
+async function finishRestore(parsed: ParsedRestore): Promise<number> {
   /* Restore just replaced settings, categories and paymentMethods wholesale,
      and parseBackupFile drops individual malformed rows by design — so any of
      those tables can legitimately come out short or empty. Nothing re-ran the
