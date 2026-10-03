@@ -27,6 +27,7 @@ import { useNow } from '../../hooks/useNow';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { amountSize, dateText, timeText, won } from '../../lib/format';
+import { compactTitle } from '../../lib/rowText';
 import { offsetFromShellCentre, useShell } from '../../shell/ShellContext';
 import { CategoryPopup, type PopupOrigin } from './CategoryPopup';
 import styles from './InputScreen.module.css';
@@ -475,7 +476,7 @@ export function InputScreen() {
                   <span className={styles.rowBadge} style={{ background: cat?.colorHex }}>
                     {cat && <Icon path={cat.iconPath} size={15} strokeWidth={2} />}
                   </span>
-                  <span className={styles.rowName}>{r.subLabel || cat?.name}</span>
+                  <span className={styles.rowName}>{compactTitle(r, cat?.name)}</span>
                   {/* 회차 번호까지 쓰면 이 줄은 시각·결제수단·금액까지 안고
                       있어서 이름이 먼저 잘린다. 할부라는 것만 표시하고, 몇
                       회차인지는 달력에서 본다. */}

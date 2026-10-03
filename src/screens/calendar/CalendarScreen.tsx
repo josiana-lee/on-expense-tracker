@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Toast } from '../../components/Toast';
 import { fmt, monthGrid, parseDateStr } from '../../db/date';
-import { installmentLabel } from '../../db/installments';
 import type { ExpenseRecord } from '../../db/types';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useDateExpenses } from '../../hooks/useExpenses';
@@ -11,7 +10,9 @@ import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { useToday } from '../../hooks/useToday';
 import { dateText, won } from '../../lib/format';
+import { rowText } from '../../lib/rowText';
 import { EntrySheet } from '../../components/EntrySheet';
+import { RowDetail } from '../../components/RowDetail';
 import { CategorySummarySheet } from './CategorySummarySheet';
 import { MonthPickerSheet } from './MonthPickerSheet';
 import { SearchScreen } from './SearchScreen';
@@ -257,6 +258,7 @@ export function CalendarScreen() {
             records.map((r) => {
               const cat = byId.get(r.categoryId);
               const pay = paymentById.get(r.paymentMethodId);
+              const text = rowText(r, cat?.name, pay?.name);
               return (
                 <button
                   key={r.id}
@@ -268,15 +270,11 @@ export function CalendarScreen() {
                     {cat && <Icon path={cat.iconPath} size={19} strokeWidth={1.8} />}
                   </span>
                   <div className={styles.rowMain}>
-                    <div className={styles.rowName}>{r.subLabel || cat?.name}</div>
+                    {/* 제목과 아래 줄을 정하는 규칙은 lib/rowText.ts 한 곳에 있다 — 달력·검색·
+                        입력 화면의 목록이 같은 기록을 같게 보이게. */}
+                    <div className={styles.rowName}>{text.title}</div>
                     <div className={styles.rowSub}>
-                      {/* The category name is only worth repeating underneath
-                          when the title above is a sub-label instead. */}
-                      {/* 할부 회차를 제일 앞에 둔다. 이 줄에서 사용자가
-                          찾는 건 "이 4십만원은 왜 여기 있지?"의 답이다. */}
-                      {[installmentLabel(r), r.memo, r.subLabel ? cat?.name : null, pay?.name]
-                        .filter(Boolean)
-                        .join(' · ')}
+                      <RowDetail text={text} />
                     </div>
                   </div>
                   <div className={styles.rowRight}>

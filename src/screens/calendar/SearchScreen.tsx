@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { RowDetail } from '../../components/RowDetail';
 import { parseDateStr } from '../../db/date';
-import { installmentLabel } from '../../db/installments';
 import type { ExpenseRecord } from '../../db/types';
 import { useAllExpenses } from '../../hooks/useAllExpenses';
 import { useCatalog } from '../../hooks/useCatalog';
 import { shortDate, won } from '../../lib/format';
 import { blurOnEnter } from '../../lib/keyboard';
+import { rowText } from '../../lib/rowText';
 import { useBackHandler } from '../../shell/useBackHandler';
 import styles from './SearchScreen.module.css';
 
@@ -105,6 +106,7 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
               {shown.map((r) => {
                 const cat = byId.get(r.categoryId);
                 const pay = paymentById.get(r.paymentMethodId);
+                const text = rowText(r, cat?.name, pay?.name);
                 return (
                   <button
                     key={r.id}
@@ -116,11 +118,9 @@ export function SearchScreen({ onBack, onSelectRecord }: Props) {
                       {cat && <Icon path={cat.iconPath} size={19} strokeWidth={1.8} />}
                     </span>
                     <div className={styles.rowMain}>
-                      <div className={styles.rowName}>{r.subLabel || cat?.name}</div>
+                      <div className={styles.rowName}>{text.title}</div>
                       <div className={styles.rowSub}>
-                        {[installmentLabel(r), r.memo, r.subLabel ? cat?.name : null, pay?.name]
-                          .filter(Boolean)
-                          .join(' · ')}
+                        <RowDetail text={text} />
                       </div>
                     </div>
                     <div className={styles.rowRight}>
