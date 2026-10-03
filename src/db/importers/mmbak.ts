@@ -55,9 +55,6 @@ function kindOf(groupType: number | null): ImportRow['paymentKind'] {
   return 'debit';
 }
 
-// 이모지 본체와 그 꼬리만. \p{Emoji_Component}는 숫자 0-9와 #, *까지 포함해서 쓰지 않는다.
-const clean = (s: string) => s.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').trim();
-
 const INSTALMENT = /\((\d+)\/(\d+)\)/;
 
 export function parseMmbak(db: SqlDb): ImportParse {
@@ -160,7 +157,9 @@ export function parseMmbak(db: SqlDb): ImportParse {
       amount,
       categoryName,
       ...(parentName ? { parentName } : {}),
-      label: content || clean(categoryName) || undefined,
+      // 내역이 제목이므로 메모 칸에 둔다(우리 입력과 같은 자리). 하위 분류 카테고리 이름은
+      // 우리 카테고리와 안 맞아 상위로 묶일 때 plan이 세부항목으로 넣는다.
+      memo: content || undefined,
       paymentName: hasAsset ? assetName : '현금',
       paymentKind: hasAsset ? kindOf(r[col.gtype] == null ? null : Number(r[col.gtype])) : 'cash',
       installment,

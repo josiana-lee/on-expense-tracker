@@ -143,6 +143,30 @@ describe('planImport', () => {
       expect(p.rows[0].categoryName).toBe('🍜 식비');
     });
 
+    /* 상위로 묶이면 하위 분류 이름이 사라지지 않고 세부항목이 된다. 우리 카테고리와 맞아 그대로 쓰이면
+       이미 카테고리 자리에 있으니 세부항목을 따로 만들지 않는다. */
+    it('상위로 묶인 하위 분류는 세부항목이 된다', () => {
+      const p = plan([row({ categoryName: '택시', parentName: '🚖 교통/차량' })]);
+      expect(p.rows[0].categoryName).toBe('🚖 교통/차량');
+      expect(p.rows[0].label).toBe('택시');
+    });
+
+    it('원본이 이미 세부항목을 줬으면 그것을 지키고 하위 분류로 덮지 않는다', () => {
+      const p = plan([row({ categoryName: '택시', parentName: '🚖 교통/차량', label: '출근' })]);
+      expect(p.rows[0].label).toBe('출근');
+    });
+
+    it('하위 분류 이름의 이모지는 뗀다', () => {
+      const p = plan([row({ categoryName: '🚕 택시', parentName: '🚖 교통/차량' })]);
+      expect(p.rows[0].label).toBe('택시');
+    });
+
+    it('우리 카테고리에 그대로 맞은 하위 분류는 세부항목을 만들지 않는다', () => {
+      const p = plan([row({ categoryName: '간식', parentName: '🍜 식비' })]);
+      expect(p.rows[0].categoryName).toBe('간식');
+      expect(p.rows[0].label).toBeUndefined();
+    });
+
     it('상위 이름은 행에 남기지 않는다', () => {
       const p = plan([row({ categoryName: '외식', parentName: '🍜 식비' })]);
       expect('parentName' in p.rows[0]).toBe(false);

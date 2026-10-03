@@ -244,6 +244,8 @@ export type MetaKey =
   | 'lastImport'
   /** 가져온 파일들의 지문 — importers/imported.ts. 같은 파일을 또 넣지 않게 알아보는 용도. */
   | 'importedFiles'
+  /** 가져온 기록의 제목(내역)을 세부항목에서 메모로 옮겼다는 표시 — importers/migrate.ts. */
+  | 'importedTitlesMoved'
   | 'lastBackupAt'
   | 'lastBackupReminderAt';
 

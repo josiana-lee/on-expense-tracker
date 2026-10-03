@@ -16,35 +16,23 @@ export type RowText = {
 
 /** 목록 한 줄에 보일 두 줄의 글.
  *
- *  **제목은 사용자가 쓴 글이어야 한다.** 그런데 그 글이 들어가는 칸이 기록마다 다르다 —
- *  직접 입력하면 "영화" 같은 세부항목은 `subLabel`에, 쓴 글("치이카와 인어섬의 비밀")은
- *  `memo`에 들어간다. 가져온 기록은 원본의 "내역"이 `subLabel`에 들어간다(내역을 카테고리
- *  이름과 구별되게 위에 두려고 그렇게 정했다). 예전에는 둘 다 `subLabel`을 제목으로 써서,
- *  직접 입력한 기록은 "영화"가 위에 뜨고 쓴 글은 아래로 밀렸고 가져온 기록은 쓴 글(내역)이
- *  위에 떴다 — 같은 앱 안에서 같은 목록이 두 가지로 보였다.
+ *  **제목은 사용자가 쓴 글, 곧 메모다.** 직접 입력한 기록도 가져온 기록도 같은 칸에 같은 것이
+ *  들어 있다 — 메모는 쓴 글(제목), 세부항목은 카테고리 아래 칩에서 고른 것. (가져온 기록은
+ *  예전에 내역을 세부항목 칸에 넣어서 규칙이 둘로 갈렸는데, 수정 화면에서 고칠 수 없는 문제와
+ *  같이 없앴다. lib의 importers/migrate.ts가 이미 가져온 기록을 옮긴다.)
  *
- *  - **직접 입력:** 메모가 있으면 메모가 제목이다. 메모가 없으면 **카테고리가 제목**이고
- *    세부항목은 아래 줄로 간다. 세부항목("점심")은 카테고리("식비")의 하위지 제목이 아니다 —
- *    예전에는 메모가 없을 때 세부항목이 윗줄로 올라가서 식비 기록이 "점심"이라는 한 단어로
- *    보였고, 어느 카테고리 소속인지는 작은 글자로 밀렸다.
- *  - **가져온 기록:** 제목은 예전 그대로다. 내역이 이미 제목 자리(`subLabel`)에 있고, 거기 딸린
- *    `memo`는 원본의 "메모" 칸이라 제목이 아니라 부가 설명이다 — 같은 규칙을 쓰면 위플 파일의
- *    메모가 내역을 밀어내고 제목이 된다.
+ *  - 메모가 있으면 메모가 제목이고, 아래는 "**카테고리** › 세부항목"(카테고리 굵게)이다.
+ *  - 메모가 없으면 **카테고리가 제목**이고 세부항목은 아래 줄로 간다. 세부항목("점심")은
+ *    카테고리("식비")의 하위지 제목이 아니다.
  *
- *  **아래 줄은 위아래 관계가 보이게 한다.** 예전에는 세부항목, 카테고리, 결제수단을 같은
- *  급으로 점으로 이었는데, 영화가 문화생활의 하위라는 게 안 보이고 순서도 거꾸로였다.
- *  - 제목이 메모면 아래는 "**카테고리** › 세부항목"이다(카테고리 굵게).
- *  - 제목이 카테고리면 카테고리를 되풀이하지 않고 아래에는 세부항목만 온다.
- *  - 제목이 세부항목(가져온 기록의 내역)이면 아래에 **카테고리**만 온다. */
+ *  할부 회차는 아래 줄 맨 앞이고, 결제수단은 맨 뒤다. 입력한 값은 어디엔가 반드시 보인다. */
 export function rowText(
   r: ExpenseRecord,
   categoryName: string | undefined,
   paymentName: string | undefined,
 ): RowText {
   const category = categoryName ?? '';
-  const imported = Boolean(r.importId);
-
-  const title = imported ? r.subLabel || category : r.memo || category || r.subLabel || '';
+  const title = r.memo || category || r.subLabel || '';
 
   const detail: DetailChunk[] = [];
 
@@ -52,10 +40,7 @@ export function rowText(
   const installment = installmentLabel(r);
   if (installment) detail.push({ kind: 'text', text: installment });
 
-  if (imported) {
-    // 제목이 내역(세부항목 자리)이다. 아래에는 카테고리를 굵게.
-    if (category && title !== category) detail.push({ kind: 'category', category });
-  } else if (r.memo) {
+  if (r.memo) {
     // 제목이 메모다. 카테고리 › 세부항목으로 위아래 관계를 보인다.
     if (category) {
       detail.push({ kind: 'category', category, ...(r.subLabel ? { sub: r.subLabel } : {}) });
@@ -66,9 +51,6 @@ export function rowText(
     // 제목이 카테고리다. 세부항목은 카테고리 자리를 이어받아 아래 줄 맨 앞에 온다.
     detail.push({ kind: 'text', text: r.subLabel });
   }
-
-  // 가져온 기록에 딸린 메모는 원본의 부가 설명이다.
-  if (imported && r.memo) detail.push({ kind: 'text', text: r.memo });
 
   if (paymentName) detail.push({ kind: 'text', text: paymentName });
 
@@ -82,7 +64,6 @@ export function rowText(
  *  "카테고리 › 세부항목"을 제목에 붙이면 메모가 있는 기록에서는 세부항목이 아예 안 보였다.
  *
  *  - 직접 입력: 제목은 메모, 없으면 카테고리. 세부항목은 제목이 아닐 때 `sub`로 따로 준다.
- *  - 가져온 기록: 제목은 내역 그대로, `sub`는 없다.
  *
  *  카테고리 이름은 제목이 메모일 때 글자로는 안 보이고 앞의 동그란 아이콘 색이 말해준다. */
 export type CompactRow = {
@@ -93,7 +74,7 @@ export type CompactRow = {
 
 export function compactRow(r: ExpenseRecord, categoryName: string | undefined): CompactRow {
   const { title } = rowText(r, categoryName, undefined);
-  const sub = !r.importId && r.subLabel && r.subLabel !== title ? r.subLabel : undefined;
+  const sub = r.subLabel && r.subLabel !== title ? r.subLabel : undefined;
   return { title, ...(sub ? { sub } : {}) };
 }
 

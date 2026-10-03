@@ -38,7 +38,9 @@ describe('runImport', () => {
     await runImport(p, new Map([['악세사리', 'etc']]));
     const row = (await db.expenses.toArray()).at(-1);
     expect(row?.categoryId).toBe('etc');
-    expect(row?.subLabel).toBe('반지');
+    // 내역은 메모(= 제목)에 들어간다. 세부항목 칸에 넣으면 수정 화면에서 고칠 수 없다.
+    expect(row?.memo).toBe('반지');
+    expect(row?.subLabel).toBeUndefined();
   });
 
   /* "카드대금" 같은 분류는 지출이 아니라 카드값을 갚은 기록이다. 넣으면 같은
@@ -91,7 +93,7 @@ describe('runImport', () => {
       expect(group.every((r) => r.installmentTotal === 300000)).toBe(true);
       expect(group.reduce((s, r) => s + r.amount, 0)).toBe(300000);
       // 이름에서 회차 표기는 떨어져 있다.
-      expect(group[0].subLabel).toBe('노트북');
+      expect(group[0].memo).toBe('노트북');
     });
 
     it('회차가 비면 할부가 아니라 일반 지출로 들어간다', async () => {
@@ -102,7 +104,7 @@ describe('runImport', () => {
         ),
       );
       await runImport(p, new Map());
-      const saved = (await db.expenses.toArray()).filter((r) => r.subLabel === '가방');
+      const saved = (await db.expenses.toArray()).filter((r) => r.memo?.startsWith('가방'));
       expect(saved).toHaveLength(2);
       expect(saved.every((r) => r.installmentId === undefined)).toBe(true);
     });
@@ -166,7 +168,7 @@ describe('runImport', () => {
       const out = await runImport(p, new Map());
 
       expect(out.added).toBe(1);
-      expect((await db.expenses.toArray()).filter((r) => r.subLabel === '가')).toHaveLength(1);
+      expect((await db.expenses.toArray()).filter((r) => r.memo === '가')).toHaveLength(1);
       expect((await db.paymentMethods.toArray()).filter((x) => x.name === '롯데카드')).toHaveLength(1);
     });
   });
@@ -276,11 +278,11 @@ describe('runImport', () => {
     );
     await runImport(p, new Map([['카드대금', null]]));
 
-    const saved = (await db.expenses.toArray()).filter((r) => r.subLabel === '세탁기');
+    const saved = (await db.expenses.toArray()).filter((r) => r.memo?.startsWith('세탁기'));
     expect(saved).toHaveLength(1);
     expect(saved[0].installmentId).toBeUndefined();
     expect(saved[0].installmentTotal).toBeUndefined();
-    expect(saved[0].memo).toBe('할부 1/2회차');
+    expect(saved[0].memo).toBe('세탁기 · 할부 1/2회차');
   });
 
   /* plan이 하위를 상위로 묶으면 행의 분류 이름도 바뀐다. 커밋이 원래 이름으로 찾으면
@@ -297,6 +299,30 @@ describe('runImport', () => {
     const saved = await db.expenses.toArray();
     expect(saved.find((r) => r.subLabel === '점심')?.categoryId).toBe('food');
     expect(saved.find((r) => r.subLabel === '과자')?.categoryId).toBe('snack');
+  });
+
+  /* 가져온 기록이 우리 입력과 같은 모양이어야 한다 — 카테고리, 세부항목(칩 자리), 메모(제목). */
+  describe('직접 입력과 같은 칸에 들어간다', () => {
+    it('내역은 메모로, 하위 분류는 세부항목으로', async () => {
+      const p = await plan(file('내 가계부,2026-01-01,지출,"9,000",식비,점심,식물원 김밥,현금,현금,'));
+      await runImport(p, new Map());
+      const saved = (await db.expenses.toArray()).at(-1)!;
+      expect(saved.categoryId).toBe('food');
+      expect(saved.subLabel).toBe('점심');
+      expect(saved.memo).toBe('식물원 김밥');
+    });
+
+    /* 상위로 묶인 하위 분류는 버리지 않고 세부항목이 된다 — "교통/차량 › 택시". */
+    it('상위로 묶인 하위 분류는 세부항목으로 남는다', async () => {
+      const p = await planOf(
+        parse([row({ categoryName: '외식', parentName: '식비', memo: '추어탕' })]),
+      );
+      await runImport(p, new Map());
+      const saved = (await db.expenses.toArray()).at(-1)!;
+      expect(saved.categoryId).toBe('food');
+      expect(saved.subLabel).toBe('외식');
+      expect(saved.memo).toBe('추어탕');
+    });
   });
 
   it('원본이 시각을 주면 그 시각으로, 안 주면 00:00으로 넣는다', async () => {

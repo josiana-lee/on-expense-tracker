@@ -1,3 +1,4 @@
+import { moveImportedTitlesToMemo } from './importers/migrate';
 import { DEFAULT_VISIBLE_V1, PRESET_CATEGORIES, PRESET_VERSION } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
 import { db } from './db';
@@ -173,6 +174,10 @@ export async function bootstrap(): Promise<void> {
   await ensureSettings();
   await seedPaymentMethods();
   await reconcileCategories();
+  /* 옛 가져오기가 세부항목 칸에 넣은 제목을 메모로 옮긴다. 복원 뒤에도 bootstrap이 다시 돌아서
+     옛 백업을 복원한 경우를 같이 잡는다. 실패해도 시작을 막지 않는다 — 표시를 못 남겼으니
+     다음에 켤 때 다시 한다. */
+  await moveImportedTitlesToMemo().catch(() => undefined);
   void requestPersistence();
   // Housekeeping, and nothing on screen reads tombstones — awaiting it would
   // just push the first render back for no visible gain. A failure here means

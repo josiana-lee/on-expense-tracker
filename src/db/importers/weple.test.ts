@@ -31,8 +31,8 @@ describe('parseWeple', () => {
       date: '2026-09-11',
       amount: 15400,
       categoryName: '식비',
-      label: '식물원 김밥',
-      memo: '맛있었음',
+      // 내역이 메모(= 제목)이고, 원본에 메모 칸이 따로 있으면 이어 붙는다.
+      memo: '식물원 김밥 · 맛있었음',
       paymentName: '삼성카드',
       paymentKind: 'credit',
     });
@@ -61,11 +61,13 @@ describe('parseWeple', () => {
     expect(out.skipped).toBe(1);
   });
 
-  /* 내역이 비어 있는 행이 있다(월급 등). 그대로 두면 기록에 분류명만 남아
-     "기타"로 보이므로, 원본 분류명을 이름으로 쓴다. */
-  it('내역이 비면 분류명을 이름으로 쓴다', () => {
+  /* 내역이 비어 있는 행이 있다(월급 등). 메모도 세부항목도 비워 둔다 — 직접 입력에서 아무것도
+     안 쓴 것과 같고, 목록에서는 우리 쪽 카테고리 이름이 제목이 된다. 예전에는 분류명을 세부항목에
+     복사해 넣었는데, 칩에서 고르는 칸이라 수정 화면에서 지울 수도 없었다. */
+  it('내역이 비면 메모도 세부항목도 비워 둔다', () => {
     const [row] = parseWeple(file('내 가계부,2022-12-28,지출,"4,000",식비,,,현금,현금,')).rows;
-    expect(row.label).toBe('식비');
+    expect(row.memo).toBeUndefined();
+    expect(row.label).toBeUndefined();
   });
 
   it('지불 종류로 결제수단 종류를 정한다', () => {
@@ -79,9 +81,9 @@ describe('parseWeple', () => {
     expect(rows.map((r) => r.paymentKind)).toEqual(['credit', 'cash', 'debit']);
   });
 
-  /* 하위 분류를 쓰는 사람도 있다. 그때는 그쪽이 이름이고 내역은 메모로
-     간다 — 둘 다 버리지 않는다. */
-  it('하위 분류가 있으면 그것을 이름으로 쓰고 내역은 메모로 보낸다', () => {
+  /* 하위 분류를 쓰는 사람도 있다. 우리 입력과 같은 칸에 넣는다 — 하위 분류는 세부항목,
+     내역은 메모(= 제목). 둘 다 버리지 않는다. */
+  it('하위 분류는 세부항목, 내역은 메모로 보낸다', () => {
     const [row] = parseWeple(
       file('내 가계부,2026-01-01,지출,"9,000",식비,점심,식물원 김밥,카드,삼성카드,'),
     ).rows;
@@ -89,11 +91,19 @@ describe('parseWeple', () => {
     expect(row.memo).toBe('식물원 김밥');
   });
 
-  it('메모가 이미 있으면 내역을 메모에 덧붙이지 않는다', () => {
+  it('원본의 메모 칸이 따로 있으면 내역 뒤에 이어 붙인다', () => {
     const [row] = parseWeple(
       file('내 가계부,2026-01-01,지출,"9,000",식비,점심,김밥,카드,삼성카드,원래메모'),
     ).rows;
-    expect(row.memo).toBe('원래메모');
+    expect(row.memo).toBe('김밥 · 원래메모');
+    expect(row.label).toBe('점심');
+  });
+
+  it('내역 없이 메모 칸만 있으면 그것이 메모다', () => {
+    const [row] = parseWeple(
+      file('내 가계부,2026-01-01,지출,"9,000",식비,,,카드,삼성카드,혼자 먹음'),
+    ).rows;
+    expect(row.memo).toBe('혼자 먹음');
   });
 
   describe('할부', () => {
@@ -101,7 +111,7 @@ describe('parseWeple', () => {
       const [row] = parseWeple(
         file('내 가계부,2026-10-01,지출,"151,086",식비,,갤럭시 폴드8 급구매(14/14),카드,삼성카드,'),
       ).rows;
-      expect(row.label).toBe('갤럭시 폴드8 급구매');
+      expect(row.memo).toBe('갤럭시 폴드8 급구매');
       expect(row.installment).toEqual({
         groupKey: '갤럭시 폴드8 급구매|14|삼성카드',
         no: 14,

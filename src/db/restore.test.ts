@@ -212,6 +212,45 @@ describe('restore validation', () => {
     expect((await db.meta.get('importedFiles'))?.value).toEqual(value);
   });
 
+  /* 옛 백업(표시 없음)을 복원하면 가져온 기록의 제목이 아직 세부항목 칸에 있다. 복원 뒤 bootstrap이
+     정리 작업을 다시 돌려서 같은 모양으로 맞춘다. 새 백업(표시 있음)은 돌리지 않는다 — 표시가 백업에
+     들어가는 이유다. */
+  it('옛 백업을 복원하면 가져온 기록의 제목을 메모로 옮긴다', async () => {
+    await bootstrap();
+    const parsed = await parseBackupFile(
+      backupFile(
+        {},
+        { expenses: [expenseRow({ id: 'old', importId: 'imp', subLabel: '퍼릿 자동화장실' })] },
+      ),
+    );
+
+    await restoreBackupFile(parsed);
+
+    const row = await db.expenses.get('old');
+    expect(row?.memo).toBe('퍼릿 자동화장실');
+    expect(row?.subLabel).toBeUndefined();
+  });
+
+  it('옮겼다는 표시가 든 백업을 복원하면 다시 옮기지 않는다', async () => {
+    await bootstrap();
+    const parsed = await parseBackupFile(
+      backupFile(
+        {},
+        {
+          expenses: [expenseRow({ id: 'new', importId: 'imp', subLabel: '택시' })],
+          meta: [{ key: 'importedTitlesMoved', value: true, updatedAt: 1 }],
+        },
+      ),
+    );
+    expect(parsed.skippedCounts.meta).toBe(0);
+
+    await restoreBackupFile(parsed);
+
+    const row = await db.expenses.get('new');
+    expect(row?.subLabel).toBe('택시');
+    expect(row?.memo).toBeUndefined();
+  });
+
   it('accepts a backup from the current schema version', async () => {
     await expect(parseBackupFile(backupFile({ schemaVersion: db.verno }))).resolves.toBeDefined();
   });

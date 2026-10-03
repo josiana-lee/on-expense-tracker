@@ -29,6 +29,11 @@ export type ImportPlan = {
   installmentGroups: number;
 };
 
+/** 화면에 보일 이름. 앞의 이모지("🚖 교통/차량")를 떼고 다듬는다. */
+function tidy(name: string): string {
+  return name.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').trim();
+}
+
 /** 우리 카테고리 중 "기타". 맞았다고 해서 무엇인지 알려주지 않는 분류다. */
 const CATCH_ALL = 'etc';
 
@@ -93,7 +98,10 @@ export function planImport(
     const own = catByKey.get(key(r.categoryName));
     if (own && own !== CATCH_ALL) return r;
     const { parentName, ...rest } = r;
-    return { ...rest, categoryName: parentName };
+    /* 상위로 묶이는 하위 분류는 버리지 않고 **세부항목**으로 남긴다 — "교통/차량 › 택시"처럼.
+       원본이 이미 세부항목(하위 분류)을 줬으면 그쪽이 낫다. */
+    const child = tidy(r.categoryName);
+    return { ...rest, categoryName: parentName, ...(rest.label || !child ? {} : { label: child }) };
   });
 
   const matched = new Map<string, ID>();

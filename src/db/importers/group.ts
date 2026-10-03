@@ -110,8 +110,11 @@ export function dropInstallment(r: GroupedRow): GroupedRow {
 
 function withContext(r: GroupedRow): GroupedRow {
   const inst = r.installment;
-  if (!inst || r.memo) return r;
-  return { ...r, memo: `할부 ${inst.no}/${inst.months}회차` };
+  if (!inst) return r;
+  /* 내역이 메모(= 제목)에 들어가므로 메모가 비어 있는 일이 드물다. 있으면 뒤에 덧붙인다 —
+     "노트북 · 할부 2/3회차". 그냥 두면 이 행이 왜 총액보다 작은 금액인지 단서가 사라진다. */
+  const context = `할부 ${inst.no}/${inst.months}회차`;
+  return { ...r, memo: r.memo ? `${r.memo} · ${context}` : context };
 }
 
 // 'YYYY-MM-DD' → 연·월을 하나의 수로. 달 단위 거리를 재려는 것이다.

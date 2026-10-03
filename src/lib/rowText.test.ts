@@ -80,28 +80,25 @@ describe('rowText', () => {
     });
   });
 
+  /* 가져온 기록도 직접 입력과 같은 칸에 같은 것이 들어 있다 — 내역은 메모, 하위 분류는 세부항목.
+     그래서 예외 규칙이 없다. 같은 값이면 같게 보여야 한다. */
   describe('가져온 기록', () => {
-    /* 폰에서 "이게 맞다"고 하신 모양이다. 제목은 바꾸지 않는다. */
-    it('내역이 제목이고 카테고리가 아래에 온다', () => {
-      const out = rowText(
-        rec({ importId: 'imp', subLabel: '퍼릿 자동화장실' }),
-        '반려동물',
-        '삼성카드',
-      );
-      expect(out.title).toBe('퍼릿 자동화장실');
-      expect(detailText(out)).toBe('반려동물 · 삼성카드');
+    it('직접 입력한 기록과 같은 값이면 똑같이 보인다', () => {
+      const typed = rowText(rec({ memo: '퍼릿 자동화장실' }), '반려동물', '삼성카드');
+      const imported = rowText(rec({ importId: 'imp', memo: '퍼릿 자동화장실' }), '반려동물', '삼성카드');
+      expect(imported).toEqual(typed);
+      expect(imported.title).toBe('퍼릿 자동화장실');
+      expect(detailText(imported)).toBe('반려동물 · 삼성카드');
     });
 
-    /* 위플 파일의 "메모" 칸은 부가 설명이다. 직접 입력과 같은 규칙을 쓰면 이 메모가 내역을
-       밀어내고 제목이 된다. */
-    it('원본의 메모가 있어도 내역이 제목이고, 메모는 아래에 보인다', () => {
+    it('하위 분류가 상위로 묶여 세부항목이 된 기록은 "카테고리 › 세부항목"', () => {
       const out = rowText(
-        rec({ importId: 'imp', subLabel: '퍼릿 자동화장실', memo: '선물용' }),
-        '반려동물',
-        '삼성카드',
+        rec({ importId: 'imp', memo: '이동 택시', subLabel: '택시' }),
+        '교통비',
+        '롯데카드',
       );
-      expect(out.title).toBe('퍼릿 자동화장실');
-      expect(detailText(out)).toBe('반려동물 · 선물용 · 삼성카드');
+      expect(out.title).toBe('이동 택시');
+      expect(detailText(out)).toBe('교통비 › 택시 · 롯데카드');
     });
 
     it('내역이 없으면 카테고리가 제목이다', () => {
@@ -158,10 +155,13 @@ describe('rowText', () => {
       expect(compactRow(rec({ memo: '팀 점심' }), '식비')).toEqual({ title: '팀 점심' });
     });
 
-    it('가져온 기록은 내역 그대로, 세부항목은 없다', () => {
-      expect(compactRow(rec({ importId: 'imp', subLabel: '퍼릿 자동화장실' }), '반려동물')).toEqual({
+    it('가져온 기록도 직접 입력과 같다', () => {
+      expect(compactRow(rec({ importId: 'imp', memo: '퍼릿 자동화장실' }), '반려동물')).toEqual({
         title: '퍼릿 자동화장실',
       });
+      expect(
+        compactRow(rec({ importId: 'imp', memo: '이동 택시', subLabel: '택시' }), '교통비'),
+      ).toEqual({ title: '이동 택시', sub: '택시' });
     });
 
     /* 입력한 메모와 세부항목은 제목이나 sub 어디엔가 반드시 보여야 한다. */

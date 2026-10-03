@@ -92,7 +92,7 @@ describe('parseMmbak', () => {
     expect(row).toMatchObject({
       amount: 7400,
       categoryName: '🍜 식비',
-      label: '김밥',
+      memo: '김밥',
       paymentName: '삼성카드',
       paymentKind: 'credit',
     });
@@ -135,7 +135,7 @@ describe('parseMmbak', () => {
       const [row] = parseMmbak(db(CHILDREN, tx({ ctg: 'c-taxi', content: '이동 택시' }))).rows;
       expect(row.categoryName).toBe('택시');
       expect(row.parentName).toBe('🚖 교통/차량');
-      expect(row.label).toBe('이동 택시');
+      expect(row.memo).toBe('이동 택시');
     });
 
     it('최상위 분류를 쓴 기록에는 parentName이 없다', () => {
@@ -144,9 +144,13 @@ describe('parseMmbak', () => {
       expect(row.parentName).toBeUndefined();
     });
 
-    it('내역이 비면 하위 분류 이름이 내역이 된다', () => {
+    /* 하위 분류 이름은 categoryName에 남고, 우리 카테고리와 안 맞아 상위로 묶일 때 plan이 세부항목으로
+       넣는다. 내역이 없으면 메모는 비어 있다 — 직접 입력에서 아무것도 안 쓴 것과 같다. */
+    it('내역이 비면 메모는 비고, 하위 분류 이름은 분류에 남는다', () => {
       const [row] = parseMmbak(db(CHILDREN, tx({ ctg: 'c-taxi', content: '' }))).rows;
-      expect(row.label).toBe('택시');
+      expect(row.memo).toBeUndefined();
+      expect(row.label).toBeUndefined();
+      expect(row.categoryName).toBe('택시');
     });
 
     /* 상위 분류 열이 없는 판의 파일이 "알아볼 수 없는 파일"이 되면 안 된다. */
@@ -222,7 +226,7 @@ describe('parseMmbak', () => {
     });
 
     it('이름은 회차 표기 없이 그대로 둔다', () => {
-      expect(parseMmbak(db(inst(1))).rows[0].label).toBe('이어폰');
+      expect(parseMmbak(db(inst(1))).rows[0].memo).toBe('이어폰');
     });
 
     it('할부가 아닌 기록에는 할부 정보가 없다', () => {
@@ -253,8 +257,8 @@ describe('parseMmbak', () => {
       expect(out.skipped).toBe(2);
     });
 
-    it('내역이 비면 분류명(이모지 뗀)을 이름으로 쓴다', () => {
-      expect(parseMmbak(db(tx({ content: '' }))).rows[0].label).toBe('식비');
+    it('내역이 비면 메모를 비워 둔다', () => {
+      expect(parseMmbak(db(tx({ content: '' }))).rows[0].memo).toBeUndefined();
     });
   });
 });

@@ -137,9 +137,11 @@ describe('groupInstallments', () => {
     expect(out[0].memo).toBe('할부 2/3회차');
   });
 
-  it('원래 메모가 있으면 덮어쓰지 않는다', () => {
+  /* 내역이 메모(= 제목)에 들어가므로 메모가 있는 게 보통이다. 지우지 않고 뒤에 붙여야 이 행이 왜 총액보다
+     작은 금액인지 단서가 남는다. */
+  it('원래 메모가 있으면 지우지 않고 뒤에 회차를 덧붙인다', () => {
     const r = { ...row('2026-02-01', 2, 3), memo: '선물' };
-    expect(groupInstallments([r])[0].memo).toBe('선물');
+    expect(groupInstallments([r])[0].memo).toBe('선물 · 할부 2/3회차');
   });
 
   describe('dropInstallment', () => {

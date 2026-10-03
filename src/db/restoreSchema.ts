@@ -194,6 +194,7 @@ const metaSchema = z.looseObject({
     'homeVisibleDefaults',
     'lastImport',
     'importedFiles',
+    'importedTitlesMoved',
     'installedAt',
     'lastBackupAt',
     'lastBackupReminderAt',

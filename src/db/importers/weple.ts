@@ -66,7 +66,7 @@ export function parseWeple(text: string): ImportParse {
 
     const categoryName = get(raw, '분류') || '분류 없음';
     const sub = get(raw, '하위 분류');
-    const memo = get(raw, '메모');
+    const note = get(raw, '메모');
     let detail = get(raw, '내역');
 
     let installment: ImportRow['installment'];
@@ -80,12 +80,10 @@ export function parseWeple(text: string): ImportParse {
       installment = { groupKey: `${base}|${months}|${get(raw, '카드')}`, no: +no, months: +months };
     }
 
-    /* 이름은 하나뿐인데 후보가 둘이다 — 하위 분류와 내역.
-       하위 분류를 쓰는 사람에겐 그게 이름이고 내역은 설명이므로 메모로
-       보낸다. 안 쓰는 사람(대부분)에겐 내역이 곧 이름이다. 어느 쪽이든
-       버리는 값이 없다. */
-    const label = sub || detail || categoryName;
-    const extra = sub && detail ? detail : '';
+    /* 우리 입력과 같은 칸에 넣는다. 하위 분류는 세부항목, 내역은 메모(= 제목)다. 원본에
+       메모 칸이 따로 있으면 내역 뒤에 이어 붙인다 — 버리는 값이 없다. 예전에는 내역을
+       세부항목 칸에 넣었는데, 칩에서 고르는 칸이라 수정 화면에서 고칠 수 없었다. */
+    const memo = [detail, note].filter(Boolean).join(' · ');
 
     /* 지불과 카드가 둘 다 비면 이름 없는 신용카드가 새로 만들어졌다. 비었으면
        현금으로 둔다 — 다른 어댑터와 같은 가정이고, 가장 덜 틀린 가정이다. */
@@ -95,8 +93,8 @@ export function parseWeple(text: string): ImportParse {
       date,
       amount,
       categoryName,
-      label: label || undefined,
-      memo: memo || extra || undefined,
+      label: sub || undefined,
+      memo: memo || undefined,
       paymentName,
       paymentKind: KIND[get(raw, '지불')] ?? (paymentName === '현금' ? 'cash' : 'debit'),
       installment,
