@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon';
-import { monthGrid, parseDateStr } from '../db/date';
+import { fmt, monthGrid, parseDateStr } from '../db/date';
 import type { DateStr } from '../db/types';
 import { useSettings } from '../hooks/useSettings';
 import { useToday } from '../hooks/useToday';
@@ -72,11 +72,9 @@ export function DatePicker({ value, onPick, onClose }: Props) {
       return { year: d.getFullYear(), month: d.getMonth() + 1 };
     });
 
-  const todayKey = useMemo(() => {
-    const t = today;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
-  }, [today]);
+  // fmt를 쓴다. 자리수 채우기를 손으로 다시 짜면 monthGrid가 만드는 키와
+  // 형식이 어긋나는 날이 오고, 그러면 오늘 표시가 조용히 사라진다.
+  const todayKey = useMemo(() => fmt(today), [today]);
 
   return (
     <>

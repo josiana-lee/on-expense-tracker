@@ -188,6 +188,23 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      할부"라고 적혀 있는데 저장만 실패하는 상태가 된다. */
   const monthsBad = monthsShown && preview.bad;
 
+  /* 아무것도 안 고치고 "수정 완료"를 눌러도 "수정했어!"가 떴다 — 한 일이
+     없는데 했다고 말하는 셈이다. 토스트 문구를 바꾸는 대신 버튼을 잠근다:
+     할 일이 없다는 걸 누르기 전에 보여주는 쪽이, 누른 뒤에 설명하는 것보다
+     낫다.
+     할부 회차는 금액·날짜가 잠겨 있어 그 둘이 달라질 일이 없고, 개월 수는
+     monthsChanged가 본다. 일반 기록을 할부로 바꾸는 것(months > 1)도
+     저장할 거리라 바뀐 것으로 친다. */
+  const unchanged =
+    record !== null &&
+    Number(amount) === record.amount &&
+    categoryId === record.categoryId &&
+    subLabel === record.subLabel &&
+    (memo.trim() || undefined) === record.memo &&
+    paymentId === record.paymentMethodId &&
+    pickedDate === record.date &&
+    (installment ? !monthsChanged : months === 1);
+
   /* 할부 회차는 날짜도 고칠 수 없다. 각 회차 날짜는 최초 구매일에서
      addMonthsClamped로 계산되므로, 한 회차만 옮기면 나머지 회차와 스케줄이
      어긋난다 — 금액을 잠근 것과 같은 이유다. 새 할부(아직 저장 전)는 여기
@@ -534,7 +551,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         type="button"
         className={styles.save}
         onClick={submit}
-        disabled={busy || monthsBad}
+        disabled={busy || monthsBad || unchanged}
       >
         {editing ? '수정 완료' : '추가!'}
       </button>
