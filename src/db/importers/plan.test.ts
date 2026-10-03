@@ -4,7 +4,8 @@ import { planImport } from './plan';
 import type { GroupedRow } from './group';
 import type { CategoryRecord, PaymentMethodRecord } from '../types';
 
-const cat = (id: string, name: string) => ({ id, name, deprecated: false }) as CategoryRecord;
+const cat = (id: string, name: string) =>
+  ({ id, name, archived: false, deprecated: false }) as CategoryRecord;
 const pay = (id: string, name: string) => ({ id, name, archived: false }) as PaymentMethodRecord;
 
 const CATS = [cat('food', '식비'), cat('daily', '생필품'), cat('etc', '기타')];
@@ -13,7 +14,6 @@ const PAYS = [pay('cash', '현금'), pay('samsung', '삼성카드')];
 const row = (p: Partial<GroupedRow> = {}): GroupedRow => ({
   date: '2026-01-01' as GroupedRow['date'],
   amount: 1000,
-  type: 'expense',
   categoryName: '식비',
   paymentName: '삼성카드',
   paymentKind: 'credit',
@@ -22,7 +22,7 @@ const row = (p: Partial<GroupedRow> = {}): GroupedRow => ({
 
 describe('planImport', () => {
   it('이름이 같은 분류는 저절로 짝지어진다', () => {
-    const plan = planImport({ source: '위플', rows: [row()], skipped: 0 }, CATS, PAYS);
+    const plan = planImport({ source: '위플', rows: [row()], income: 0, skipped: 0 }, CATS, PAYS);
     expect(plan.matched.get('식비')).toBe('food');
     expect(plan.unmatched).toHaveLength(0);
   });
@@ -31,7 +31,7 @@ describe('planImport', () => {
      하나도 안 맞아서 사용자가 23개를 전부 손으로 짝지어야 한다. */
   it('이모지와 공백은 떼고 비교한다', () => {
     const plan = planImport(
-      { source: 'x', rows: [row({ categoryName: '🍜 식비' })], skipped: 0 },
+      { source: 'x', rows: [row({ categoryName: '🍜 식비' })], income: 0, skipped: 0 },
       CATS,
       PAYS,
     );
@@ -46,6 +46,7 @@ describe('planImport', () => {
       {
         source: 'x',
         rows: [row({ categoryName: '스터디2' }), row({ categoryName: '🍜 스터디1' })],
+        income: 0,
         skipped: 0,
       },
       cats2,
@@ -64,6 +65,7 @@ describe('planImport', () => {
           row({ categoryName: '월급' }),
           row({ categoryName: '악세사리' }),
         ],
+        income: 0,
         skipped: 0,
       },
       CATS,
@@ -77,14 +79,23 @@ describe('planImport', () => {
 
   /* 지워진 카테고리에 새 기록을 붙이면 달력에 이름 없는 줄이 생긴다. */
   it('보관된 카테고리에는 짝짓지 않는다', () => {
-    const archived = [{ ...cat('food', '식비'), deprecated: true } as CategoryRecord];
-    const plan = planImport({ source: 'x', rows: [row()], skipped: 0 }, archived, PAYS);
+    /* 코드는 deprecated만 봤고 주석은 "보관·삭제된 것"이라고 했다. 테스트 제목도
+       "보관된"이었는데 deprecated로만 검증해서 어긋남을 못 잡았다. 사용자가 카테고리
+       관리에서 보관하는 건 archived다. */
+    const archived = [{ ...cat('food', '식비'), archived: true } as CategoryRecord];
+    const plan = planImport({ source: 'x', rows: [row()], income: 0, skipped: 0 }, archived, PAYS);
+    expect(plan.unmatched.map((u) => u.name)).toEqual(['식비']);
+  });
+
+  it('지워진(deprecated) 카테고리에도 짝짓지 않는다', () => {
+    const gone = [{ ...cat('food', '식비'), deprecated: true } as CategoryRecord];
+    const plan = planImport({ source: 'x', rows: [row()], income: 0, skipped: 0 }, gone, PAYS);
     expect(plan.unmatched.map((u) => u.name)).toEqual(['식비']);
   });
 
   describe('결제수단', () => {
     it('이름이 같으면 쓰던 것을 쓴다', () => {
-      const plan = planImport({ source: 'x', rows: [row()], skipped: 0 }, CATS, PAYS);
+      const plan = planImport({ source: 'x', rows: [row()], income: 0, skipped: 0 }, CATS, PAYS);
       expect(plan.payments.get('삼성카드')).toEqual({ id: 'samsung' });
       expect(plan.newPayments).toHaveLength(0);
     });
@@ -94,7 +105,7 @@ describe('planImport', () => {
        된다. */
     it('없는 결제수단은 만들 목록에 넣는다', () => {
       const plan = planImport(
-        { source: 'x', rows: [row({ paymentName: '롯데카드' })], skipped: 0 },
+        { source: 'x', rows: [row({ paymentName: '롯데카드' })], income: 0, skipped: 0 },
         CATS,
         PAYS,
       );
@@ -107,6 +118,7 @@ describe('planImport', () => {
         {
           source: 'x',
           rows: [row({ paymentName: '롯데카드' }), row({ paymentName: '롯데카드' })],
+          income: 0,
           skipped: 0,
         },
         CATS,
@@ -124,20 +136,20 @@ describe('planImport', () => {
           rows: [
             row({ date: '2020-03-05' as GroupedRow['date'], amount: 3000 }),
             row({ date: '2026-01-01' as GroupedRow['date'], amount: 7000 }),
-            row({ type: 'income', amount: 500000 }),
           ],
+          income: 8,
           skipped: 2,
         },
         CATS,
         PAYS,
       );
-      expect(plan.count).toBe(3);
+      expect(plan.count).toBe(2);
+      // 넣지 않은 수입 건수는 미리보기가 말해줄 수 있게 그대로 넘어온다.
+      expect(plan.income).toBe(8);
       expect(plan.skipped).toBe(2);
       expect(plan.from).toBe('2020-03-05');
       expect(plan.to).toBe('2026-01-01');
-      // 수입은 지출 합계에 넣지 않는다 — sumExpenses와 같은 규칙.
       expect(plan.spend).toBe(10000);
-      expect(plan.incomeCount).toBe(1);
     });
 
     it('할부 묶음 수를 센다', () => {
@@ -150,6 +162,7 @@ describe('planImport', () => {
             row({ installmentId: 'g2' as GroupedRow['installmentId'] }),
             row(),
           ],
+          income: 0,
           skipped: 0,
         },
         CATS,
@@ -169,6 +182,7 @@ describe('현금', () => {
       {
         source: 'x',
         rows: [row({ paymentName: '현금', paymentKind: 'cash' })],
+        income: 0,
         skipped: 0,
       },
       CATS,
@@ -181,7 +195,7 @@ describe('현금', () => {
   it('쓸 수 있는 현금 수단이 없으면 만들지 않고 비워둔다', () => {
     const noCash = [{ id: 'k', name: '카드', kind: 'credit', archived: false }] as never;
     const plan = planImport(
-      { source: 'x', rows: [row({ paymentName: '현금', paymentKind: 'cash' })], skipped: 0 },
+      { source: 'x', rows: [row({ paymentName: '현금', paymentKind: 'cash' })], income: 0, skipped: 0 },
       CATS,
       noCash,
     );

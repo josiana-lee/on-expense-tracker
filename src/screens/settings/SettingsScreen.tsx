@@ -124,7 +124,18 @@ export function SettingsScreen({ onManageCards }: Props) {
         db.categories.toArray(),
         db.paymentMethods.toArray(),
       ]);
-      setImportData(planImport(found.parse, categories, payments));
+      const next = planImport(found.parse, categories, payments);
+      /* 읽을 지출이 하나도 없으면 시트를 열 이유가 없다. 열면 0건·0원에 가져오기
+         버튼만 있는 화면이 뜬다. 수입만 든 파일이면 왜 비었는지도 말해준다. */
+      if (next.count === 0) {
+        flash(
+          next.income > 0
+            ? `가져올 지출이 없어. 수입 ${next.income.toLocaleString()}건은 가져오지 않아`
+            : '가져올 지출 기록이 없어',
+        );
+        return;
+      }
+      setImportData(next);
     } catch (err) {
       if (err instanceof DetectError || err instanceof RestoreFormatError) flash(err.message);
       else flash('파일을 읽지 못했어');

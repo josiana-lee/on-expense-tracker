@@ -87,7 +87,6 @@ describe('parseMmbak', () => {
     const [row] = parseMmbak(db(tx())).rows;
     expect(row).toMatchObject({
       amount: 7400,
-      type: 'expense',
       categoryName: '🍜 식비',
       label: '김밥',
       paymentName: '삼성카드',
@@ -96,10 +95,22 @@ describe('parseMmbak', () => {
     expect(row.date).toBe('2026-10-03');
   });
 
-  /* 원본이 밀리초 시각을 갖고 있다. 버리면 하루치가 전부 00:00이 된다. */
-  it('날짜에 든 시각을 살린다', () => {
-    const [row] = parseMmbak(db(tx())).rows;
-    expect(row.time).toMatch(/^\d{2}:\d{2}$/);
+  /* 원본이 밀리초 시각을 갖고 있다. 버리면 하루치가 전부 00:00이 된다.
+     예전 테스트는 HH:mm 모양이기만 하면 통과해서 시각이 틀려도 몰랐다. 저녁
+     시각으로 잡아서 날짜가 밀리는지(UTC를 로컬로 바꾸다 다음 날로 넘어가는 경우)와
+     시각 자체를 같이 본다. */
+  it('날짜에 든 시각과 날짜를 그대로 살린다', () => {
+    const evening = new Date(2026, 9, 3, 22, 47, 5).getTime();
+    const [row] = parseMmbak(db(tx({ ms: evening }))).rows;
+    expect(row.date).toBe('2026-10-03');
+    expect(row.time).toBe('22:47');
+  });
+
+  it('자정 직후도 그날로 읽는다', () => {
+    const justAfter = new Date(2026, 9, 4, 0, 3, 0).getTime();
+    const [row] = parseMmbak(db(tx({ ms: justAfter }))).rows;
+    expect(row.date).toBe('2026-10-04');
+    expect(row.time).toBe('00:03');
   });
 
   it('삭제된 기록은 읽지 않고, 못 읽은 줄로도 세지 않는다', () => {
@@ -114,9 +125,12 @@ describe('parseMmbak', () => {
   });
 
   describe('수입과 지출', () => {
-    it('구분값과 분류 종류가 둘 다 수입이면 수입으로 받는다', () => {
-      const [row] = parseMmbak(db(tx({ ctg: 'c-pay', doType: 0 }))).rows;
-      expect(row.type).toBe('income');
+    /* 이 앱은 지출만 다룬다. 수입은 넣지 않고 건수만 세서 미리보기에서 알린다. */
+    it('구분값과 분류 종류가 둘 다 수입이면 넣지 않고 센다', () => {
+      const out = parseMmbak(db(tx({ ctg: 'c-pay', doType: 0 }), tx()));
+      expect(out.rows).toHaveLength(1);
+      expect(out.income).toBe(1);
+      expect(out.skipped).toBe(0);
     });
 
     /* 구분값이 0·1이 아닌 건 이체 같은 것이다. 뜻을 모르는 값을 지출로 치면
@@ -125,14 +139,16 @@ describe('parseMmbak', () => {
       const out = parseMmbak(db(tx({ doType: 3 }), tx()));
       expect(out.rows).toHaveLength(1);
       expect(out.skipped).toBe(1);
+      expect(out.income).toBe(0);
     });
 
     /* 둘이 어긋나면 어느 쪽이 맞는지 모른다. 틀린 방향으로 넣는 것보다
-       빼고 알리는 편이 낫다. */
-    it('구분값과 분류 종류가 어긋나면 건너뛴다', () => {
+       빼고 알리는 편이 낫다. 수입으로도 세지 않는다 — 수입이라고 확신할 수 없다. */
+    it('구분값과 분류 종류가 어긋나면 건너뛰고, 수입으로 세지도 않는다', () => {
       const out = parseMmbak(db(tx({ doType: 1, ctg: 'c-pay' })));
       expect(out.rows).toHaveLength(0);
       expect(out.skipped).toBe(1);
+      expect(out.income).toBe(0);
     });
   });
 
@@ -180,6 +196,22 @@ describe('parseMmbak', () => {
   describe('못 읽는 줄', () => {
     it('금액이 없거나 0인 줄은 건너뛴다', () => {
       const out = parseMmbak(db(tx({ money: '0.0' }), tx({ money: 'abc' }), tx()));
+      expect(out.rows).toHaveLength(1);
+      expect(out.skipped).toBe(2);
+    });
+
+    /* ZDATE가 비면 Number(null)이 0이라 1970-01-01로 들어갔다. */
+    it('날짜가 비었거나 0이면 건너뛴다', () => {
+      const none = tx().replace(`'${MS}'`, 'NULL');
+      const out = parseMmbak(db(none, tx({ ms: 0 }), tx()));
+      expect(out.rows).toHaveLength(1);
+      expect(out.skipped).toBe(2);
+    });
+
+    /* 원은 소수 단위가 없다. 소수가 있으면 다른 통화이거나 깨진 값이다.
+       12.5를 13원으로 반올림해 넣으면 틀린 기록이 조용히 생긴다. */
+    it('소수 금액과 앱이 받는 최대 금액을 넘는 금액은 건너뛴다', () => {
+      const out = parseMmbak(db(tx({ money: '12.5' }), tx({ money: '100000000000.0' }), tx()));
       expect(out.rows).toHaveLength(1);
       expect(out.skipped).toBe(2);
     });

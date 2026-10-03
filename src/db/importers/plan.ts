@@ -16,13 +16,14 @@ export type ImportPlan = {
   newPayments: { name: string; kind: 'credit' | 'debit' }[];
 
   count: number;
+  /** 파일에 있었지만 일부러 넣지 않은 수입 건수. 이 앱은 지출만 다룬다. */
+  income: number;
   skipped: number;
   from: DateStr | null;
   to: DateStr | null;
-  /** 지출 합계. 수입은 빼고 센다 — sumExpenses와 같은 규칙이라, 가져온 뒤
-   *  달력에 뜨는 숫자와 미리보기가 어긋나지 않는다. */
+  /** 지출 합계. 읽은 행은 전부 지출이라 그냥 더한다 — 가져온 뒤 달력에 뜨는 숫자와
+   *  미리보기가 어긋나지 않는다. */
   spend: number;
-  incomeCount: number;
   installmentGroups: number;
 };
 
@@ -56,7 +57,10 @@ export function planImport(
      달력에 이름 없는 줄이 생긴다. */
   const catByKey = new Map<string, ID>();
   for (const c of categories) {
-    if (c.deprecated) continue;
+    /* 보관(archived)·삭제(deprecated)된 것에는 짝짓지 않는다. 코드는 deprecated만
+       보고 있었는데, 사용자가 카테고리 관리에서 보관하는 건 archived다 — 보관한
+       카테고리에 가져온 기록이 붙었다. */
+    if (c.archived || c.deprecated) continue;
     const k = key(c.name);
     if (!catByKey.has(k)) catByKey.set(k, c.id);
   }
@@ -99,7 +103,7 @@ export function planImport(
         /* 없는 카드는 묻지 않고 만든다. 이름과 종류가 파일에 적혀 있어
            추측할 것이 없고, 여기서 사용자를 세우면 카드 다섯 장에 다섯 번
            묻게 된다. 카테고리와 다른 점은 거기엔 고를 것이 있다는 것이다. */
-        const create = { name: r.paymentName, kind: r.paymentKind as 'credit' | 'debit' };
+        const create = { name: r.paymentName, kind: r.paymentKind };
         paymentTargets.set(r.paymentName, { create });
         newPayments.push(create);
       }
@@ -119,11 +123,11 @@ export function planImport(
     payments: paymentTargets,
     newPayments,
     count: rows.length,
+    income: parse.income,
     skipped: parse.skipped,
     from: dates[0] ?? null,
     to: dates[dates.length - 1] ?? null,
-    spend: rows.reduce((sum, r) => (r.type === 'income' ? sum : sum + r.amount), 0),
-    incomeCount: rows.filter((r) => r.type === 'income').length,
+    spend: rows.reduce((sum, r) => sum + r.amount, 0),
     installmentGroups: groups.size,
   };
 }

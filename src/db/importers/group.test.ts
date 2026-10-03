@@ -6,7 +6,6 @@ import type { ImportRow } from './types';
 const row = (date: string, no: number, months: number, key = 'A', amount = 1000): ImportRow => ({
   date: date as ImportRow['date'],
   amount,
-  type: 'expense',
   categoryName: '식비',
   paymentName: '삼성카드',
   paymentKind: 'credit',
@@ -16,7 +15,6 @@ const row = (date: string, no: number, months: number, key = 'A', amount = 1000)
 const plain = (date: string): ImportRow => ({
   date: date as ImportRow['date'],
   amount: 1000,
-  type: 'expense',
   categoryName: '식비',
   paymentName: '현금',
   paymentKind: 'cash',

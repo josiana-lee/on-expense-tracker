@@ -32,7 +32,7 @@ describe('가져온 기록 되돌리기', () => {
     await addExpense({ amount: 500, categoryId: 'food', paymentMethodId: 'cash' });
     const out = await importFile(TWO);
 
-    const tagged = (await db.expenses.toArray()).filter((r) => r.importId === out.importId);
+    const tagged = (await db.expenses.toArray()).filter((r) => r.importId === out.last!.id);
     expect(tagged).toHaveLength(2);
     // 원래 있던 기록에는 표시가 없다.
     expect((await db.expenses.toArray()).filter((r) => !r.importId)).toHaveLength(1);
@@ -144,12 +144,12 @@ describe('가져온 기록 되돌리기', () => {
     const second = await importFile(
       file('내 가계부,2026-02-01,지출,"3,000",식비,,다,현금,현금,'),
     );
-    expect((await readLastImport())?.id).toBe(second.importId);
+    expect((await readLastImport())?.id).toBe(second.last!.id);
 
     await undoImport((await readLastImport())!);
 
     // 앞의 가져오기는 건드리지 않았다.
-    expect((await db.expenses.toArray()).filter((r) => r.importId === first.importId)).toHaveLength(2);
+    expect((await db.expenses.toArray()).filter((r) => r.importId === first.last!.id)).toHaveLength(2);
   });
 
   it('아무것도 못 가져왔으면 되돌릴 표시를 남기지 않는다', async () => {
