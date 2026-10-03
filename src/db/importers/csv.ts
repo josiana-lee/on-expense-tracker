@@ -32,7 +32,9 @@ export function parseCsv(text: string): string[][] {
       continue;
     }
 
-    if (ch === '"') {
+    /* 따옴표는 칸의 맨 앞에서만 인용을 연다. 가운데에 든 것은 그냥 글자다 — 인치를
+       뜻하는 27" 하나가 이후의 줄 전부를 한 칸으로 삼키던 문제(RFC 4180). */
+    if (ch === '"' && cell === '') {
       quoted = true;
     } else if (ch === ',') {
       row.push(cell);
