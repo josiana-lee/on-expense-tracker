@@ -1,11 +1,9 @@
 import { PRESET_CATEGORIES } from '../data/categories';
 import { PRESET_PAYMENTS } from '../data/payments';
-import { APP_INFO } from '../data/appInfo';
-import { handedOff, shareOrDownload } from '../lib/download';
-import { BACKUP_TABLES, buildBackupFile } from './backup';
+import { BACKUP_TABLES } from './backup';
 import { db } from './db';
-import { fmt } from './date';
 import { now } from './id';
+import { discardRestoreCopy, readRestoreCopyFile, saveRestoreCopy } from './restoreCopy';
 import { BackupEnvelopeSchema, TABLE_SCHEMAS } from './restoreSchema';
 import { bootstrap } from './seed';
 
@@ -16,8 +14,7 @@ const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
 
 export class RestoreFormatError extends Error {}
 
-/** Thrown when the pre-restore safety copy couldn't be secured, so nothing
- *  was overwritten. */
+/** 복원 전 사본을 앱 안에 남기지 못해서 멈췄다. 아무것도 덮어쓰지 않았다. */
 export class RestoreAbortedError extends Error {}
 
 /** Rows that survive validation but point at a category or payment method
@@ -154,61 +151,47 @@ export async function parseBackupFile(file: File): Promise<ParsedRestore> {
   };
 }
 
-/** 복원 전 현재 데이터를 자동으로 한 번 내보낸다 — 잘못된 백업 파일을 골랐을 때의
- *  마지막 방어선(docs/data-model.md §7-1 rule 2).
- *
- *  This used to call downloadBlob directly and ignore the outcome, on the
- *  reasoning that the user had just picked a file to *restore from* and asking
- *  where to *save* one would confuse them. That holds on the web, where an
- *  `<a download>` click reliably works — but it silently doesn't in a
- *  Capacitor WebView, which is where this app is headed. downloadBlob can't
- *  report that: it never throws and returns nothing, so the one safeguard
- *  standing between a mistaken tap and years of records was unverified
- *  exactly where it was most likely to be absent.
- *
- *  shareOrDownload confirms the hand-off on precisely those platforms — its
- *  `true` means the OS share sheet took the file. Where sharing isn't offered
- *  at all it falls back to the same plain download as before, which is the
- *  web case that already worked. So the extra prompt only appears where it
- *  buys something. */
-async function safetyExportBeforeRestore(): Promise<void> {
-  const current = await buildBackupFile();
-  const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
-  const filename = `${APP_INFO.fileName}_복원전백업_${fmt(new Date())}.json`;
-
-  const result = await shareOrDownload(
-    blob,
-    filename,
-    '복원하기 전에 지금 데이터를 백업해 둘게. 저장해줘.',
-  );
-
-  /* Judged on what actually happened to the file, not on what the platform
-     might have been able to tell us.
-   *
-   *  This used to gate on `navigator.canShare`, which is a web API and does
-   *  not exist in an Android WebView — so on the only platform this ships to,
-   *  the guard was permanently switched off and a dismissed share sheet let
-   *  the restore proceed and overwrite everything anyway. On desktop it failed
-   *  the other way: a share sheet that fell through to a working download
-   *  reported the same `false` as a refusal, so restores were blocked with the
-   *  safety copy sitting in the user's Downloads folder.
-   *
-   *  'downloaded' is a success. Only an outright dismissal stops the restore,
-   *  and nothing has been written at this point. */
-  if (!handedOff(result)) {
-    throw new RestoreAbortedError(
-      '복원 전 백업을 저장하지 않아서 멈췄어. 데이터는 그대로야. 다시 시도해줘',
-    );
-  }
-}
-
 /** 전체 교체(replace) — 단일 트랜잭션에서 clear → bulkPut (docs/data-model.md
  *  §7-1 rule 5). MVP는 병합을 지원하지 않는다: 두 기기의 기록을 합치려면 ID
  *  충돌·중복 판정 규칙이 필요한데, 지금은 "기기를 바꿔도 살아남는다"는 요구사항만
  *  충족하면 되므로 그 복잡도를 들일 이유가 없다. */
 export async function restoreBackupFile(parsed: ParsedRestore): Promise<number> {
-  await safetyExportBeforeRestore();
+  /* 덮어쓰기 전에 지금 데이터를 앱 안에 사본으로 남긴다 — 잘못된 파일을 골랐을
+     때의 마지막 방어선(docs/data-model.md §7-1 rule 2). 사본을 못 남기면
+     덮어쓰지 않고 멈춘다. 이 시점엔 아무것도 쓰이지 않았다.
+     예전에는 공유창으로 파일을 저장하게 했는데, 그 창을 닫으면 복원이 멈춰서
+     처음 보는 사람이 자주 닫았다. 앱 안 사본은 묻지 않고 바로 진행한다. */
+  try {
+    await saveRestoreCopy();
+  } catch {
+    throw new RestoreAbortedError(
+      '복원 전 사본을 남기지 못해서 멈췄어. 데이터는 그대로야. 저장 공간을 확인하고 다시 시도해줘',
+    );
+  }
+  return replaceAll(parsed);
+}
 
+/** 사본이 가리키는 복원 전 상태로 돌아간다. 사본이 없으면 null.
+ *
+ *  복원과 같은 검증(parseBackupFile)과 같은 덮어쓰기(replaceAll)를 거친다. 다른
+ *  길로 쓰면 사본에서 돌아올 때만 deviceId가 바뀌거나 bootstrap이 빠지는 식으로
+ *  어긋난다. **새 사본은 만들지 않는다** — 되돌리기를 되돌리는 일이 끝없이
+ *  이어지고, 방금 쓴 사본 자리에 지금 상태가 덮인다. */
+export async function undoRestore(): Promise<number | null> {
+  const file = await readRestoreCopyFile();
+  if (!file) return null;
+
+  const rows = await replaceAll(await parseBackupFile(file));
+  await discardRestoreCopy();
+  return rows;
+}
+
+/** "이대로 쓸게". 사본을 버린다. 데이터는 건드리지 않는다. */
+export async function keepRestore(): Promise<void> {
+  await discardRestoreCopy();
+}
+
+async function replaceAll(parsed: ParsedRestore): Promise<number> {
   // Belongs to *this install*, not to the backup: it identifies this device,
   // and two devices restored from one file must not end up sharing it.
   const localDeviceId = (await db.meta.get('deviceId'))?.value;

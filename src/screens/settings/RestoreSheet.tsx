@@ -17,9 +17,11 @@ type Props = {
   parsed: ParsedRestore;
   onClose: () => void;
   onDone: (message: string) => void;
+  /** 복원이 끝난 뒤. 호출한 쪽이 이 시트를 닫고 "두고 갈지 되돌릴지"를 물어본다. */
+  onRestored: () => void;
 };
 
-export function RestoreSheet({ parsed, onClose, onDone }: Props) {
+export function RestoreSheet({ parsed, onClose, onDone, onRestored }: Props) {
   const { busy, guard } = useGuardedAction();
 
   const totalSkipped = Object.values(parsed.skippedCounts).reduce((sum, n) => sum + n, 0);
@@ -34,9 +36,11 @@ export function RestoreSheet({ parsed, onClose, onDone }: Props) {
   const confirm = () => {
     guard(async () => {
       try {
-        const rows = await restoreBackupFile(parsed);
-        onDone(`${rows}건 복원했어!`);
-        onClose();
+        await restoreBackupFile(parsed);
+        /* 토스트로 끝내지 않는다. 복원은 전부 덮어써서 "이 파일이 아니었네"가
+           되면 지금 데이터가 이미 없는데, 복원하기 전 사본이 앱 안에 있으니
+           바로 두고 갈지 되돌릴지 고르게 한다. */
+        onRestored();
       } catch (err) {
         // Stopping before the safety copy exists isn't a failure to explain
         // away — it already says what happened and that the data is intact.
@@ -75,8 +79,8 @@ export function RestoreSheet({ parsed, onClose, onDone }: Props) {
       )}
 
       <div className={styles.warnBox}>
-        복원하면 지금 기기에 있는 모든 데이터가 이 백업 내용으로 완전히 바뀌어. 혹시 몰라 지금
-        데이터는 파일로 먼저 저장해줄게.
+        복원하면 지금 기기에 있는 모든 데이터가 이 백업 내용으로 완전히 바뀌어. 지금 데이터는
+        앱 안에 사본으로 남겨둘게. 마음에 안 들면 복원하기 전으로 되돌릴 수 있어.
       </div>
 
       <div className={styles.actions}>

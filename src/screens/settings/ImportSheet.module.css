@@ -5,6 +5,9 @@
 }
 
 .hint {
+  /* 한글은 기본값이 글자 사이 어디서든 꺾어서 단어가 잘린다. 띄어쓰기에서만 꺾는다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
   margin-top: 4px;
   font-size: 12.5px;
   font-weight: 600;
@@ -43,6 +46,8 @@
 }
 
 .warnBox {
+  word-break: keep-all;
+  overflow-wrap: break-word;
   margin-top: 12px;
   background: var(--warnSoft);
   color: var(--warn);

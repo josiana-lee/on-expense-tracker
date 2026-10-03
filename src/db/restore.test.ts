@@ -6,11 +6,14 @@ import { buildBackupFile } from './backup';
 import { db } from './db';
 import { addExpense } from './expenses';
 import {
+  keepRestore,
   parseBackupFile,
   RestoreAbortedError,
   restoreBackupFile,
   RestoreFormatError,
+  undoRestore,
 } from './restore';
+import { copyDb, readRestoreCopy } from './restoreCopy';
 import {
   addRecurringRule,
   isTemplateVisible,
@@ -18,8 +21,6 @@ import {
   templateAmountText,
 } from './recurring';
 import { bootstrap } from './seed';
-import * as download from '../lib/download';
-import type { HandoffResult } from '../lib/download';
 
 type BackupShape = Record<string, unknown>;
 
@@ -61,14 +62,6 @@ const expenseRow = (over: BackupShape = {}) => ({
   ...over,
 });
 
-/** The real one reaches an <a download> click, which does nothing useful here
- *  and writes noise to the jsdom console. */
-function silenceSafetyDownload() {
-  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
-  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-}
-
 describe('backup round trip', () => {
   it('restores every table and the month total unchanged', async () => {
     await bootstrap();
@@ -83,7 +76,6 @@ describe('backup round trip', () => {
     };
 
     const snapshot = await buildBackupFile();
-    silenceSafetyDownload();
     await db.expenses.clear();
 
     const parsed = await parseBackupFile(
@@ -101,7 +93,6 @@ describe('backup round trip', () => {
 describe('restore recovers bootstrap invariants', () => {
   it('re-seeds presets and settings when the backup lost them', async () => {
     await bootstrap();
-    silenceSafetyDownload();
 
     // Every catalogue table emptied — what row-level validation dropping them
     // looks like. presetVersion rides along, which used to convince
@@ -123,7 +114,6 @@ describe('restore recovers bootstrap invariants', () => {
   it('keeps this install’s deviceId rather than the backup’s', async () => {
     await bootstrap();
     const localDeviceId = (await db.meta.get('deviceId'))?.value;
-    silenceSafetyDownload();
 
     const parsed = await parseBackupFile(
       backupFile({}, { meta: [{ key: 'deviceId', value: 'SOURCE-DEVICE', updatedAt: 1 }] }),
@@ -237,7 +227,6 @@ describe('restore validation', () => {
     expect(parsed.skippedCounts.recurringRules ?? 0).toBe(0);
     expect(parsed.validCounts.recurringRules).toBe(1);
 
-    silenceSafetyDownload();
     await restoreBackupFile(parsed);
 
     const restored = await db.recurringRules.get('r1');
@@ -264,7 +253,6 @@ describe('restore validation', () => {
     await setRecurringVisible(made.id, false);
 
     const snapshot = await buildBackupFile();
-    silenceSafetyDownload();
     await db.recurringRules.clear();
 
     const parsed = await parseBackupFile(
@@ -278,70 +266,107 @@ describe('restore validation', () => {
   });
 });
 
-describe('pre-restore safety copy', () => {
-  /** The guard's decision now turns on what became of the file, so these mock
-   *  the hand-off itself rather than the Web Share API. The old tests stubbed
-   *  `navigator.canShare` to stand in for the native path, but jsdom is never
-   *  `isNative`, so they exercised the web branch while claiming otherwise —
-   *  and that mismatch is what hid the real bug: on Android `canShare` does
-   *  not exist at all, so the guard was permanently off there. */
-  function stubHandoff(result: HandoffResult) {
-    vi.spyOn(download, 'shareOrDownload').mockResolvedValue(result);
-  }
-
+describe('pre-restore copy', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('refuses to restore when the user dismissed the share sheet', async () => {
+  const parse = (rows: BackupShape[]) => parseBackupFile(backupFile({}, { expenses: rows }));
+
+  /* 복원은 전부 덮어쓴다. 예전에는 그 전에 공유창을 띄워 파일로 저장하게 했고,
+     그 창을 닫으면 복원이 멈췄다. 이제는 앱 안에 사본을 남기고 바로 진행한다 —
+     마음에 안 들면 사본으로 되돌린다. */
+  it('복원하기 전 데이터를 앱 안에 사본으로 남긴다', async () => {
     await bootstrap();
     await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
-    stubHandoff('cancelled');
 
-    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
+    await restoreBackupFile(await parse([expenseRow()]));
 
-    await expect(restoreBackupFile(parsed)).rejects.toBeInstanceOf(RestoreAbortedError);
-    // The point of stopping: the data the copy was meant to protect is intact.
-    const rows = await db.expenses.toArray();
-    expect(rows).toHaveLength(1);
-    expect(rows[0].amount).toBe(9900);
+    const copy = await readRestoreCopy();
+    expect(copy).not.toBeNull();
+    expect(copy!.expenses).toBe(1);
+    // 복원은 그대로 이루어졌다.
+    expect((await db.expenses.toArray()).map((r) => r.amount)).toEqual([1000]);
   });
 
-  it('restores once the share sheet took the file', async () => {
+  it('사본으로 되돌리면 복원 전 기록이 그대로 돌아온다', async () => {
     await bootstrap();
     await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
-    stubHandoff('shared');
+    await restoreBackupFile(await parse([expenseRow()]));
 
-    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
-    await restoreBackupFile(parsed);
-
-    const rows = await db.expenses.toArray();
-    expect(rows).toHaveLength(1);
-    expect(rows[0].amount).toBe(1000);
+    // 돌려주는 값은 복원과 같은 "표 전체 행 수"라 지출 건수가 아니다. 사본이
+    // 없을 때의 null과 구분되는 것만 본다.
+    expect(await undoRestore()).not.toBeNull();
+    expect((await db.expenses.toArray()).map((r) => r.amount)).toEqual([9900]);
+    // 쓴 사본은 지워진다. 되돌린 뒤에 또 되돌릴 것은 없다.
+    expect(await readRestoreCopy()).toBeNull();
   });
 
-  /* The desktop failure this replaced: a dismissed share sheet falls through
-     to a download that actually works, and the restore used to abort anyway
-     with the safety copy already sitting in the user's Downloads folder. */
-  it('restores when the file went out as a plain download', async () => {
+  /* 되돌린다고 새 사본이 생기면 "되돌리기의 되돌리기"가 끝없이 이어지고, 방금
+     쓴 사본 자리에 지금 상태가 덮인다. */
+  it('사본으로 되돌리는 일은 새 사본을 만들지 않는다', async () => {
     await bootstrap();
-    stubHandoff('downloaded');
+    await restoreBackupFile(await parse([expenseRow()]));
+    await undoRestore();
+    expect(await readRestoreCopy()).toBeNull();
+  });
 
-    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
-    await expect(restoreBackupFile(parsed)).resolves.toBeGreaterThan(0);
+  /* 틀린 파일로 한 번 복원하고, 곧바로 맞는 파일로 또 복원하는 건 자연스러운
+     순서다. 두 번째 사본이 첫 번째를 덮으면 "복원 전"이 틀린 파일의 내용이
+     되어, 정작 지키고 싶던 원래 데이터가 영영 사라진다. 고르기 전에는 맨 처음
+     사본을 둔다. */
+  it('연달아 복원해도 사본은 맨 처음 상태다', async () => {
+    await bootstrap();
+    await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
+    await restoreBackupFile(await parse([expenseRow({ id: 'wrong', amount: 111 })]));
+    await restoreBackupFile(await parse([expenseRow({ id: 'right', amount: 222 })]));
+
+    await undoRestore();
+
+    expect((await db.expenses.toArray()).map((r) => r.amount)).toEqual([9900]);
+  });
+
+  it('이대로 쓰기로 하면 사본만 지우고 데이터는 그대로다', async () => {
+    await bootstrap();
+    await restoreBackupFile(await parse([expenseRow()]));
+
+    await keepRestore();
+
+    expect(await readRestoreCopy()).toBeNull();
     expect(await db.expenses.count()).toBe(1);
   });
 
-  it('leaves the database untouched when it refuses', async () => {
+  /* 사본이 없는 복원은 예전의 마지막 방어선이 빠진 복원이다. 사본을 못 만들면
+     덮어쓰지 않고 멈춘다. 이때 데이터는 손대지 않은 상태여야 한다. */
+  it('사본을 못 만들면 복원하지 않고 데이터도 그대로 둔다', async () => {
     await bootstrap();
     await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
     const before = await db.expenses.toArray();
-    stubHandoff('cancelled');
+    vi.spyOn(copyDb.copies, 'put').mockRejectedValue(new Error('QuotaExceeded'));
 
-    const parsed = await parseBackupFile(backupFile({}, { expenses: [expenseRow()] }));
-    await expect(restoreBackupFile(parsed)).rejects.toBeInstanceOf(RestoreAbortedError);
+    await expect(restoreBackupFile(await parse([expenseRow()]))).rejects.toBeInstanceOf(
+      RestoreAbortedError,
+    );
 
     expect(await db.expenses.toArray()).toEqual(before);
+  });
+
+  it('돌아갈 사본이 없으면 아무 일도 하지 않는다', async () => {
+    await bootstrap();
+    await addExpense({ amount: 9900, categoryId: 'food', paymentMethodId: 'cash' });
+
+    expect(await undoRestore()).toBeNull();
+    expect(await db.expenses.count()).toBe(1);
+  });
+
+  /* deviceId는 이 설치의 것이지 백업의 것이 아니다. 사본으로 돌아갈 때도
+     같은 규칙이 적용돼야 한다. */
+  it('되돌려도 이 기기의 deviceId는 그대로다', async () => {
+    await bootstrap();
+    const id = (await db.meta.get('deviceId'))?.value;
+    await restoreBackupFile(await parse([expenseRow()]));
+    await undoRestore();
+    expect((await db.meta.get('deviceId'))?.value).toBe(id);
   });
 });
 

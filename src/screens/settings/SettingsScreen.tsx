@@ -11,6 +11,8 @@ import { detectFile, UnknownFileError } from '../../db/importers/detect';
 import { planImport, type ImportPlan } from '../../db/importers/plan';
 import { ImportSheet } from './ImportSheet';
 import { ImportUndoSheet } from './ImportUndoSheet';
+import { RestoreUndoSheet } from './RestoreUndoSheet';
+import { useRestoreCopy } from '../../hooks/useRestoreCopy';
 import type { LastImport } from '../../db/importers/undo';
 import { useLastImport } from '../../hooks/useLastImport';
 import { DEFAULT_REMINDER_TIME, setReminder, updateSettings } from '../../db/settings';
@@ -59,6 +61,8 @@ export function SettingsScreen({ onManageCards }: Props) {
   const [importData, setImportData] = useState<ImportPlan | null>(null);
   const [undoData, setUndoData] = useState<{ last: LastImport; fresh: boolean } | null>(null);
   const lastImport = useLastImport();
+  const restoreCopy = useRestoreCopy();
+  const [restoreUndo, setRestoreUndo] = useState<{ fresh: boolean } | null>(null);
   const backupOverdue = useBackupOverdue();
 
   const exportCsv = () => {
@@ -385,6 +389,31 @@ export function SettingsScreen({ onManageCards }: Props) {
             </span>
           </button>
         )}
+
+        {/* 복원한 뒤 "이대로 쓸게"도 "되돌리기"도 안 고르고 닫았을 때만 남는다.
+            가져오기 되돌리기와 같은 이유다 — 마음이 바뀌는 건 결과를 살펴본 뒤라서
+            시트가 열려 있는 동안에만 돌아갈 수 있으면 부족하다. */}
+        {restoreCopy && (
+          <button
+            type="button"
+            className={styles.row}
+            onClick={() => setRestoreUndo({ fresh: false })}
+          >
+            <div className={styles.rowLabel}>
+              복원 전으로 되돌리기
+              <span className={styles.rowSub}>
+                {new Date(restoreCopy.takenAt).toLocaleDateString('ko-KR', {
+                  month: 'long',
+                  day: 'numeric',
+                })}
+                에 복원하기 전 상태로
+              </span>
+            </div>
+            <span className={styles.chevron}>
+              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+            </span>
+          </button>
+        )}
       </div>
 
       <input
@@ -525,6 +554,19 @@ export function SettingsScreen({ onManageCards }: Props) {
         <RestoreSheet
           parsed={restoreData}
           onClose={() => setRestoreData(null)}
+          onDone={flash}
+          onRestored={() => {
+            setRestoreData(null);
+            setRestoreUndo({ fresh: true });
+          }}
+        />
+      )}
+
+      {restoreUndo && restoreCopy && (
+        <RestoreUndoSheet
+          copy={restoreCopy}
+          fresh={restoreUndo.fresh}
+          onClose={() => setRestoreUndo(null)}
           onDone={flash}
         />
       )}
