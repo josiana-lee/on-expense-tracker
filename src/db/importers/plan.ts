@@ -16,6 +16,8 @@ export type ImportPlan = {
   newPayments: { name: string; kind: 'credit' | 'debit' }[];
 
   count: number;
+  /** 파일 내용의 지문(ImportParse에서 그대로). 가져온 파일로 기록해 둔다. */
+  fingerprint?: string;
   /** 파일에 있었지만 일부러 넣지 않은 수입 건수. 이 앱은 지출만 다룬다. */
   income: number;
   skipped: number;
@@ -140,6 +142,7 @@ export function planImport(
     payments: paymentTargets,
     newPayments,
     count: rows.length,
+    fingerprint: parse.fingerprint,
     income: parse.income,
     skipped: parse.skipped,
     from: dates[0] ?? null,

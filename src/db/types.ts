@@ -241,6 +241,8 @@ export type MetaKey =
   | 'installedAt'
   /** 마지막 가져오기의 되돌리기 정보 — importers/undo.ts. 한 번에 하나만 둔다. */
   | 'lastImport'
+  /** 가져온 파일들의 지문 — importers/imported.ts. 같은 파일을 또 넣지 않게 알아보는 용도. */
+  | 'importedFiles'
   | 'lastBackupAt'
   | 'lastBackupReminderAt';
 

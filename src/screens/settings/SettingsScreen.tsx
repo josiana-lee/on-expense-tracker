@@ -8,6 +8,7 @@ import type { ParsedRestore } from '../../db/restore';
 import { parseBackupFile, RestoreFormatError } from '../../db/restore';
 import { db } from '../../db/db';
 import { DetectError, detectFile } from '../../db/importers/detect';
+import { findImportedFile } from '../../db/importers/imported';
 import { planImport, type ImportPlan } from '../../db/importers/plan';
 import { ImportSheet } from './ImportSheet';
 import { ImportUndoSheet } from './ImportUndoSheet';
@@ -127,6 +128,16 @@ export function SettingsScreen({ onManageCards }: Props) {
         db.paymentMethods.toArray(),
       ]);
       const next = planImport(found.parse, categories, payments);
+      /* 같은 파일을 또 고른 것이면 시트를 열지 않는다. 가져오기는 더하기라서 그대로 두면
+         전부 두 번 들어가고, 파일을 다시 고르는 건 대개 "들어갔나?" 하고 확인하려는
+         때라 시트의 경고를 읽기 전에 버튼을 누른다. 되돌렸거나 기록이 이미 없으면
+         항목이 없어서 다시 가져올 수 있다. */
+      const done = next.fingerprint ? await findImportedFile(next.fingerprint) : null;
+      if (done) {
+        const day = new Date(done.at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+        flash(`이미 가져온 파일이야 (${day}, ${done.count.toLocaleString()}건)`);
+        return;
+      }
       /* 읽을 지출이 하나도 없으면 시트를 열 이유가 없다. 열면 0건·0원에 가져오기
          버튼만 있는 화면이 뜬다. 수입만 든 파일이면 왜 비었는지도 말해준다. */
       if (next.count === 0) {

@@ -7,6 +7,7 @@ import { bootstrap } from '../seed';
 import { updateSettings } from '../settings';
 import { runImport } from './commit';
 import { planImport } from './plan';
+import { findImportedFile } from './imported';
 import { keepImport, readLastImport, undoImport } from './undo';
 import { parseWeple } from './weple';
 
@@ -140,6 +141,44 @@ describe('가져온 기록 되돌리기', () => {
     await undoImport(last!);
 
     expect((await db.expenses.toArray()).filter((r) => r.installmentId)).toHaveLength(0);
+  });
+
+  describe('가져온 파일 기억', () => {
+    const withHash = async (text: string, hash: string) => {
+      await bootstrap();
+      const [categories, payments] = await Promise.all([
+        db.categories.toArray(),
+        db.paymentMethods.toArray(),
+      ]);
+      const plan = { ...planImport(parseWeple(text), categories, payments), fingerprint: hash };
+      return runImport(plan, new Map());
+    };
+
+    /* 항목이 남으면 지운 기록을 "이미 가져온 파일"이라고 막는다. */
+    it('되돌리면 그 파일을 다시 가져올 수 있다', async () => {
+      await withHash(TWO, 'file-1');
+      expect(await findImportedFile('file-1')).not.toBeNull();
+
+      await undoImport((await readLastImport())!);
+
+      expect(await findImportedFile('file-1')).toBeNull();
+    });
+
+    it('이대로 쓰기로 하면 계속 이미 가져온 파일이다', async () => {
+      await withHash(TWO, 'file-2');
+      await keepImport();
+      expect(await findImportedFile('file-2')).not.toBeNull();
+    });
+
+    it('다른 가져오기의 항목은 건드리지 않는다', async () => {
+      await withHash(TWO, 'file-a');
+      await withHash(file('내 가계부,2026-02-01,지출,"3,000",식비,,다,현금,현금,'), 'file-b');
+
+      await undoImport((await readLastImport())!);
+
+      expect(await findImportedFile('file-b')).toBeNull();
+      expect(await findImportedFile('file-a')).not.toBeNull();
+    });
   });
 
   describe('이대로 쓰기', () => {

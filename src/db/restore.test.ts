@@ -196,6 +196,22 @@ describe('restore validation', () => {
     await expect(parseBackupFile(same)).resolves.toBeDefined();
   });
 
+  /* 목록에 없는 메타 키는 복원 때 조용히 버려진다. importedFiles가 빠지면 복원한 사람이
+     이미 가져온 파일을 또 가져올 수 있고, 되돌리기 목록이 가져오기마다 만든 카드를
+     잊는다. */
+  it('가져온 파일 기록을 복원 때 버리지 않는다', async () => {
+    await bootstrap();
+    const value = [{ hash: 'h', importId: 'i', at: 1, count: 2, createdPaymentIds: ['c1'] }];
+    const parsed = await parseBackupFile(
+      backupFile({}, { meta: [{ key: 'importedFiles', value, updatedAt: 1 }] }),
+    );
+    expect(parsed.skippedCounts.meta).toBe(0);
+
+    await restoreBackupFile(parsed);
+
+    expect((await db.meta.get('importedFiles'))?.value).toEqual(value);
+  });
+
   it('accepts a backup from the current schema version', async () => {
     await expect(parseBackupFile(backupFile({ schemaVersion: db.verno }))).resolves.toBeDefined();
   });

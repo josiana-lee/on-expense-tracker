@@ -4,6 +4,7 @@ import { addPaymentMethod } from '../paymentMethods';
 import type { ExpenseRecord, ID, Minor } from '../types';
 import { toMinor } from '../types';
 import { dropInstallment, type GroupedRow } from './group';
+import { rememberImportedFile } from './imported';
 import type { ImportPlan } from './plan';
 import { saveLastImport, type LastImport } from './undo';
 
@@ -129,6 +130,15 @@ export async function runImport(plan: ImportPlan, choices: CategoryChoice): Prom
 
     last = { id: importId, at: stamp, count: records.length, createdPaymentIds };
     await saveLastImport(last);
+    /* 어떤 파일을 가져왔는지. 같은 파일을 또 고르면 알려주고, 되돌리기 목록이 이 가져오기의
+       카드를 기억하는 데 쓴다. 기록과 같이 들어가거나 같이 안 들어간다. */
+    await rememberImportedFile({
+      ...(plan.fingerprint ? { hash: plan.fingerprint } : {}),
+      importId,
+      at: stamp,
+      count: records.length,
+      createdPaymentIds,
+    });
   });
 
   return { added: rows.length, skipped, createdPayments: createdPaymentIds.length, last };

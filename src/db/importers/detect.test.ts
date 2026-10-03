@@ -35,6 +35,30 @@ describe('detectFile', () => {
     if (out.kind === 'import') expect(out.parse.rows).toHaveLength(1);
   });
 
+  /* 같은 파일을 다시 고르면 알아보려는 지문이다. 이름이 아니라 내용이 같아야 같다. */
+  describe('지문', () => {
+    const body = '내 가계부,2026-01-01,지출,"1,000",식비,,김밥,현금,현금,';
+
+    it('CSV를 가져오는 파일에는 지문이 붙는다', async () => {
+      const out = await detectFile(csv(body));
+      expect(out.kind === 'import' && out.parse.fingerprint).toMatch(/^[0-9a-f]{64}$/);
+    });
+
+    it('내용이 같으면 이름이 달라도 같은 지문이다', async () => {
+      const a = await detectFile(csv(body));
+      const b = await detectFile(
+        new File([[HEAD, body].join('\n')], '다운로드 (1).csv', { type: 'text/csv' }),
+      );
+      expect(a.kind === 'import' && b.kind === 'import' && a.parse.fingerprint === b.parse.fingerprint).toBe(true);
+    });
+
+    it('내용이 다르면 다른 지문이다', async () => {
+      const a = await detectFile(csv(body));
+      const b = await detectFile(csv(body.replace('1,000', '2,000')));
+      expect(a.kind === 'import' && b.kind === 'import' && a.parse.fingerprint !== b.parse.fingerprint).toBe(true);
+    });
+  });
+
   /* 헤더 한 줄을 보려고 파일 전체를 파싱하던 때가 있었다. 첫 줄 뒤의 내용이
      어떻든 판별은 헤더만으로 끝나야 한다. */
   it('헤더만 맞으면 첫 줄 뒤의 내용에 상관없이 CSV로 간다', async () => {

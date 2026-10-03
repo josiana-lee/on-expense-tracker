@@ -6,6 +6,7 @@ import { listInstallmentGroup } from '../installments';
 import { parseWeple } from './weple';
 import { planImport } from './plan';
 import { runImport } from './commit';
+import { findImportedFile } from './imported';
 import { readLastImport } from './undo';
 import type { ImportParse } from './types';
 
@@ -195,6 +196,45 @@ describe('runImport', () => {
 
       expect(second.last).toBeNull();
       expect(await readLastImport()).toEqual(first);
+    });
+  });
+
+  describe('가져온 파일 기억', () => {
+    it('지문이 있으면 이 가져오기를 그 파일로 기억한다', async () => {
+      const p = { ...(await plan(file('내 가계부,2026-01-01,지출,"1,000",식비,,가,카드,롯데카드,'))), fingerprint: 'abc' };
+      const out = await runImport(p, new Map());
+
+      const found = await findImportedFile('abc');
+      expect(found?.importId).toBe(out.last!.id);
+      expect(found?.count).toBe(1);
+      // 되돌릴 때 같이 치울 카드도 같이 적어 둔다.
+      expect(found?.createdPaymentIds).toEqual(out.last!.createdPaymentIds);
+    });
+
+    it('지문이 없어도 항목은 남긴다(되돌리기 목록이 쓴다)', async () => {
+      const p = await plan(file('내 가계부,2026-01-01,지출,"1,000",식비,,가,현금,현금,'));
+      await runImport(p, new Map());
+      const kept = (await db.meta.get('importedFiles'))?.value as { hash?: string }[];
+      expect(kept).toHaveLength(1);
+      expect(kept[0].hash).toBeUndefined();
+    });
+
+    /* 기록이 안 들어갔는데 파일만 "가져온 것"으로 남으면 그 파일을 다시는 못 가져온다. */
+    it('한 건도 안 들어갔으면 파일도 기억하지 않는다', async () => {
+      const p = {
+        ...(await plan(file('내 가계부,2026-01-01,지출,"1,000",카드대금,,갚음,현금,현금,'))),
+        fingerprint: 'zzz',
+      };
+      await runImport(p, new Map([['카드대금', null]]));
+      expect(await findImportedFile('zzz')).toBeNull();
+      expect(await db.meta.get('importedFiles')).toBeUndefined();
+    });
+
+    it('도중에 실패하면 파일도 기억하지 않는다', async () => {
+      const p = { ...(await plan(file('내 가계부,2026-01-01,지출,"1,000",식비,,가,현금,현금,'))), fingerprint: 'fail' };
+      vi.spyOn(db.expenses, 'bulkAdd').mockRejectedValue(new Error('boom'));
+      await expect(runImport(p, new Map())).rejects.toThrow();
+      expect(await db.meta.get('importedFiles')).toBeUndefined();
     });
   });
 

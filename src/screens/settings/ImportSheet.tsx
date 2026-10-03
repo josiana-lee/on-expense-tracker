@@ -173,7 +173,8 @@ export function ImportSheet({ plan, onClose, onDone, onImported }: Props) {
       )}
 
       <div className={styles.warnBox}>
-        지금 기록은 그대로 두고 더해져. 같은 파일을 두 번 넣으면 두 번 들어가니까 조심해줘.
+        지금 기록은 그대로 두고 더해져. 전에 넣은 기록과 겹치는 파일이면 겹친 만큼 두 번
+        들어가니까 조심해줘.
       </div>
 
       {pending && (

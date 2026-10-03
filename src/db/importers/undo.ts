@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { now } from '../id';
+import { forgetImportedFile } from './imported';
 import type { Epoch, ID } from '../types';
 
 /** 마지막 가져오기에 대해 되돌릴 때 필요한 것. meta에 한 줄만 둔다.
@@ -82,6 +83,9 @@ export async function undoImport(last: LastImport): Promise<UndoResult> {
         }
       }
 
+      /* 되돌렸으면 그 파일은 다시 가져올 수 있어야 한다. 항목이 남아 있으면 지운 기록을
+         "이미 가져온 파일"이라고 막는다. */
+      await forgetImportedFile(last.id);
       await db.meta.delete(KEY);
       return { removed, removedPayments };
     },

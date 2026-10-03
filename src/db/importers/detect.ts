@@ -1,4 +1,5 @@
 import { parseCsv } from './csv';
+import { fingerprintOf } from './imported';
 import { isMmbak, parseMmbak } from './mmbak';
 import { openSqlite, SqliteLoadError } from './sqlite';
 import { isWeple, parseWeple } from './weple';
@@ -68,7 +69,10 @@ export async function detectFile(file: File): Promise<Detected> {
 
   const firstLine = head.split(/\r?\n/, 1)[0] ?? '';
   if (isWeple(parseCsv(firstLine)[0] ?? [])) {
-    return { kind: 'import', parse: parseWeple(await file.text()) };
+    // 한 번 읽은 바이트로 글자도 지문도 만든다.
+    const bytes = await file.arrayBuffer();
+    const parse = parseWeple(new TextDecoder().decode(bytes));
+    return { kind: 'import', parse: { ...parse, fingerprint: await fingerprintOf(bytes) } };
   }
 
   throw new UnknownFileError(
@@ -81,8 +85,9 @@ export async function detectFile(file: File): Promise<Detected> {
    사본은 이 함수 밖에서 쓸 데가 없다. */
 async function detectSqlite(file: File): Promise<Detected> {
   let db;
+  const bytes = await file.arrayBuffer();
   try {
-    db = await openSqlite(new Uint8Array(await file.arrayBuffer()));
+    db = await openSqlite(new Uint8Array(bytes));
   } catch (err) {
     throw new UnreadableFileError(
       err instanceof SqliteLoadError
@@ -94,7 +99,7 @@ async function detectSqlite(file: File): Promise<Detected> {
     if (!isMmbak(db)) {
       throw new UnknownFileError('이 SQLite 파일은 읽을 수 없는 형식이야');
     }
-    return { kind: 'import', parse: parseMmbak(db) };
+    return { kind: 'import', parse: { ...parseMmbak(db), fingerprint: await fingerprintOf(bytes) } };
   } finally {
     db.close();
   }
