@@ -77,6 +77,8 @@ export type NewInstallment = {
   memo?: string;
   /** 구매 시점. 기본값은 지금. */
   at?: Date;
+  /** 가져오기로 들어온 할부를 다시 짤 때 표시를 이어받는다. 새로 적는 할부에는 없다. */
+  importId?: ID;
 };
 
 /** 회차 수만큼 지출 행을 만든다. 첫 회차가 구매일, 나머지는 매월 같은 날짜.
@@ -110,6 +112,7 @@ export async function addInstallment(input: NewInstallment): Promise<ID> {
     installmentNo: i + 1,
     installmentMonths: input.months,
     installmentTotal: total,
+    importId: input.importId,
     createdAt: stamp,
     updatedAt: stamp,
   }));

@@ -13,6 +13,8 @@ export type NewExpense = {
   memo?: string;
   /** Defaults to the moment of the call. */
   at?: Date;
+  /** 가져오기로 들어온 기록을 다시 짤 때 표시를 이어받는다. 새로 적는 기록에는 없다. */
+  importId?: ID;
 };
 
 export async function addExpense(input: NewExpense): Promise<ID> {
@@ -33,6 +35,7 @@ export async function addExpense(input: NewExpense): Promise<ID> {
        달력 줄이 "3개월 할부 2/3 ·    · 현대카드"가 되는데, 그 기록을 한 번
        수정하면 사라진다 — 같은 데이터가 들어온 경로에 따라 다르게 남는다. */
     memo: input.memo?.trim() || undefined,
+    importId: input.importId,
     createdAt: stamp,
     updatedAt: stamp,
   });

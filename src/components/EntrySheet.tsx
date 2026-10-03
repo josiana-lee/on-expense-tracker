@@ -263,14 +263,19 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           const total =
             installmentRow.installmentTotal ?? rows.reduce((sum, r) => sum + r.amount, 0);
 
+          /* 가져온 기록이면 표시를 이어받는다. 새로 짠 행에 표시가 없으면 되돌릴 때
+             이 행만 남는다 — "가져온 뒤에 고친 내용도 같이 사라져"라고 말해둔 것과
+             다르다. */
+          const importId = rows[0]?.importId ?? installmentRow.importId;
+
           if (months > 1) splitInstallment(total, months);
           await deleteInstallmentGroup(installmentId);
 
           if (months > 1) {
-            await addInstallment({ ...common, total, months, at: stampFor(anchor) });
+            await addInstallment({ ...common, total, months, at: stampFor(anchor), importId });
             onDone(`${months}개월 할부로 다시 나눴어`);
           } else {
-            await addExpense({ ...common, amount: total, at: stampFor(anchor) });
+            await addExpense({ ...common, amount: total, at: stampFor(anchor), importId });
             onDone('일시불로 바꿨어');
           }
         } else if (installmentId) {
@@ -282,7 +287,13 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           const total = Number(amount);
           splitInstallment(total, months);
           await deleteExpense(record.id);
-          await addInstallment({ ...common, total, months, at: stampFor(pickedDate) });
+          await addInstallment({
+            ...common,
+            total,
+            months,
+            at: stampFor(pickedDate),
+            importId: record.importId,
+          });
           onDone(`${months}개월 할부로 바꿨어`);
         } else if (record) {
           await updateExpense(record.id, {

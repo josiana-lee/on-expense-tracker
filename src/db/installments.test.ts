@@ -117,6 +117,33 @@ describe('addMonthsClamped', () => {
 });
 
 describe('addInstallment', () => {
+  /* 가져온 기록을 고쳐서 할부로 다시 짜면 새 행이 생긴다. 표시를 이어받지 않으면
+     "가져온 기록 되돌리기"가 이 행들만 남기고 지운다. */
+  it('가져오기 표시를 넘기면 모든 회차에 붙는다', async () => {
+    await bootstrap();
+    await addInstallment({
+      total: 300_000,
+      months: 3,
+      categoryId: 'shopping',
+      paymentMethodId: 'cash',
+      importId: 'imp-1',
+    });
+    const rows = await db.expenses.toArray();
+    expect(rows).toHaveLength(3);
+    expect(rows.every((r) => r.importId === 'imp-1')).toBe(true);
+  });
+
+  it('표시를 넘기지 않으면 붙지 않는다', async () => {
+    await bootstrap();
+    await addInstallment({
+      total: 300_000,
+      months: 3,
+      categoryId: 'shopping',
+      paymentMethodId: 'cash',
+    });
+    expect((await db.expenses.toArray()).every((r) => r.importId === undefined)).toBe(true);
+  });
+
   it('회차 수만큼 행을 만들고 매월 같은 날짜에 건다', async () => {
     await bootstrap();
     await addInstallment({
