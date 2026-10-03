@@ -34,10 +34,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- 둘 다 "있으면 쓰고 없어도 된다"는 선언이다. 없으면 Play가 그 하드웨어가
+    <!-- "있으면 쓰고 없어도 된다"는 선언이다. 없으면 Play가 그 하드웨어가
          달린 기기에만 앱을 배포한다.
 
-         screen.portrait가 진짜 원인이었다. 안드로이드는 액티비티에
+         안드로이드는 액티비티에
          screenOrientation="portrait"가 붙어 있으면 **세로 화면 지원을 필수
          요구사항으로 자동 생성한다.** 선언한 적이 없어서 매니페스트를 아무리
          들여다봐도 안 보이는데, `aapt dump badging`을 돌리면 나온다:
@@ -50,14 +50,11 @@
          오류가 났다. 세로를 못 하는 기기들이다. 세로로 쓰라는 건 폰에서의
          선호지 기기 요구사항이 아니므로 required="false"로 바로잡는다.
 
-         vibrator는 원인을 잘못 짚고 넣은 줄이다(VIBRATE 권한 때문이라고 봤는데
-         기기 수가 그대로였다). 그래도 남긴다 — 선언 자체는 맞는 말이라서다:
-         tapFeedback()은 실패를 삼키고 설정에 끄는 스위치도 있어서 진동기가 없는
-         기기에서도 앱은 그대로 돌아간다. 권한은 빼면 안 된다. 진동기가 있는
-         기기에서는 여전히 필요하다.
+         (한동안 vibrator도 같이 선언돼 있었다. 원인을 VIBRATE 권한으로 잘못
+         짚고 넣은 줄인데 기기 수는 그대로였고, 햅틱 기능 자체를 걷어내면서
+         권한과 함께 빠졌다.)
 
          고친 뒤에는 짐작하지 말고 확인해라:
            aapt dump badging app.apk | grep feature -->
     <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
-    <uses-feature android:name="android.hardware.vibrator" android:required="false" />
 </manifest>

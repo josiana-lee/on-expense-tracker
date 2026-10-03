@@ -114,9 +114,6 @@ export function SettingsScreen({ onManageCards }: Props) {
   };
 
   const dark = settings?.themeMode === 'dark';
-  /* 필드가 없는 예전 설정 행은 켜짐으로 읽는다 — useHaptics의 기본값과 같은
-     자리를 두 군데서 정하지 않도록 값도 같게 둔다. */
-  const haptics = settings?.hapticsEnabled ?? true;
   const colorTheme = settings?.colorTheme ?? DEFAULT_COLOR_THEME;
   const colorThemeName = COLOR_THEMES.find((t) => t.id === colorTheme)?.name;
   const visibleCount = categories.filter((c) => c.visibleOnHome && !c.deprecated).length;
@@ -153,27 +150,6 @@ export function SettingsScreen({ onManageCards }: Props) {
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
         </button>
-
-        {/* 화면 색 다음, 데이터 관리 앞. 여기까지가 "앱이 어떻게 보이고
-            느껴지는지"를 정하는 자리다.
-            안드로이드에도 터치 진동 설정이 따로 있지만 웹뷰에서는 그 값을
-            읽을 수 없다. 시스템에서 꺼둔 사람에게도 계속 울리면 앱이 설정을
-            무시하는 것으로 보이므로, 끌 자리를 앱 안에 둔다. */}
-        <div className={styles.row} style={{ cursor: 'default' }}>
-          <div className={styles.rowLabel}>
-            버튼 진동
-            <span className={styles.rowSub}>숫자판을 누를 때 짧게 울릴게</span>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={haptics}
-            onClick={() => updateSettings({ hapticsEnabled: !haptics })}
-            className={`${styles.switch} ${haptics ? styles.switchOn : ''}`}
-          >
-            <span className={styles.knob} />
-          </button>
-        </div>
 
         <button type="button" className={styles.row} onClick={() => setSub('categories')}>
           <span className={styles.rowLabel}>카테고리 관리</span>

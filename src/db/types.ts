@@ -208,10 +208,6 @@ export interface SettingsRecord {
    *  밝은 모드와 어두운 모드가 각각 있다. 이 기능이 생기기 전에 만들어진
    *  설정 행에는 없으므로 optional이고, 읽는 쪽에서 기본값을 준다. */
   colorTheme?: ColorTheme;
-  /** 숫자판을 누를 때 짧게 울릴지. 이 기능이 생기기 전에 만들어진 설정 행에는
-   *  없으므로 optional이고, 읽는 쪽에서 켜짐을 기본값으로 준다 — 새로 깔든
-   *  쓰던 앱을 올리든 같은 감으로 시작한다. */
-  hapticsEnabled?: boolean;
   budgetAlertThresholds: number[];
   updatedAt: Epoch;
 }

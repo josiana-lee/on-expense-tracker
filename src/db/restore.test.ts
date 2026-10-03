@@ -190,40 +190,6 @@ describe('restore validation', () => {
     expect(parsed.skippedCounts.settings).toBe(1);
   });
 
-  /* settingsSchema가 looseObject라 모르는 필드는 그냥 통과한다 — 그래서
-     hapticsEnabled를 적어두는 값어치는 "보존"이 아니라 "검사"에 있다.
-     타입이 틀린 값이 들어오면 스위치가 읽을 수 없는 상태로 저장되는데,
-     사용자 눈에는 진동이 켜지지도 꺼지지도 않는 것으로 보인다. */
-  it('버튼 진동 설정은 불리언일 때만 받는다', async () => {
-    const base = {
-      id: 'app', monthStartDay: 1, weekStartDay: 0, baseCurrency: 'KRW',
-      reminderEnabled: false, themeMode: 'system', budgetAlertThresholds: [], updatedAt: 1,
-    };
-    const ok = await parseBackupFile(
-      backupFile({}, { settings: [{ ...base, hapticsEnabled: false }] }),
-    );
-    expect(ok.validCounts.settings).toBe(1);
-    expect((ok.tables.settings[0] as { hapticsEnabled?: boolean }).hapticsEnabled).toBe(false);
-
-    const bad = await parseBackupFile(
-      backupFile({}, { settings: [{ ...base, hapticsEnabled: 'yes' }] }),
-    );
-    expect(bad.validCounts.settings).toBe(0);
-    expect(bad.skippedCounts.settings).toBe(1);
-  });
-
-  /* 이 설정이 생기기 전 백업에는 필드가 아예 없다. 그 행이 버려지면 복원한
-     기기가 설정을 통째로 잃는다. */
-  it('버튼 진동 설정이 없는 예전 백업도 그대로 받는다', async () => {
-    const rows = [
-      { id: 'app', monthStartDay: 1, weekStartDay: 0, baseCurrency: 'KRW',
-        reminderEnabled: false, themeMode: 'system', budgetAlertThresholds: [], updatedAt: 1 },
-    ];
-    const parsed = await parseBackupFile(backupFile({}, { settings: rows }));
-    expect(parsed.validCounts.settings).toBe(1);
-    expect((parsed.tables.settings[0] as { hapticsEnabled?: boolean }).hapticsEnabled).toBeUndefined();
-  });
-
   /* 파일 선택기의 accept는 힌트일 뿐이라 동영상도 고를 수 있다. 검증은
      파일을 다 읽은 뒤에야 시작되므로, 그 전에 거절하지 않으면 WebView가
      먼저 죽는다. */

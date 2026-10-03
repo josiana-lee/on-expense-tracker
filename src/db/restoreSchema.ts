@@ -173,9 +173,6 @@ const settingsSchema = z.looseObject({
   /* 이 필드가 생기기 전 백업에는 없다. 없으면 기본 팔레트로 읽으므로
      복원한 기기는 테마 기능이 없던 때와 같은 화면으로 시작한다. */
   colorTheme: z.enum(COLOR_THEMES.map((t) => t.id)).optional(),
-  /* 마찬가지로 이 필드가 생기기 전 백업에는 없다. 없으면 켜짐으로 읽으므로
-     복원한 기기도 새로 깐 기기와 같은 감으로 시작한다. */
-  hapticsEnabled: z.boolean().optional(),
   budgetAlertThresholds: z.array(z.number()),
   updatedAt: epoch,
 });

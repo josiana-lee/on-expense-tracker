@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { TabBar, TABS, type TabId } from './components/TabBar';
 import { isNative } from './lib/platform';
 import { handleBack } from './shell/useBackHandler';
-import { useHaptics } from './hooks/useHaptics';
 import { useReminderScheduler } from './hooks/useReminderScheduler';
 import { useTheme } from './hooks/useTheme';
 import { AssetsScreen } from './screens/assets/AssetsScreen';
@@ -72,7 +71,6 @@ export function App() {
   const [shell, setShell] = useState<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<TabId>('input');
   useTheme();
-  useHaptics();
   useReminderScheduler();
   useAndroidBackButton(tab, setTab);
 
