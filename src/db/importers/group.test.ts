@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { groupInstallments } from './group';
+import { dropInstallment, groupInstallments } from './group';
 import type { ImportRow } from './types';
 
 const row = (date: string, no: number, months: number, key = 'A', amount = 1000): ImportRow => ({
@@ -87,6 +87,76 @@ describe('groupInstallments', () => {
   it('1개월은 할부로 치지 않는다', () => {
     const out = groupInstallments([row('2026-01-01', 1, 1)]);
     expect(out[0].installmentId).toBeUndefined();
+  });
+
+  /* 같은 이름·같은 카드·같은 개월 수의 할부 두 건이 한 달 어긋나게 겹치면, 회차
+     번호만 보고 이으면 서로 다른 구매가 한 묶음이 된다. A는 1·2·3월에 10만 원,
+     B는 2·3·4월에 1만 원일 때 B1+B2+A3이 총액 12만 원짜리 하나로 묶였다.
+     할부는 한 달에 한 번이다 — 앞 회차 다음 달이 아니면 이어진 회차가 아니다. */
+  it('다음 달로 이어지지 않는 회차는 같은 묶음이 아니다', () => {
+    const out = groupInstallments([
+      row('2026-01-05', 1, 3, 'K', 100_000),
+      row('2026-02-05', 2, 3, 'K', 100_000),
+      row('2026-02-20', 1, 3, 'K', 10_000),
+      row('2026-03-20', 2, 3, 'K', 10_000),
+      row('2026-03-25', 3, 3, 'K', 100_000), // A의 3회차가 B의 2회차 뒤에 온다
+      row('2026-04-20', 3, 3, 'K', 10_000),
+    ]);
+    // 어느 쪽도 잘못 합쳐지지 않는다. 합쳐진 묶음이 있다면 총액이 12만 원일 것이다.
+    const totals = out.map((r) => r.installmentTotal).filter((t) => t !== undefined);
+    expect(totals).not.toContain(120_000);
+    expect(totals).not.toContain(210_000);
+  });
+
+  /* 위플은 말일이 없는 달을 넘겨서 적는다. 12/30 구매의 2회차는 1/30, 3회차는 2월 30일
+     이 없어서 3/2다. 실제 9년치 파일에서 멀쩡한 할부 하나(3행)가 "정확히 다음 달"
+     규칙에 걸려 거절됐다. 앞이 29일 이후이고 다음이 3일 이전일 때만 두 달 건너뛴
+     것을 이어진 것으로 본다 — 그냥 "두 달까지"로 풀면 틀리게 합치는 길이 다시 열린다. */
+  it('말일 날짜가 다음 달로 넘친 회차는 이어진 것으로 본다', () => {
+    const out = groupInstallments([
+      row('2022-12-30', 1, 3, 'K', 116_000),
+      row('2023-01-30', 2, 3, 'K', 116_000),
+      row('2023-03-02', 3, 3, 'K', 116_000),
+    ]);
+    expect(new Set(out.map((r) => r.installmentId)).size).toBe(1);
+    expect(out[0].installmentId).toBeDefined();
+  });
+
+  it('말일이 아닌 두 달 건너뜀은 이어진 것으로 보지 않는다', () => {
+    const out = groupInstallments([
+      row('2026-01-10', 1, 3),
+      row('2026-02-10', 2, 3),
+      row('2026-04-10', 3, 3), // 3월이 빠졌다
+    ]);
+    expect(out.every((r) => r.installmentId === undefined)).toBe(true);
+  });
+
+  /* 묶이지 못한 회차는 이름에서 "(2/3)"을 이미 뗐다. 그대로 두면 "이어폰" 한 줄이
+     왜 금액이 이런지 단서가 사라진다 — 메모로 남긴다. */
+  it('묶이지 못한 회차는 회차를 메모로 남긴다', () => {
+    const out = groupInstallments([row('2026-02-01', 2, 3)]);
+    expect(out[0].installmentId).toBeUndefined();
+    expect(out[0].memo).toBe('할부 2/3회차');
+  });
+
+  it('원래 메모가 있으면 덮어쓰지 않는다', () => {
+    const r = { ...row('2026-02-01', 2, 3), memo: '선물' };
+    expect(groupInstallments([r])[0].memo).toBe('선물');
+  });
+
+  describe('dropInstallment', () => {
+    /* 묶음의 일부 회차만 가져오게 되면(분류를 "가져오지 않기"로 골라서) 남은 회차를
+       할부로 두면 "3개월 할부 1/3"과 총액 30만 원이 달린 반쪽 할부가 된다. */
+    it('할부 필드를 떼고 회차를 메모로 남긴다', () => {
+      const [r] = groupInstallments([
+        row('2026-01-01', 1, 2),
+        row('2026-02-01', 2, 2),
+      ]);
+      const plainRow = dropInstallment(r);
+      expect(plainRow.installmentId).toBeUndefined();
+      expect(plainRow.installmentTotal).toBeUndefined();
+      expect(plainRow.memo).toBe('할부 1/2회차');
+    });
   });
 
   it('행 개수와 순서는 그대로다', () => {

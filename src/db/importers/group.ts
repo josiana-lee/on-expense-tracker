@@ -66,10 +66,16 @@ export function groupInstallments(rows: ImportRow[]): GroupedRow[] {
 
     for (const i of idx) {
       const no = out[i].installment!.no;
+      const prev = run.length > 0 ? out[run[run.length - 1]] : null;
       if (no === 1) {
         close();
         run = [i];
-      } else if (run.length > 0 && no === out[run[run.length - 1]].installment!.no + 1) {
+      } else if (
+        prev !== null &&
+        no === prev.installment!.no + 1 &&
+        // 할부는 한 달에 한 번이다. 다음 달이 아니면 같은 구매의 다음 회차가 아니다.
+        isNextMonth(prev.date, out[i].date)
+      ) {
         run.push(i);
       } else {
         // 1로 시작하지 않거나 중간이 빈 조각. 묶지 않고 버린다.
@@ -79,5 +85,48 @@ export function groupInstallments(rows: ImportRow[]): GroupedRow[] {
     close();
   }
 
-  return out;
+  /* 묶이지 못한 회차는 이름에서 "(2/3)"을 이미 뗐다. 그대로 두면 "이어폰" 한 줄이 왜
+     이 금액인지 단서가 사라진다. */
+  return out.map((r) =>
+    r.installment && r.installment.months >= MIN_MONTHS && !r.installmentId
+      ? withContext(r)
+      : r,
+  );
+}
+
+/** 할부 표시를 떼고 일반 지출로 만든다. 회차는 메모로 남긴다.
+ *
+ *  묶음 중 일부만 가져오게 되면(분류를 "가져오지 않기"로 골라서) 남은 회차를 할부로
+ *  두면 안 된다 — "3개월 할부 1/3"과 총액 30만 원이 달렸는데 나머지가 없는 반쪽
+ *  할부가 되고, 달력에서 사용자가 읽을 수 없다. */
+export function dropInstallment(r: GroupedRow): GroupedRow {
+  const { installmentId, installmentNo, installmentMonths, installmentTotal, ...rest } = r;
+  void installmentId;
+  void installmentNo;
+  void installmentMonths;
+  void installmentTotal;
+  return withContext(rest);
+}
+
+function withContext(r: GroupedRow): GroupedRow {
+  const inst = r.installment;
+  if (!inst || r.memo) return r;
+  return { ...r, memo: `할부 ${inst.no}/${inst.months}회차` };
+}
+
+// 'YYYY-MM-DD' → 연·월을 하나의 수로. 달 단위 거리를 재려는 것이다.
+function monthIndex(date: string): number {
+  return Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7)) - 1;
+}
+
+/** 다음 회차가 앞 회차의 다음 달에 있는가.
+ *
+ *  정확히 한 달 뒤여야 하지만, 위플은 말일이 없는 달을 **넘겨서** 적는다 — 12/30
+ *  구매의 3회차는 2월 30일이 없어서 3/2가 된다. 그 경우만 두 달 건너뛴 것을
+ *  받는다: 앞이 29일 이후이고 다음이 3일 이전. 이 조건이 아니면 두 달 떨어진 건 같은
+ *  구매가 아니다. */
+function isNextMonth(prev: string, next: string): boolean {
+  const gap = monthIndex(next) - monthIndex(prev);
+  if (gap === 1) return true;
+  return gap === 2 && Number(prev.slice(8, 10)) >= 29 && Number(next.slice(8, 10)) <= 3;
 }
