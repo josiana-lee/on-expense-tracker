@@ -29,6 +29,7 @@ import { useSettings } from '../hooks/useSettings';
 import { amountSize, won } from '../lib/format';
 import { blurOnEnter } from '../lib/keyboard';
 import styles from './EntrySheet.module.css';
+import { liveTitle } from '../lib/rowText';
 
 /** TabBar의 달력 탭과 같은 path. 같은 뜻(날짜)을 가리키는 자리라 아이콘도
  *  같은 걸 쓴다. */
@@ -428,7 +429,9 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           disabled={installment}
           aria-label="금액"
         >
-          <span className={styles.name}>{subLabel || category?.name}</span>
+          <span className={styles.name}>
+            {liveTitle({ memo, subLabel, category: category?.name })}
+          </span>
           <span className={`${styles.amount} tabular`} data-size={amountSize(amount)}>
             {won(amount || '0')}원
           </span>

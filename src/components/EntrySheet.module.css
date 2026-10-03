@@ -110,9 +110,14 @@
 
 /* Holds its width. The amount used to be flex:none and this shrank instead,
    so a long number clipped the category to "식" — the label that says what is
-   being recorded is not the part to sacrifice. */
+   being recorded is not the part to sacrifice.
+   The name is the memo now, which can be long. It still holds its width up to
+   about half the row, then ends in an ellipsis; without that cap a long memo
+   pushes the amount out. */
 .name {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
   font-size: 14px;
   font-weight: 700;
   color: var(--tx2);

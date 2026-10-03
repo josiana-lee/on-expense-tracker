@@ -78,6 +78,24 @@ export function compactRow(r: ExpenseRecord, categoryName: string | undefined): 
   return { title, ...(sub ? { sub } : {}) };
 }
 
+/** 수정 시트의 금액 옆 이름. 기록이 아니라 **지금 고치고 있는 값**으로 만든다.
+ *
+ *  목록과 같은 규칙이다 — 쓴 글(메모)이 제목이고, 없으면 카테고리. 다만 이 자리는 한 줄뿐이고
+ *  세부항목 칩을 누르는 즉시 이름이 바뀌어야 "고른 게 반영됐다"가 보이므로, 메모가 없을 땐
+ *  "카테고리 › 세부항목"으로 한 줄에 붙인다. 메모가 있으면 메모만 보인다 — 고른 세부항목은 아래
+ *  칩이 이미 켜져 있다. 공백뿐인 메모는 없는 것으로 친다(저장할 때도 그렇게 다룬다). */
+export function liveTitle(input: {
+  memo?: string;
+  subLabel?: string;
+  category?: string;
+}): string {
+  const memo = input.memo?.trim();
+  if (memo) return memo;
+  const category = input.category ?? '';
+  if (!input.subLabel) return category;
+  return category ? `${category} › ${input.subLabel}` : input.subLabel;
+}
+
 /** 아래 줄을 글자로만. 화면 읽기와 테스트용이다. */
 export function detailText(text: RowText): string {
   return text.detail

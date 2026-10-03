@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ExpenseRecord } from '../db/types';
-import { compactRow, detailText, rowText } from './rowText';
+import { compactRow, detailText, liveTitle, rowText } from './rowText';
 
 const rec = (over: Partial<ExpenseRecord> = {}) =>
   ({
@@ -175,6 +175,35 @@ describe('rowText', () => {
           });
         }
       }
+    });
+  });
+
+  /* 수정 시트의 이름. 폰에서 본 문제: 메모 "추어탕" + 세부항목 "점심" 기록을 열면 목록은 "추어탕"인데
+     시트 위쪽은 "점심"이었다. */
+  describe('liveTitle (수정 시트의 이름)', () => {
+    it('메모가 있으면 메모', () => {
+      expect(liveTitle({ memo: '추어탕', subLabel: '점심', category: '식비' })).toBe('추어탕');
+    });
+
+    it('메모가 없으면 "카테고리 › 세부항목"', () => {
+      expect(liveTitle({ subLabel: '점심', category: '식비' })).toBe('식비 › 점심');
+    });
+
+    it('아무것도 없으면 카테고리', () => {
+      expect(liveTitle({ category: '식비' })).toBe('식비');
+    });
+
+    it('공백뿐인 메모는 없는 것으로 친다', () => {
+      expect(liveTitle({ memo: '   ', subLabel: '점심', category: '식비' })).toBe('식비 › 점심');
+    });
+
+    it('메모 앞뒤 공백은 뗀다', () => {
+      expect(liveTitle({ memo: '  추어탕 ', category: '식비' })).toBe('추어탕');
+    });
+
+    it('카테고리가 없어도 깨지지 않는다', () => {
+      expect(liveTitle({ subLabel: '점심' })).toBe('점심');
+      expect(liveTitle({})).toBe('');
     });
   });
 
