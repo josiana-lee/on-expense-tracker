@@ -142,3 +142,33 @@ describe('planImport', () => {
     });
   });
 });
+
+describe('현금', () => {
+  /* addPaymentMethod는 신용·체크만 만든다 — 현금은 여러 장 가질 수 있는
+     것이 아니라 하나뿐인 개념이다. 그래서 이름이 안 맞아도 종류로 찾는다. */
+  it('이름이 달라도 현금 계열이면 쓰던 현금 수단에 붙인다', () => {
+    const wallet = [{ id: 'cash', name: '지갑', kind: 'cash', archived: false }] as never;
+    const plan = planImport(
+      {
+        source: 'x',
+        rows: [row({ paymentName: '현금', paymentKind: 'cash' })],
+        skipped: 0,
+      },
+      CATS,
+      wallet,
+    );
+    expect(plan.payments.get('현금')).toEqual({ id: 'cash' });
+    expect(plan.newPayments).toHaveLength(0);
+  });
+
+  it('쓸 수 있는 현금 수단이 없으면 만들지 않고 비워둔다', () => {
+    const noCash = [{ id: 'k', name: '카드', kind: 'credit', archived: false }] as never;
+    const plan = planImport(
+      { source: 'x', rows: [row({ paymentName: '현금', paymentKind: 'cash' })], skipped: 0 },
+      CATS,
+      noCash,
+    );
+    expect(plan.payments.has('현금')).toBe(false);
+    expect(plan.newPayments).toHaveLength(0);
+  });
+});

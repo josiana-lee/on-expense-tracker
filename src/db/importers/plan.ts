@@ -1,9 +1,9 @@
 import type { CategoryRecord, DateStr, ID, PaymentMethodRecord } from '../types';
 import { groupInstallments, type GroupedRow } from './group';
-import type { ImportParse, ImportRow } from './types';
+import type { ImportParse } from './types';
 
 /** 쓰려는 결제수단: 이미 있는 것이거나, 만들어야 하는 것. */
-export type PaymentTarget = { id: ID } | { create: { name: string; kind: ImportRow['paymentKind'] } };
+export type PaymentTarget = { id: ID } | { create: { name: string; kind: 'credit' | 'debit' } };
 
 export type ImportPlan = {
   source: string;
@@ -13,7 +13,7 @@ export type ImportPlan = {
   /** 사용자가 골라야 하는 것. 많이 쓴 순서. */
   unmatched: { name: string; count: number }[];
   payments: Map<string, PaymentTarget>;
-  newPayments: { name: string; kind: ImportRow['paymentKind'] }[];
+  newPayments: { name: string; kind: 'credit' | 'debit' }[];
 
   count: number;
   skipped: number;
@@ -58,10 +58,16 @@ export function planImport(
     if (!catByKey.has(k)) catByKey.set(k, c.id);
   }
   const payByKey = new Map<string, ID>();
+  /* 현금은 종류로도 찾는다. addPaymentMethod가 신용·체크만 만들 수 있어서
+     — 현금은 "여러 장" 가질 수 있는 것이 아니라 하나뿐인 개념이다 — 이름이
+     안 맞으면 붙일 데가 없어진다. 이름을 "현금" 대신 "지갑"으로 바꿔 쓰는
+     사람의 파일도 여기서 걸린다. */
+  let cashId: ID | undefined;
   for (const p of payments) {
     if (p.archived) continue;
     const k = key(p.name);
     if (!payByKey.has(k)) payByKey.set(k, p.id);
+    if (p.kind === 'cash' && !cashId) cashId = p.id;
   }
 
   const matched = new Map<string, ID>();
@@ -79,14 +85,18 @@ export function planImport(
     }
 
     if (!paymentTargets.has(r.paymentName)) {
-      const id = payByKey.get(key(r.paymentName));
+      const id = payByKey.get(key(r.paymentName)) ?? (r.paymentKind === 'cash' ? cashId : undefined);
       if (id) {
         paymentTargets.set(r.paymentName, { id });
+      } else if (r.paymentKind === 'cash') {
+        /* 현금 계열인데 쓸 수 있는 현금 수단이 하나도 없다(지워버린 경우).
+           만들 수가 없으므로 자리를 비워두고, 커밋이 그 행들을 건너뛰며
+           숫자로 알려준다 — 카드에 조용히 붙이는 것보다 낫다. */
       } else {
         /* 없는 카드는 묻지 않고 만든다. 이름과 종류가 파일에 적혀 있어
            추측할 것이 없고, 여기서 사용자를 세우면 카드 다섯 장에 다섯 번
            묻게 된다. 카테고리와 다른 점은 거기엔 고를 것이 있다는 것이다. */
-        const create = { name: r.paymentName, kind: r.paymentKind };
+        const create = { name: r.paymentName, kind: r.paymentKind as 'credit' | 'debit' };
         paymentTargets.set(r.paymentName, { create });
         newPayments.push(create);
       }
