@@ -6,5 +6,6 @@ import { readLastImport, type LastImport } from '../db/importers/undo';
  *  라이브 쿼리라서 "이대로 쓸게"나 "되돌리기"를 누르는 즉시 설정의 줄이 사라진다.
  *  로딩 중에는 undefined가 나오는데 null과 같이 없는 것으로 읽으면 된다. */
 export function useLastImport(): LastImport | null | undefined {
-  return useLiveQuery(() => readLastImport(), []);
+  // 읽기에 실패해도 설정 화면 전체가 오류 화면이 되지 않게 한다. 줄 하나가 안 보일 뿐이다.
+  return useLiveQuery(() => readLastImport().catch(() => null), []);
 }

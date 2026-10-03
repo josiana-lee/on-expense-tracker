@@ -29,8 +29,13 @@ export function ImportUndoSheet({ last, fresh, onClose, onDone }: Props) {
 
   const keep = () => {
     guard(async () => {
-      await keepImport();
-      onClose();
+      try {
+        await keepImport();
+        onClose();
+      } catch {
+        // 지워지지 않았는데 닫으면 설정에 줄이 그대로 남아서 눌렀는데 안 된 것처럼 보인다.
+        onDone('처리하지 못했어. 다시 시도해줘');
+      }
     });
   };
 
