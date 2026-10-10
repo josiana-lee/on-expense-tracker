@@ -19,7 +19,7 @@ export function MonthStartDaySheet({ value, onClose }: Props) {
         결제일에 맞춰두면 실제 씀씀이 주기랑 더 잘 맞아.
       </div>
 
-      <Stepper label="시작일" value={value} min={1} max={28} unit="일" onChange={(v) => updateSettings({ monthStartDay: v })} />
+      <Stepper label="시작일" value={value} min={1} max={31} unit="일" onChange={(v) => updateSettings({ monthStartDay: v })} />
 
       <button type="button" className={styles.done} onClick={onClose}>
         완료

@@ -20,17 +20,43 @@ export function parseDateStr(s: DateStr): Date {
   return new Date(y, m - 1, d);
 }
 
+/** 그 달의 마지막 날짜(28~31). month1to12가 13이면 다음 해 1월이다. */
+function daysIn(year: number, month1to12: number): number {
+  return new Date(year, month1to12, 0).getDate();
+}
+
+/** 그 달에서 주기가 시작하는 날. 시작일이 그 달에 없으면(31일인데 4월, 29일인데
+ *  평년 2월) 말일로 당긴다.
+ *
+ *  `new Date(y, m, 31)`을 그대로 쓰면 없는 날이 다음 달로 넘어가서(2월 31일 → 3월
+ *  3일) 두 함수가 서로 다른 주기를 가리킨다. 31일 시작에서 3월 2일은 monthRange로는
+ *  1월 주기(1/31~3/2) 안인데, currentAccountingMonth는 "3월 2일 < 31이니 2월
+ *  주기"라고 답하고 그 2월 주기는 3월 3일에 시작한다 — 어느 주기에도 못 들어간다.
+ *  시작일을 말일로 당기면 주기의 시작이 "그 달에 실제로 있는 날" 하나로 정해져서,
+ *  다음 주기가 시작하는 날의 전날까지가 곧 이 주기의 끝이 된다. */
+function cycleStart(year: number, month1to12: number, monthStartDay: number): Date {
+  return new Date(
+    year,
+    month1to12 - 1,
+    Math.min(monthStartDay, daysIn(year, month1to12)),
+  );
+}
+
 /** Accounting-month bounds, inclusive. A cycle is named by the calendar
  *  month it starts in: monthStartDay=25 makes the "2026-08" cycle run
  *  Aug 25 – Sep 24, not Jul 25 – Aug 24. monthStartDay=1 collapses to the
- *  plain calendar month, which is the common case. */
+ *  plain calendar month, which is the common case.
+ *
+ *  monthStartDay 29~31 is allowed: in a month that has no such day the cycle
+ *  starts on the last day (31 → Feb 28, Apr 30), so cycles still tile the
+ *  calendar with no gap and no overlap. */
 export function monthRange(
   year: number,
   month1to12: number,
   monthStartDay: number,
 ): { from: DateStr; to: DateStr } {
-  const start = new Date(year, month1to12 - 1, monthStartDay);
-  const end = new Date(year, month1to12, monthStartDay);
+  const start = cycleStart(year, month1to12, monthStartDay);
+  const end = cycleStart(year, month1to12 + 1, monthStartDay);
   end.setDate(end.getDate() - 1);
   return { from: fmt(start), to: fmt(end) };
 }
@@ -44,7 +70,9 @@ export function currentAccountingMonth(
 ): { year: number; month: number } {
   let month = today.getMonth() + 1;
   let year = today.getFullYear();
-  if (today.getDate() < monthStartDay) {
+  /* 이 달의 주기가 시작하는 날은 말일로 당겨질 수 있다(monthRange와 같은 규칙).
+     같은 규칙을 쓰지 않으면 두 함수가 서로 다른 주기를 가리킨다. */
+  if (today.getDate() < Math.min(monthStartDay, daysIn(year, month))) {
     month -= 1;
     if (month === 0) {
       month = 12;

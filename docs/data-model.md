@@ -262,7 +262,7 @@ export interface PaymentMethodRecord {
   accountId?: ID;             // 체크카드/현금 → 출금 계좌 연결 (선택)
 
   // 신용카드 전용
-  paymentDay?: number;        // 결제일 1~28
+  paymentDay?: number;        // 결제일 1~31 (없는 달은 말일 — 표시만 하고 계산에는 안 쓴다)
   statementStartDay?: number; // 사용기간 시작일 — ※ 10장 미확정 항목 참조
   statementEndDay?: number;   // 사용기간 종료일
   performanceThreshold?: Minor; // 전월실적 기준 금액
@@ -382,7 +382,7 @@ async function materialize(rule: RecurringRuleRecord, occurrenceDate: DateStr) {
 // ---------- 설정 (단일 행) ----------
 export interface SettingsRecord {
   id: 'app';
-  monthStartDay: number;      // 1~28 (29~31은 2월에 정의 불가 → 제약)
+  monthStartDay: number;      // 1~31 (그 달에 없는 날이면 말일에 시작)
   weekStartDay: number;       // 0(일)~6(토)
   defaultPaymentMethodId?: ID;
   baseCurrency: 'KRW';
@@ -491,7 +491,7 @@ export function fmt(d: Date): DateStr {
 
 `fmt()`에서 `toISOString().slice(0,10)`을 **절대 쓰지 않는다.** KST(UTC+9)에서 자정 직후 기록이 전날로 밀린다. 이 앱에서 가장 나기 쉬운 날짜 버그다.
 
-`monthStartDay`를 1~28로 제한한 것도 같은 종류의 방어다. 31일 시작을 허용하면 2월 경계가 정의되지 않는다.
+`monthStartDay`는 1~31이다. 그 달에 없는 날(31일인데 4월, 29일인데 평년 2월)이면 그 달 말일에 시작한다 — `new Date(y, m, 31)`을 그대로 쓰면 다음 달 1일로 넘어가 주기 이름과 어긋나므로 `monthRange`/`currentAccountingMonth`가 같은 규칙(`cycleStart`)으로 말일에 맞춘다. 카드의 사용기간 시작일도 같은 두 함수를 쓴다. 결제일(`paymentDay`)은 "매월 N일 결제"로 보여주기만 하고 계산에 쓰지 않아 말일 처리가 필요 없다.
 
 ### 4-4. 카드별 이번 달 결제액 / 미결제 잔액
 

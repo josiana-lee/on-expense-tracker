@@ -159,12 +159,12 @@ const recurringRuleSchema = z.looseObject({
 
 const settingsSchema = z.looseObject({
   id: z.literal('app'),
-  /* types.ts가 못박아 둔 범위(1~28, 0~6)가 런타임 어디에도 없었다. 복원된
+  /* types.ts가 못박아 둔 범위(1~31, 0~6)가 런타임 어디에도 없었다. 복원된
      monthStartDay: 45는 monthRange()에서 다음 달로 롤오버하고, weekStartDay가
      범위를 벗어나면 splitWeeks()의 주차 구분이 뭉개진다.
      여기서 걸러 행이 버려져도 bootstrap()의 ensureSettings()가 기본값으로
      되살리므로, 조이는 비용이 사실상 없다. */
-  monthStartDay: z.number().int().min(1).max(28),
+  monthStartDay: z.number().int().min(1).max(31),
   weekStartDay: z.number().int().min(0).max(6),
   defaultPaymentMethodId: id.optional(),
   baseCurrency: z.literal('KRW'),

@@ -21,7 +21,7 @@ type Props = {
 };
 
 const MIN_DAY = 1;
-const MAX_DAY = 28;
+const MAX_DAY = 31;
 
 const KINDS: Array<{ value: 'credit' | 'debit'; label: string }> = [
   { value: 'credit', label: '신용카드' },

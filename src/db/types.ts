@@ -201,7 +201,7 @@ export interface RecurringRuleRecord {
 
 export interface SettingsRecord {
   id: 'app';
-  /** 1~28. 29~31은 2월에 정의할 수 없다. */
+  /** 1~31. 그 달에 없는 날(31일인데 4월 등)이면 그 달 말일에 시작한다. */
   monthStartDay: number;
   /** 0(일) ~ 6(토) */
   weekStartDay: number;
