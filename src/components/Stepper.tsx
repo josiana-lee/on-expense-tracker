@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { blurOnEnter } from '../lib/keyboard';
 import styles from './Stepper.module.css';
-import { cleanDraft, readDraft } from './stepperInput';
+import { cleanDraft, readDraft, step } from './stepperInput';
 
 type Props = {
   label: string;
@@ -14,8 +14,6 @@ type Props = {
 };
 
 export function Stepper({ label, value, min, max, unit = '', onChange }: Props) {
-  const clamp = (n: number) => Math.min(max, Math.max(min, n));
-
   /* 숫자를 눌러 직접 적는 동안의 글자. null이면 적는 중이 아니다.
      누르면 칸이 비고 원래 값이 흐리게 비쳐 보인다 — 전체 선택은 안드로이드
      WebView에서 손을 떼는 순간 풀려서, 비우는 쪽이 어느 기기에서나 같게 동작한다. */
@@ -47,8 +45,7 @@ export function Stepper({ label, value, min, max, unit = '', onChange }: Props) 
         <button
           type="button"
           className={styles.btn}
-          onClick={() => onChange(clamp(value - 1))}
-          disabled={value <= min}
+          onClick={() => onChange(step(value, -1, min, max))}
           aria-label={`${label} 감소`}
         >
           −
@@ -77,8 +74,7 @@ export function Stepper({ label, value, min, max, unit = '', onChange }: Props) 
         <button
           type="button"
           className={styles.btn}
-          onClick={() => onChange(clamp(value + 1))}
-          disabled={value >= max}
+          onClick={() => onChange(step(value, 1, min, max))}
           aria-label={`${label} 증가`}
         >
           +

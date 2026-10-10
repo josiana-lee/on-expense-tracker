@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { cleanDraft, readDraft } from './stepperInput';
+import { cleanDraft, readDraft, step } from './stepperInput';
 
 describe('cleanDraft', () => {
   it('숫자가 아닌 글자는 뺀다', () => {
@@ -40,5 +40,22 @@ describe('readDraft', () => {
   it('숫자가 없으면 null이다', () => {
     expect(readDraft('', 1, 28)).toBeNull();
     expect(readDraft('abc', 1, 28)).toBeNull();
+  });
+});
+
+describe('step', () => {
+  it('한 칸씩 움직인다', () => {
+    expect(step(15, 1, 1, 31)).toBe(16);
+    expect(step(15, -1, 1, 31)).toBe(14);
+  });
+
+  it('끝에서 반대쪽으로 넘어간다', () => {
+    expect(step(31, 1, 1, 31)).toBe(1);
+    expect(step(1, -1, 1, 31)).toBe(31);
+  });
+
+  it('끝 바로 앞에서는 넘어가지 않는다', () => {
+    expect(step(30, 1, 1, 31)).toBe(31);
+    expect(step(2, -1, 1, 31)).toBe(1);
   });
 });

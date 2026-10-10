@@ -8,6 +8,18 @@ export function cleanDraft(text: string, max: number): string {
   return text.replace(/\D/g, '').slice(0, String(max).length);
 }
 
+/** ± 한 번에 움직인 값. min~max를 한 바퀴로 보고 끝에서 반대쪽으로 넘어간다
+ *  (31에서 +는 1, 1에서 −는 31).
+ *
+ *  이 칸은 전부 "며칠"을 고른다. 달력의 날짜는 31 다음이 1이라서, 끝에서 멈추면
+ *  1일로 가려는 사람이 − 를 30번 눌러야 한다. */
+export function step(value: number, delta: 1 | -1, min: number, max: number): number {
+  const next = value + delta;
+  if (next > max) return min;
+  if (next < min) return max;
+  return next;
+}
+
 /** 적고 있는 글자가 가리키는 값. 범위 밖이면 가까운 쪽 끝으로 맞추고, 아직 숫자가
  *  없으면(빈 칸) null — 그때는 원래 값을 그대로 둔다.
  *
