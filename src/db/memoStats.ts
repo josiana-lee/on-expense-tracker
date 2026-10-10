@@ -9,7 +9,8 @@ import { db } from './db';
 export async function loadMemoStats(today: Date = new Date()): Promise<MemoStat[]> {
   const rows: MemoRow[] = [];
   await db.expenses
-    .filter((r) => !!r.memo)
+    // 지출을 적는 칸의 후보다. 수입 행의 메모("월급")가 섞이면 안 된다.
+    .filter((r) => !!r.memo && r.type !== 'income')
     .each((r) =>
       rows.push({
         memo: r.memo,

@@ -25,6 +25,14 @@ describe('loadMemoStats', () => {
     expect(await ask('')).toEqual([]);
   });
 
+  /* 지출을 적는 칸의 후보다. 수입 행의 메모가 섞여 들어오면 "월급" 같은 것이 추천된다. */
+  it('수입 기록의 메모는 후보가 아니다', async () => {
+    await bootstrap();
+    await addExpense({ amount: 3_000_000, categoryId: 'food', paymentMethodId: 'cash', type: 'income', memo: '월급' });
+    await addExpense({ amount: 6000, categoryId: 'food', paymentMethodId: 'cash', memo: '월세' });
+    expect(await ask('월')).toEqual(['월세']);
+  });
+
   /* 후보를 따로 저장하지 않으니 기록을 지우면 후보도 사라진다. 저장해 두었다면 이 테스트가
      이 기능의 가장 먼저 깨지는 곳이다. */
   it('기록을 지우면 후보도 사라진다', async () => {

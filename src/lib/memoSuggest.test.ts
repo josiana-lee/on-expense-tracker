@@ -22,6 +22,42 @@ describe('memoKey', () => {
   it('영문은 대소문자를 가리지 않고, 앞뒤 공백은 뗀다', () => {
     expect(memoKey('  GS25 ')).toBe('gs25');
   });
+
+  /* 글자를 조합하는 중에는 칸의 내용이 완성되기 전 모양이다. 겹받침·겹모음은 그 중간
+     모양("달", "호")이 최종 글자("닭", "화")의 앞부분이 아니어서, QA가 이 순간에 칩이
+     한 번 사라지는 것을 찾았다. 키보드가 실제로 내보내는 순서대로 모두 본다. */
+  describe('조합하는 도중의 모양이 최종 글자의 앞부분이다', () => {
+    const typing: Array<[string, string[]]> = [
+      ['닭가슴살', ['ㄷ', '다', '달', '닭', '닭ㄱ', '닭가']],
+      ['화장품', ['ㅎ', '호', '화', '화ㅈ', '화장']],
+      ['과자', ['ㄱ', '고', '과', '과ㅈ']],
+      ['읽을책', ['ㅇ', '이', '일', '읽', '읽ㅇ']],
+      ['값비싼', ['ㄱ', '가', '갑', '값', '값ㅂ']],
+      ['왜관', ['ㅇ', '오', '왜', '왜ㄱ']], // 왜(ㅙ)는 ㅗ 다음에 ㅐ를 쳐서 만든다 — '와'를 거치지 않는다
+      ['외식비', ['ㅇ', '오', '외', '외ㅅ']],
+      ['의류정리', ['ㅇ', '으', '의', '의ㄹ']],
+      ['롯데리아', ['ㄹ', '로', '롯', '롯ㄷ', '롯데', '롯데ㄹ', '롯데리', '롯데리ㅇ']],
+      ['앉아', ['ㅇ', '아', '안', '앉']],
+    ];
+    for (const [memo, steps] of typing) {
+      it(memo, () => {
+        for (const s of steps) {
+          expect(memoKey(memo).startsWith(memoKey(s)), `"${s}" → "${memo}"`).toBe(true);
+        }
+      });
+    }
+
+    /* 받침이 다음 글자의 첫 자음으로 넘어가는 순간. "롯"을 치다가 "로시"가 된다. */
+    it('받침과 다음 글자의 첫 자음을 같은 자모로 본다', () => {
+      expect(memoKey('로시').startsWith(memoKey('롯'))).toBe(true);
+    });
+
+    it('앞부분이 아닌 것은 여전히 거른다', () => {
+      expect(memoKey('닭가슴살').startsWith(memoKey('닥'))).toBe(false);
+      expect(memoKey('화장품').startsWith(memoKey('후'))).toBe(false);
+      expect(memoKey('롯데리아').startsWith(memoKey('롯데ㅁ'))).toBe(false);
+    });
+  });
 });
 
 describe('buildMemoStats', () => {
@@ -33,6 +69,26 @@ describe('buildMemoStats', () => {
     const out = stats([row('롯데리아', 'food', 5000, '2026-10-01'), row('롯데리아 ', 'food', 6000, '2026-10-02')]);
     expect(out).toHaveLength(1);
     expect(out[0].memo).toBe('롯데리아');
+  });
+
+  /* "GS25"와 "gs25"를 칩 두 개로 따로 보여 주면 같은 가게가 두 칸을 차지하고 어느 쪽이
+     맞는지 고민하게 된다. 같은 카테고리에서는 한 후보로 모으고, 보여줄 표기는 가장
+     최근에 쓴 것으로 한다. */
+  it('대소문자만 다른 메모는 한 후보로 모으고 가장 최근 표기를 쓴다', () => {
+    const out = stats([
+      row('GS25', 'food', 3000, '2026-09-01'),
+      row('gs25', 'food', 3000, '2026-10-01'),
+      row('GS25', 'food', 3000, '2026-08-01'),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].memo).toBe('gs25');
+    expect(out[0].amounts).toHaveLength(3);
+  });
+
+  it('같은 날 표기가 갈리면 어느 순서로 들어와도 같은 표기를 쓴다', () => {
+    const a = row('GS25', 'food', 1, '2026-10-01');
+    const b = row('gs25', 'food', 1, '2026-10-01');
+    expect(stats([a, b])[0].memo).toBe(stats([b, a])[0].memo);
   });
 
   it('카테고리가 다르면 따로 센다', () => {
@@ -108,6 +164,18 @@ describe('suggestMemos', () => {
 
     it('조합 중인 끝 자음이 있어도 앞글자가 맞으면 남는다', () => {
       expect(ask(R, { text: '롯ㄷ' })).toEqual(['롯데리아', '롯데마트']);
+    });
+
+    it('겹받침·겹모음을 치는 도중에도 칩이 남는다', () => {
+      const rows = [row('닭가슴살', 'food', 9000, '2026-10-01'), row('화장품', 'food', 9000, '2026-10-01')];
+      expect(ask(rows, { text: '달' })).toEqual(['닭가슴살']);
+      expect(ask(rows, { text: '호' })).toEqual(['화장품']);
+    });
+
+    it('철자만 다른 메모는 그대로 친 것도 후보에서 뺀다', () => {
+      const rows = [row('GS25', 'food', 3000, '2026-10-01'), row('gs25', 'food', 3000, '2026-10-02')];
+      expect(ask(rows, { text: 'gs25' })).toEqual([]);
+      expect(ask(rows, { text: 'GS' })).toEqual(['gs25']);
     });
 
     it('앞뒤 공백과 대소문자는 가리지 않는다', () => {
@@ -189,6 +257,11 @@ describe('suggestMemos', () => {
     it('여러 카테고리에 있는 같은 메모는 한 번만 보인다', () => {
       const rows = [row('롯데', 'food', 1, '2026-10-01'), row('롯데', 'shop', 1, '2026-10-01')];
       expect(ask(rows, { text: '롯' })).toEqual(['롯데']);
+    });
+
+    it('다른 카테고리에 철자만 다르게 있어도 한 번만 보인다', () => {
+      const rows = [row('GS25', 'food', 1, '2026-10-01'), row('gs25', 'daily', 1, '2026-10-02')];
+      expect(ask(rows, { text: 'g' })).toEqual(['GS25']);
     });
   });
 });

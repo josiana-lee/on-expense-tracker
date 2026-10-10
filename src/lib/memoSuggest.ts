@@ -42,14 +42,40 @@ const SIMILAR = 0.15;
 /** 칩으로 보여주는 최대 개수. */
 export const MAX_SUGGESTIONS = 8;
 
+/* NFKD가 한글 음절을 풀어 주는 낱자(conjoining jamo)를, 한 번 더 기본 자모로 푼다.
+   초성/중성/종성 순서(유니코드 표 순서)다. 겹받침(ㄺ)과 겹모음(ㅘ)은 두 자모로 쪼갠다. */
+const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+const JUNG = [
+  'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅗㅏ', 'ㅗㅐ', 'ㅗㅣ', 'ㅛ', 'ㅜ', 'ㅜㅓ', 'ㅜㅔ', 'ㅜㅣ', 'ㅠ', 'ㅡ', 'ㅡㅣ', 'ㅣ',
+];
+const JONG = [
+  'ㄱ', 'ㄲ', 'ㄱㅅ', 'ㄴ', 'ㄴㅈ', 'ㄴㅎ', 'ㄷ', 'ㄹ', 'ㄹㄱ', 'ㄹㅁ', 'ㄹㅂ', 'ㄹㅅ', 'ㄹㅌ', 'ㄹㅍ', 'ㄹㅎ', 'ㅁ', 'ㅂ', 'ㅂㅅ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+];
+
+function flattenJamo(ch: string): string {
+  const cp = ch.codePointAt(0)!;
+  if (cp >= 0x1100 && cp <= 0x1112) return CHO[cp - 0x1100];
+  if (cp >= 0x1161 && cp <= 0x1175) return JUNG[cp - 0x1161];
+  if (cp >= 0x11a8 && cp <= 0x11c2) return JONG[cp - 0x11a8];
+  return ch;
+}
+
 /** 메모를 비교하기 위한 모양.
  *
- *  한글을 자모로 풀어(NFKD) 둔다. 글자를 조합하는 중에는 칸의 내용이 "롯ㄷ"처럼 끝
- *  글자가 자음 하나인데, 풀어 두면 이것이 "롯데"의 앞부분이 되어서 "롯데리아"가 글자
- *  사이마다 사라졌다 나타나지 않는다. 호환 자모("ㄷ")도 NFKD가 같은 자모로 바꿔 준다.
+ *  한글을 **기본 자모의 줄**로 푼다("닭" → ㄷㅏㄹㄱ). 글자를 조합하는 중에는 칸의 내용이
+ *  완성되기 전 모양이라 — "롯ㄷ", "닭"을 치는 도중의 "달", "화"를 치는 도중의 "호" —
+ *  그대로 비교하면 최종 글자의 앞부분이 아니다. 자모의 줄로 풀면 이 중간 모양이 모두
+ *  최종 글자의 앞부분이 되어서, 글자 사이마다 칩이 사라졌다 나타나지 않는다.
+ *
+ *  - 겹받침(ㄺ)과 겹모음(ㅘ)을 두 자모로 쪼갠다. 안 쪼개면 "달"이 "닭"의 앞부분이
+ *    아니고, "호"가 "화"의 앞부분이 아니다.
+ *  - 받침과 다음 글자의 첫 자음을 같은 자모로 본다. "롯"(받침 ㅅ)을 치다가 "로시"가
+ *    되는 순간에도 이어진다.
+ *  - 호환 자모("ㄷ")는 NFKD가 먼저 낱자로 바꿔 준다.
+ *
  *  영문은 대소문자를 가리지 않는다. */
 export function memoKey(text: string): string {
-  return text.trim().normalize('NFKD').toLowerCase();
+  return [...text.trim().normalize('NFKD').toLowerCase()].map(flattenJamo).join('');
 }
 
 /** 기록에서 (카테고리, 메모)별 이력을 만든다.
@@ -72,22 +98,30 @@ export function buildMemoStats(rows: Iterable<MemoRow>, today: Date): MemoStat[]
     if (!prev || r.date < prev.date) seen.set(r.installmentId, r);
   }
 
-  type Acc = MemoStat & { used: { date: string; amount: number }[] };
+  /* 같은 카테고리에서 비교 키가 같으면 한 후보다("GS25"와 "gs25"). 칩에 둘이 나란히 뜨면
+     같은 가게를 두 칸 쓰고 어느 쪽이 맞는지 고민하게 만든다. 보여줄 표기는 가장 최근에 쓴
+     것이고, 점수와 금액은 합친다. */
+  type Acc = MemoStat & { used: { date: string; amount: number }[]; latest: string };
   const acc = new Map<string, Acc>();
   for (const r of [...singles, ...seen.values()]) {
     const memo = r.memo!.trim();
-    const id = `${r.categoryId}\u0000${memo}`;
+    const key = memoKey(memo);
+    const id = `${r.categoryId}\u0000${key}`;
     let a = acc.get(id);
     if (!a) {
-      a = { memo, key: memoKey(memo), categoryId: r.categoryId, score: 0, amounts: [], used: [] };
+      a = { memo, key, categoryId: r.categoryId, score: 0, amounts: [], used: [], latest: r.date };
       acc.set(id, a);
+    } else if (r.date > a.latest || (r.date === a.latest && memo < a.memo)) {
+      // 날짜가 같으면 글자가 작은 쪽 — 어느 행을 먼저 만나든 같은 답이 나오게.
+      a.memo = memo;
+      a.latest = r.date;
     }
     const age = Math.max(0, (t0 - parseDateStr(r.date).getTime()) / DAY_MS);
     a.score += Math.pow(0.5, age / HALF_LIFE_DAYS);
     a.used.push({ date: r.date, amount: r.amount });
   }
 
-  return [...acc.values()].map(({ used, ...stat }) => ({
+  return [...acc.values()].map(({ used, latest: _latest, ...stat }) => ({
     ...stat,
     amounts: used
       .sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
@@ -109,7 +143,7 @@ function isSimilar(amounts: number[], amount: number): boolean {
  *
  *  글자를 쳤으면 그 글자로 시작하는 것만 남긴다. 칸에 이미 그대로 적힌 메모는 후보에서
  *  뺀다 — 눌러도 아무 일도 안 일어나는 칩이 된다. 같은 메모가 여러 카테고리에 있으면
- *  가장 높은 자리의 하나만 보인다. */
+ *  가장 높은 자리의 하나만 보인다(철자만 다른 것도 같은 메모로 본다). */
 export function suggestMemos(
   stats: MemoStat[],
   opts: { categoryId: string; amount: number; text: string; limit?: number },
@@ -138,8 +172,10 @@ export function suggestMemos(
     );
 
   const out: string[] = [];
+  const seenKeys = new Set<string>();
   for (const { s } of ranked) {
-    if (out.includes(s.memo)) continue;
+    if (seenKeys.has(s.key)) continue;
+    seenKeys.add(s.key);
     out.push(s.memo);
     if (out.length >= limit) break;
   }
