@@ -26,6 +26,19 @@
   padding: 22px;
   box-shadow: 0 18px 50px rgba(12, 16, 30, 0.26);
   animation: popIn 0.34s var(--spring);
+  /* 올라갈 때와 내려올 때. popIn은 transform만 쓰므로 top/margin의 transition과 겹치지 않는다. */
+  transition:
+    top 0.22s cubic-bezier(0.2, 0.8, 0.3, 1),
+    margin-top 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* 메모 칸에 커서가 있는 동안. 키보드가 올라오면 앱 화면 자체가 그만큼 줄어드는데(탭 바가
+   키보드 바로 위에 붙는다), 가운데에 떠 있는 팝업은 그 줄어든 화면의 가운데라 아래 칩
+   줄과 '입력 완료'가 키보드에 걸린다. 위에 붙이면 키보드 위까지 쓸 수 있다. */
+.lifted {
+  top: 12px;
+  margin-top: 0;
+  max-height: calc(100% - 24px);
 }
 
 .closing {
@@ -94,6 +107,44 @@
   font-size: 14px;
   color: var(--tx);
   outline: none;
+}
+
+/* 옆으로 미는 한 줄. 두 줄로 접으면 키보드가 올라온 낮은 화면에서 팝업이 넘친다.
+   끝에 걸쳐 잘린 칩이 "더 있다"는 표시를 대신한다. */
+.suggest {
+  display: flex;
+  gap: 7px;
+  margin-top: 10px;
+  height: 36px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.suggest::-webkit-scrollbar {
+  display: none;
+}
+
+.suggestChip {
+  flex: none;
+  max-width: 13em;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  background: var(--brandSoft);
+  color: var(--brand);
+}
+
+.suggestChip:active {
+  transform: scale(0.95);
 }
 
 .cta {
