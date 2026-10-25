@@ -5,6 +5,8 @@ import { Keypad, applyKey } from '../../components/Keypad';
 import { InstallmentChips } from '../../components/InstallmentChips';
 import { InstallmentSheet } from '../../components/InstallmentSheet';
 import { EntrySheet } from '../../components/EntrySheet';
+import { ForeignPanel } from '../../components/ForeignPanel';
+import { useForeignEntry } from '../../components/useForeignEntry';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
 import { HOME_CATEGORIES_PER_PAGE } from '../../data/categories';
@@ -31,8 +33,6 @@ import { currencyOf } from '../../lib/currency';
 import { compactRow } from '../../lib/rowText';
 import { offsetFromShellCentre, useShell } from '../../shell/ShellContext';
 import { CategoryPopup, type PopupOrigin } from './CategoryPopup';
-import { ForeignPanel } from './ForeignPanel';
-import { useForeignEntry } from './useForeignEntry';
 import styles from './InputScreen.module.css';
 
 /** Where a bare "추가!" press files an entry when nothing was ever confirmed

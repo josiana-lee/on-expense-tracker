@@ -3,6 +3,7 @@ import { Icon } from './Icon';
 import { Keypad, applyKey } from './Keypad';
 import { ClearAmount } from './ClearAmount';
 import { DatePicker } from './DatePicker';
+import { ForeignAmountSheet } from './ForeignAmountSheet';
 import { InstallmentChips } from './InstallmentChips';
 import { Sheet } from './Sheet';
 import { rememberCategoryPayment } from '../db/categories';
@@ -83,6 +84,8 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
      막고 있던 건 이 화면뿐이었다. */
   const [pickedDate, setPickedDate] = useState<DateStr>(record?.date ?? date);
   const [dateOpen, setDateOpen] = useState(false);
+  /** 해외 결제 금액 시트. 새 기록을 추가할 때만 열 수 있다 — 고치는 건 청구서의 원화로 고친다. */
+  const [foreignOpen, setForeignOpen] = useState(false);
 
   /* Defaults are derived, not seeded into state. The catalog and settings
      arrive a frame after mount, and a useState initialiser only ever runs on
@@ -365,6 +368,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   };
 
   return (
+    <>
     <Sheet label={editing ? '기록 수정' : '기록 추가'} onClose={onClose}>
       <div className={styles.head}>
         <div className={styles.titleRow}>
@@ -399,6 +403,16 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
               />
             )}
           </div>
+
+          {/* 여행 다녀와서 지난 날짜에 해외 결제를 몰아 적을 때 쓴다. 이 시트는 이미 700px 화면의
+              87%를 쓰고 있어서 칩과 환율 줄을 여기에 펼치지 않고, 누르면 입력 탭과 같은 해외 결제
+              시트가 위로 열린다. 이 줄은 비어 있어서 높이가 늘지 않는다. 고칠 때는 안 나온다 — 청구서가
+              원화로 와서 원화로 고치는 게 자연스럽다. */}
+          {!editing && (
+            <button type="button" className={styles.foreignChip} onClick={() => setForeignOpen(true)}>
+              해외 결제
+            </button>
+          )}
         </div>
         {editing && (
           <button
@@ -570,5 +584,15 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         {editing ? '수정 완료' : '추가!'}
       </button>
     </Sheet>
+
+    {foreignOpen && (
+      <ForeignAmountSheet
+        amount={amount}
+        fxLookup={settings?.fxLookup}
+        onAmount={setAmount}
+        onClose={() => setForeignOpen(false)}
+      />
+    )}
+    </>
   );
 }

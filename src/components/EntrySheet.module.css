@@ -56,6 +56,25 @@
   padding: 5px 9px;
 }
 
+/* 해외 결제 시트를 여는 작은 필. 날짜 필과 같은 배합이라 같은 줄에서 한 식구로 보인다. */
+.foreignChip {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brandSoft);
+  color: var(--brand);
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.foreignChip:active {
+  transform: scale(0.96);
+}
+
 /* 할부 회차를 고치는 중. 잠긴 이유는 .installNote가 말한다. */
 .dateChipLocked {
   opacity: 0.5;

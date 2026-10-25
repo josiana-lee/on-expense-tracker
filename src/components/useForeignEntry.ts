@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MAX_AMOUNT_DIGITS } from '../../components/Keypad';
-import { getRates, type RatesResult } from '../../db/fxRates';
-import { updateSettings } from '../../db/settings';
-import type { CurrencyCode } from '../../lib/currency';
+import { MAX_AMOUNT_DIGITS } from './Keypad';
+import { getRates, type RatesResult } from '../db/fxRates';
+import { updateSettings } from '../db/settings';
+import type { CurrencyCode } from '../lib/currency';
 import {
   amountFor,
   effectiveKrwPer,
@@ -10,8 +10,8 @@ import {
   stepEntry,
   type EntryAction,
   type ForeignEntry,
-} from '../../lib/foreignEntry';
-import { isFresh } from '../../lib/fxRates';
+} from '../lib/foreignEntry';
+import { isFresh } from '../lib/fxRates';
 
 /** 환율 줄이 어떤 모습인가.
  *  - `krw`: 원화를 고른 평소 상태. 줄이 없다.

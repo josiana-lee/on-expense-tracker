@@ -1,11 +1,14 @@
-import { CURRENCIES, currencyOf, formatForeign, rateLine } from '../../lib/currency';
-import type { ForeignEntry } from '../../lib/foreignEntry';
-import { describeAge, type FxRates } from '../../lib/fxRates';
-import { won } from '../../lib/format';
+import { CURRENCIES, currencyOf, formatForeign, rateLine } from '../lib/currency';
+import type { ForeignEntry } from '../lib/foreignEntry';
+import { describeAge, type FxRates } from '../lib/fxRates';
+import { won } from '../lib/format';
 import type { RateStatus } from './useForeignEntry';
 import styles from './ForeignPanel.module.css';
 
 type Props = {
+  /** 해외 결제 전용 시트 안에서 쓰는 모양: 처음부터 칩 줄이 펼쳐져 있고, "원" 칩이 없다(이미 외화를
+   *  치려고 연 시트라서 원화로 돌아갈 이유가 없다). 통화를 고르기 전에는 고르라는 말만 보인다. */
+  standalone?: boolean;
   /** 통화 칩 줄이 펼쳐졌는가. 아니면 "해외 결제 금액 입력" 버튼 하나만 보인다. */
   expanded: boolean;
   onExpand: () => void;
@@ -29,6 +32,7 @@ type Props = {
  *  칩은 한 줄로 옆으로 밀어 본다 — 두 줄로 접으면 키패드가 밀려나고, 이 시트에서 제일 중요한 건
  *  여전히 숫자판이다. 맨 앞 "원"이 기본이고 외화를 고르면 그 아래에 환율 줄이 나온다. */
 export function ForeignPanel({
+  standalone = false,
   expanded,
   onExpand,
   entry,
@@ -46,7 +50,7 @@ export function ForeignPanel({
 
   /* 평소 모습: 버튼 하나. 외화를 쓰는 날은 드물어서 칩 아홉 개가 늘 보이면 이 시트가 "원화 숫자판"이
      아니라 "환전소"처럼 보인다. 눌러야 칩이 나오고, 칩 줄의 "원"이 다시 접는 길이다. */
-  if (!expanded) {
+  if (!expanded && !standalone) {
     return (
       <div className={styles.panel}>
         <button type="button" className={styles.expand} onClick={onExpand}>
@@ -59,14 +63,16 @@ export function ForeignPanel({
   return (
     <div className={styles.panel}>
       <div className={styles.chips} role="group" aria-label="통화">
-        <button
-          type="button"
-          className={`${styles.chip} ${entry.code === null ? styles.chipOn : ''}`}
-          aria-pressed={entry.code === null}
-          onClick={() => onPick(null)}
-        >
-          원
-        </button>
+        {!standalone && (
+          <button
+            type="button"
+            className={`${styles.chip} ${entry.code === null ? styles.chipOn : ''}`}
+            aria-pressed={entry.code === null}
+            onClick={() => onPick(null)}
+          >
+            원
+          </button>
+        )}
         {CURRENCIES.map((c) => (
           <button
             key={c.code}
@@ -80,6 +86,12 @@ export function ForeignPanel({
           </button>
         ))}
       </div>
+
+      {standalone && !cur && (
+        <div className={styles.line}>
+          <span className={styles.krw}>통화를 골라 주세요</span>
+        </div>
+      )}
 
       {cur && status !== 'ask' && (
         <div className={styles.line}>
