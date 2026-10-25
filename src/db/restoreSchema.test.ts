@@ -68,3 +68,31 @@ describe('restoreSchema mirrors types.ts', () => {
     expect(parsed).toHaveProperty('columnAddedLater', 'keep me');
   });
 });
+
+describe('settings.fxLookup (환율 자동 조회 허용)', () => {
+  const base = {
+    id: 'app',
+    monthStartDay: 1,
+    weekStartDay: 0,
+    baseCurrency: 'KRW',
+    reminderEnabled: false,
+    themeMode: 'system',
+    budgetAlertThresholds: [0.8, 1],
+    updatedAt: 1,
+  };
+
+  /* 이 필드가 생기기 전의 백업. 없으면 "아직 안 물어봤다"이고 복원이 이 행을 버리면 안 된다 —
+     설정 행이 버려지면 월 시작일·테마까지 기본값으로 돌아간다. */
+  it('이 필드가 없는 옛 백업의 설정 행도 읽힌다', () => {
+    expect(TABLE_SCHEMAS.settings.safeParse(base).success).toBe(true);
+  });
+
+  it('true와 false를 그대로 읽는다', () => {
+    expect(TABLE_SCHEMAS.settings.parse({ ...base, fxLookup: true }).fxLookup).toBe(true);
+    expect(TABLE_SCHEMAS.settings.parse({ ...base, fxLookup: false }).fxLookup).toBe(false);
+  });
+
+  it('참거짓이 아닌 값은 거절한다', () => {
+    expect(TABLE_SCHEMAS.settings.safeParse({ ...base, fxLookup: 'yes' }).success).toBe(false);
+  });
+});

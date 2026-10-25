@@ -214,6 +214,11 @@ export interface SettingsRecord {
    *  밝은 모드와 어두운 모드가 각각 있다. 이 기능이 생기기 전에 만들어진
    *  설정 행에는 없으므로 optional이고, 읽는 쪽에서 기본값을 준다. */
   colorTheme?: ColorTheme;
+  /** 외화 환산에 쓸 환율을 인터넷에서 받아도 되는가. **없으면 아직 안 물어본 것**이고(처음 외화
+   *  칩을 누를 때 묻는다), true는 허용, false는 직접 입력만 쓴다. 이 앱이 인터넷에 접속하는
+   *  유일한 자리라서 사용자가 정하게 한다 — db/fxRates.ts 참고. 이 기능이 생기기 전의 설정
+   *  행에는 없으므로 optional이다. */
+  fxLookup?: boolean;
   budgetAlertThresholds: number[];
   updatedAt: Epoch;
 }
