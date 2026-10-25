@@ -67,6 +67,12 @@ export type RatesResult = {
 
 let inflight: Promise<RatesResult> | null = null;
 
+/** 접속이 실패하면 이만큼은 다시 접속하지 않는다. 서버가 막아 둔 때(429)나 인터넷이 안 될 때 칩을 누를
+ *  때마다 다시 두드리면, 막힌 주소를 더 오래 막히게 만들 뿐이다. 그동안은 저장해 둔 환율이나 직접
+ *  입력으로 이어진다. */
+const RETRY_AFTER_FAIL_MS = 60_000;
+let lastFailAt = -Infinity;
+
 /** 쓸 환율을 정한다.
  *
  *  1. 하루 안에 받아 둔 게 있으면 그걸 쓴다(접속하지 않는다).
@@ -82,17 +88,24 @@ export function getRates(
   const cached = loadCachedRates();
   if (cached && isFresh(cached, nowMs)) return Promise.resolve({ rates: cached, failed: false });
   if (!opts.allowFetch) return Promise.resolve({ rates: cached, failed: false });
+  if (nowMs >= lastFailAt && nowMs - lastFailAt < RETRY_AFTER_FAIL_MS) {
+    return Promise.resolve({ rates: cached, failed: true });
+  }
 
   inflight ??= fetchRates(fetchFn, nowMs)
     .then((rates): RatesResult => ({ rates, failed: false }))
-    .catch((): RatesResult => ({ rates: cached, failed: true }))
+    .catch((): RatesResult => {
+      lastFailAt = nowMs;
+      return { rates: cached, failed: true };
+    })
     .finally(() => {
       inflight = null;
     });
   return inflight;
 }
 
-/** 테스트용: 진행 중인 요청 기억을 지운다. */
-export function resetRatesInflightForTest(): void {
+/** 테스트용: 진행 중인 요청과 실패 기억을 지운다. */
+export function resetRatesStateForTest(): void {
   inflight = null;
+  lastFailAt = -Infinity;
 }

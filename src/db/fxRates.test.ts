@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FX_TTL_MS } from '../lib/fxRates';
-import { fetchRates, getRates, loadCachedRates, resetRatesInflightForTest } from './fxRates';
+import { fetchRates, getRates, loadCachedRates, resetRatesStateForTest } from './fxRates';
 
 const BODY = {
   result: 'success',
@@ -29,7 +29,7 @@ const ok = () => Promise.resolve(new Response(JSON.stringify(BODY), { status: 20
 
 beforeEach(() => {
   localStorage.clear();
-  resetRatesInflightForTest();
+  resetRatesStateForTest();
 });
 
 describe('fetchRates', () => {
@@ -138,13 +138,33 @@ describe('getRates', () => {
     expect(b.rates).toEqual(c.rates);
   });
 
-  it('실패한 뒤에는 다시 시도할 수 있다', async () => {
+  it('실패하고 1분이 지나면 다시 시도할 수 있다', async () => {
     const down = fakeFetch(() => Promise.reject(new TypeError('Failed to fetch')));
     await getRates({ allowFetch: true }, down, NOW);
     const f = fakeFetch(ok);
-    const res = await getRates({ allowFetch: true }, f, NOW + 1000);
+    const res = await getRates({ allowFetch: true }, f, NOW + 61_000);
     expect(f).toHaveBeenCalledTimes(1);
     expect(res.failed).toBe(false);
+  });
+
+  /* 서버가 429로 막았거나 인터넷이 안 될 때 칩을 누를 때마다 다시 두드리면 막힌 주소를 더 오래
+     막히게 만든다. */
+  it('실패한 직후에는 다시 접속하지 않는다', async () => {
+    const down = fakeFetch(() => Promise.reject(new TypeError('Failed to fetch')));
+    await getRates({ allowFetch: true }, down, NOW);
+    const f = fakeFetch(ok);
+    const res = await getRates({ allowFetch: true }, f, NOW + 5_000);
+    expect(f).not.toHaveBeenCalled();
+    expect(res).toEqual({ rates: null, failed: true });
+  });
+
+  it('쉬는 동안에도 저장해 둔 환율은 돌려준다', async () => {
+    await getRates({ allowFetch: true }, fakeFetch(ok), NOW);
+    const down = fakeFetch(() => Promise.reject(new TypeError('Failed to fetch')));
+    await getRates({ allowFetch: true }, down, NOW + 2 * FX_TTL_MS);
+    const res = await getRates({ allowFetch: true }, fakeFetch(ok), NOW + 2 * FX_TTL_MS + 5_000);
+    expect(res.failed).toBe(true);
+    expect(res.rates).not.toBeNull();
   });
 });
 
