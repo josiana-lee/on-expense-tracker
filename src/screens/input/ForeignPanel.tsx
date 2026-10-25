@@ -6,7 +6,7 @@ import type { RateStatus } from './useForeignEntry';
 import styles from './ForeignPanel.module.css';
 
 type Props = {
-  /** 통화 칩 줄이 펼쳐졌는가. 아니면 "다른 나라 금액으로 입력하기" 버튼 하나만 보인다. */
+  /** 통화 칩 줄이 펼쳐졌는가. 아니면 "해외 결제 금액 입력" 버튼 하나만 보인다. */
   expanded: boolean;
   onExpand: () => void;
   entry: ForeignEntry;
@@ -50,7 +50,7 @@ export function ForeignPanel({
     return (
       <div className={styles.panel}>
         <button type="button" className={styles.expand} onClick={onExpand}>
-          다른 나라 금액으로 입력하기
+          해외 결제 금액 입력
         </button>
       </div>
     );

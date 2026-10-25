@@ -41,7 +41,7 @@ export function useForeignEntry({ open, fxLookup, onAmount }: Params) {
   const entryRef = useRef(entry);
   const [rates, setRates] = useState<RatesResult | null>(null);
   const [loading, setLoading] = useState(false);
-  /** 통화 칩 줄을 펼쳤는가. 평소에는 "다른 나라 금액으로 입력하기" 버튼 하나만 보이고, 그걸 눌러야
+  /** 통화 칩 줄을 펼쳤는가. 평소에는 "해외 결제 금액 입력" 버튼 하나만 보이고, 그걸 눌러야
    *  `원 · 달러 · …` 칩이 나온다 — 외화를 쓰는 일은 드물어서 시트의 기본 모습을 차지하면 안 된다. */
   const [expanded, setExpanded] = useState(false);
 
