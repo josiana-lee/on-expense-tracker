@@ -6,6 +6,9 @@ import type { RateStatus } from './useForeignEntry';
 import styles from './ForeignPanel.module.css';
 
 type Props = {
+  /** 통화 칩 줄이 펼쳐졌는가. 아니면 "다른 나라 금액으로 입력하기" 버튼 하나만 보인다. */
+  expanded: boolean;
+  onExpand: () => void;
   entry: ForeignEntry;
   status: RateStatus;
   /** 지금 쓰는 환율(1단위가 몇 원인가). */
@@ -26,6 +29,8 @@ type Props = {
  *  칩은 한 줄로 옆으로 밀어 본다 — 두 줄로 접으면 키패드가 밀려나고, 이 시트에서 제일 중요한 건
  *  여전히 숫자판이다. 맨 앞 "원"이 기본이고 외화를 고르면 그 아래에 환율 줄이 나온다. */
 export function ForeignPanel({
+  expanded,
+  onExpand,
   entry,
   status,
   krwPer,
@@ -38,6 +43,18 @@ export function ForeignPanel({
   onDeny,
 }: Props) {
   const cur = entry.code ? currencyOf(entry.code) : null;
+
+  /* 평소 모습: 버튼 하나. 외화를 쓰는 날은 드물어서 칩 아홉 개가 늘 보이면 이 시트가 "원화 숫자판"이
+     아니라 "환전소"처럼 보인다. 눌러야 칩이 나오고, 칩 줄의 "원"이 다시 접는 길이다. */
+  if (!expanded) {
+    return (
+      <div className={styles.panel}>
+        <button type="button" className={styles.expand} onClick={onExpand}>
+          다른 나라 금액으로 입력하기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.panel}>

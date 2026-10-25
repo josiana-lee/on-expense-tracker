@@ -540,6 +540,8 @@ export function InputScreen() {
           </div>
 
           <ForeignPanel
+            expanded={fx.expanded}
+            onExpand={fx.expand}
             entry={fx.entry}
             status={fx.status}
             krwPer={fx.krwPer}

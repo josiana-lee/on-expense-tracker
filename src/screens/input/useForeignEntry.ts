@@ -41,6 +41,9 @@ export function useForeignEntry({ open, fxLookup, onAmount }: Params) {
   const entryRef = useRef(entry);
   const [rates, setRates] = useState<RatesResult | null>(null);
   const [loading, setLoading] = useState(false);
+  /** 통화 칩 줄을 펼쳤는가. 평소에는 "다른 나라 금액으로 입력하기" 버튼 하나만 보이고, 그걸 눌러야
+   *  `원 · 달러 · …` 칩이 나온다 — 외화를 쓰는 일은 드물어서 시트의 기본 모습을 차지하면 안 된다. */
+  const [expanded, setExpanded] = useState(false);
 
   const setEntry = (next: ForeignEntry) => {
     entryRef.current = next;
@@ -66,9 +69,12 @@ export function useForeignEntry({ open, fxLookup, onAmount }: Params) {
     if (r.amount !== undefined) onAmountRef.current(r.amount);
   }, []);
 
-  // 시트를 닫으면 원화로 돌아간다. 바깥 금액은 이미 환산된 값으로 들어가 있다.
+  // 시트를 닫으면 원화로 돌아가고 칩 줄도 접는다. 바깥 금액은 이미 환산된 값으로 들어가 있다.
   useEffect(() => {
-    if (!open) setEntry(INITIAL_ENTRY);
+    if (!open) {
+      setEntry(INITIAL_ENTRY);
+      setExpanded(false);
+    }
   }, [open]);
 
   // 외화 칩을 고르면 환율을 정한다. 허락이 있을 때만 접속하고, 아니면 저장해 둔 것만 본다.
@@ -119,7 +125,14 @@ export function useForeignEntry({ open, fxLookup, onAmount }: Params) {
     /** 환율 서비스에 접속하려다 실패했다. */
     failed: rates?.failed ?? false,
     active: code !== null,
-    pickCurrency: (c: CurrencyCode | null) => act({ type: 'currency', code: c }),
+    /** 칩 줄이 펼쳐져 있다. 외화를 고른 동안은 늘 펼쳐져 있다. */
+    expanded: expanded || code !== null,
+    expand: () => setExpanded(true),
+    pickCurrency: (c: CurrencyCode | null) => {
+      // "원"을 누르면 평소로 돌아온다 — 칩 줄도 접는다.
+      if (c === null) setExpanded(false);
+      act({ type: 'currency', code: c });
+    },
     press: (key: string) => act({ type: 'key', key }),
     clear: () => act({ type: 'clear' }),
     editRate: () => act({ type: 'editRate' }),
