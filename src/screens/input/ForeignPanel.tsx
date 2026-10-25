@@ -76,7 +76,7 @@ export function ForeignPanel({
             aria-label={`${c.name} ${c.code}`}
             onClick={() => onPick(c.code)}
           >
-            {c.name}
+            {c.code}
           </button>
         ))}
       </div>
@@ -85,10 +85,10 @@ export function ForeignPanel({
         <div className={styles.line}>
           <span className={`${styles.krw} tabular`}>
             {entry.text === ''
-              ? `${cur.name} 금액을 쳐 주세요`
+              ? `${cur.code} 금액을 쳐 주세요`
               : krwPer === null
-                ? `${formatForeign(entry.text)}${cur.name}` // 환율을 모르면 원화를 말하지 않는다("≈ 0원"은 거짓이다)
-                : `${formatForeign(entry.text)}${cur.name} ≈ ${won(amount || '0')}원`}
+                ? `${formatForeign(entry.text)} ${cur.code}` // 환율을 모르면 원화를 말하지 않는다("≈ 0원"은 거짓이다)
+                : `${formatForeign(entry.text)} ${cur.code} ≈ ${won(amount || '0')}원`}
           </span>
         </div>
       )}
@@ -135,8 +135,7 @@ export function ForeignPanel({
       {cur && status === 'editing' && (
         <div className={styles.rate}>
           <span className={`${styles.rateEdit} tabular`}>
-            {cur.quoteUnit}
-            {cur.name} = <b>{formatForeign(entry.rateText ?? '')}</b>원
+            {cur.quoteUnit} {cur.code} = <b>{formatForeign(entry.rateText ?? '')}</b>원
           </span>
           <button type="button" className={styles.fix} onClick={onDoneRate}>
             완료

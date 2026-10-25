@@ -7,7 +7,8 @@ export type CurrencyCode = 'USD' | 'EUR' | 'JPY' | 'CNY' | 'VND' | 'THB' | 'GBP'
 
 export type Currency = {
   code: CurrencyCode;
-  /** 칩에 적는 이름. 한글로 말하는 쪽이 이 앱의 말투다("달러", "엔"). */
+  /** 한글 이름. 화면에는 통화 코드("USD")를 쓰고, 이 이름은 스크린 리더가 읽는 이름("달러 USD")에만 쓴다.
+   *  "달러"는 미국 달러·대만달러·홍콩달러가 다 그렇게 불려서 칩만 보고는 어느 나라인지 알 수 없다. */
   name: string;
   /** 소수 몇 자리까지 치는가. ISO 4217의 보조 단위 자릿수를 따른다 — 엔과 동은 0,
    *  나머지는 2. 카드 명세에 "12.50"처럼 찍히는 통화에 소수점이 없으면 안 된다. */
@@ -95,10 +96,10 @@ function pretty(n: number, digits: number): string {
   return tail ? `${head}.${tail}` : head;
 }
 
-/** 환율을 한 줄로: "1유로 = 1,484.2원", "100엔 = 844.7원". 기준 단위는 통화마다 다르다.
+/** 환율을 한 줄로: "1 EUR = 1,484.2원", "100 JPY = 844.7원". 기준 단위는 통화마다 다르다.
  *  `krwPerUnit`은 1단위가 몇 원인가. */
 export function rateLine(code: CurrencyCode, krwPerUnit: number): string {
-  const { name, quoteUnit } = currencyOf(code);
+  const { quoteUnit } = currencyOf(code);
   const won = krwPerUnit * quoteUnit;
-  return `${quoteUnit}${name} = ${pretty(won, won >= 100 ? 1 : 2)}원`;
+  return `${quoteUnit} ${code} = ${pretty(won, won >= 100 ? 1 : 2)}원`;
 }

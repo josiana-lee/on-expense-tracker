@@ -140,19 +140,19 @@ describe('formatForeign', () => {
 
 describe('rateLine', () => {
   it('1단위로 말하는 통화', () => {
-    expect(rateLine('EUR', 1484.18)).toBe('1유로 = 1,484.2원');
-    expect(rateLine('USD', 1324.82)).toBe('1달러 = 1,324.8원');
+    expect(rateLine('EUR', 1484.18)).toBe('1 EUR = 1,484.2원');
+    expect(rateLine('USD', 1324.82)).toBe('1 USD = 1,324.8원');
   });
 
   it('엔·동은 100단위로 말한다', () => {
-    expect(rateLine('JPY', 8.4468)).toBe('100엔 = 844.7원');
-    expect(rateLine('VND', 0.0513)).toBe('100동 = 5.13원');
+    expect(rateLine('JPY', 8.4468)).toBe('100 JPY = 844.7원');
+    expect(rateLine('VND', 0.0513)).toBe('100 VND = 5.13원');
   });
 
   /* 소수 부분에 쉼표가 들어가면("0.0,513") 읽을 수 없다. */
   it('소수 부분에는 쉼표가 들어가지 않는다', () => {
     expect(rateLine('VND', 0.00001)).not.toMatch(/\.\d*,/);
-    expect(rateLine('TWD', 40.66)).toBe('1대만달러 = 40.66원');
+    expect(rateLine('TWD', 40.66)).toBe('1 TWD = 40.66원');
   });
 
   it('통화 정보를 찾을 수 있다', () => {
