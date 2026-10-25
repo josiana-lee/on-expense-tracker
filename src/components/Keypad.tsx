@@ -2,22 +2,27 @@ import styles from './Keypad.module.css';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'del'] as const;
 
-export type KeypadKey = (typeof KEYS)[number];
+/** 점('.')은 외화 입력에서만 나온다 — `dot`을 켠 키패드가 `00` 자리에 내놓는다. */
+export type KeypadKey = (typeof KEYS)[number] | '.';
 
 type Props = {
   onPress: (key: KeypadKey) => void;
   compact?: boolean;
+  /** `00` 자리를 소수점으로 바꾼다. 소수가 있는 외화를 칠 때만 켠다 — 원화에는 소수점이
+   *  없으니 다른 곳의 키패드는 그대로다. */
+  dot?: boolean;
 };
 
-export function Keypad({ onPress, compact }: Props) {
+export function Keypad({ onPress, compact, dot }: Props) {
+  const keys: readonly KeypadKey[] = dot ? KEYS.map((k) => (k === '00' ? '.' : k)) : KEYS;
   return (
     <div className={`${styles.grid} ${compact ? styles.compactGrid : ''}`}>
-      {KEYS.map((k) => (
+      {keys.map((k) => (
         <button
           key={k}
           type="button"
           onClick={() => onPress(k)}
-          aria-label={k === 'del' ? '지우기' : k}
+          aria-label={k === 'del' ? '지우기' : k === '.' ? '소수점' : k}
           className={[styles.key, compact ? styles.compact : '', k === 'del' ? styles.muted : '']
             .filter(Boolean)
             .join(' ')}
@@ -51,6 +56,7 @@ export const MAX_AMOUNT_DIGITS = 11;
  *  where clearing happens, so the next person adds a key for it and the screen
  *  ends up with two paths that clear. */
 export function applyKey(amount: string, key: KeypadKey): string {
+  if (key === '.') return amount; // 원화에는 소수점이 없다. 눌릴 일도 없지만 받아서 무시한다.
   if (key === 'del') return amount.slice(0, -1);
   const next = (amount + key).replace(/^0+/, '');
   return next.length > MAX_AMOUNT_DIGITS ? amount : next;

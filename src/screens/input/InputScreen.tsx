@@ -27,9 +27,12 @@ import { useNow } from '../../hooks/useNow';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { amountSize, dateText, timeText, won } from '../../lib/format';
+import { currencyOf } from '../../lib/currency';
 import { compactRow } from '../../lib/rowText';
 import { offsetFromShellCentre, useShell } from '../../shell/ShellContext';
 import { CategoryPopup, type PopupOrigin } from './CategoryPopup';
+import { ForeignPanel } from './ForeignPanel';
+import { useForeignEntry } from './useForeignEntry';
 import styles from './InputScreen.module.css';
 
 /** Where a bare "추가!" press files an entry when nothing was ever confirmed
@@ -55,6 +58,13 @@ export function InputScreen() {
   /** 1이면 일시불. 그 위는 할부 개월 수. */
   const [months, setMonths] = useState(1);
   const [keypadOpen, setKeypadOpen] = useState(false);
+  /* 외화로 치면 환산한 원화가 곧바로 `amount`에 들어간다 — 외화는 기록에 남지 않고, 원화 금액을
+     만들어 내는 입력 도구다. 시트가 닫히면 원화로 돌아간다. */
+  const fx = useForeignEntry({
+    open: keypadOpen,
+    fxLookup: settings?.fxLookup,
+    onAmount: setAmount,
+  });
   const [installOpen, setInstallOpen] = useState(false);
   /** 오늘 기록에서 탭한 줄. 그 자리에서 고칠 수 있어야 한다 — 방금 잘못 넣은
    *  걸 고치려고 달력까지 건너가는 건 되돌리기가 아니라 수색이다. */
@@ -526,13 +536,27 @@ export function InputScreen() {
             <span className={`${styles.keypadValue} tabular`} data-size={amountSize(amount)}>
               {won(amount || '0')}원
             </span>
-            {amount && <ClearAmount onClear={() => setAmount('')} />}
+            {amount && <ClearAmount onClear={() => (fx.active ? fx.clear() : setAmount(''))} />}
           </div>
+
+          <ForeignPanel
+            entry={fx.entry}
+            status={fx.status}
+            krwPer={fx.krwPer}
+            fetched={fx.fetched}
+            amount={amount}
+            onPick={fx.pickCurrency}
+            onEditRate={fx.editRate}
+            onDoneRate={fx.doneRate}
+            onAllow={fx.allow}
+            onDeny={fx.deny}
+          />
 
           {/* 저장해둔 지출. 결제수단 칩과 같이 가로로 흐르게 두는 건 열 개가
               차도 키패드를 밀어내지 않게 하려는 것 — 이 시트에서 제일 중요한
               건 여전히 숫자판이다. */}
-          {templates.length > 0 && (
+          {/* 외화를 치는 동안은 숨긴다 — 눌러도 원화 금액으로 덮어쓸 뿐이고, 그만큼 시트가 낮아진다. */}
+          {templates.length > 0 && !fx.active && (
             <div className={styles.templates}>
               {templates.map((t) => {
                 const cat = byId.get(t.categoryId);
@@ -555,7 +579,11 @@ export function InputScreen() {
             </div>
           )}
 
-          <Keypad onPress={(k) => setAmount((a) => applyKey(a, k))} />
+          <Keypad
+            /* 소수점은 소수가 있는 외화를 치거나 환율을 고칠 때만 나온다. */
+            dot={fx.entry.editing === 'rate' || (fx.entry.code !== null && currencyOf(fx.entry.code).decimals > 0)}
+            onPress={(k) => (fx.active ? fx.press(k) : setAmount((a) => applyKey(a, k)))}
+          />
           <button type="button" className={styles.done} onClick={() => setKeypadOpen(false)}>
             완료
           </button>
