@@ -256,6 +256,25 @@ export function SettingsScreen({ onManageCards }: Props) {
           </span>
         </button>
 
+        {/* 이 앱이 인터넷에 접속하는 유일한 자리라서 스위치를 따로 둔다. 처음 외화 칩을 누를 때 묻는
+            (`fxLookup`이 없을 때) 그 답을 여기서 언제든 바꾼다. 꺼 두면 접속하지 않고 환율을 직접
+            입력한다. */}
+        <div className={styles.row} style={{ cursor: 'default' }}>
+          <div className={styles.rowLabel}>
+            환율 자동 조회
+            <span className={styles.rowSub}>외화를 입력할 때 오늘 환율을 받아와요</span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings?.fxLookup === true}
+            onClick={() => updateSettings({ fxLookup: settings?.fxLookup !== true })}
+            className={`${styles.switch} ${settings?.fxLookup === true ? styles.switchOn : ''}`}
+          >
+            <span className={styles.knob} />
+          </button>
+        </div>
+
         {/* "알람"이 아니라 "알림". 하는 일은 정한 시각에 알림창에 메시지를
             띄우는 것이고, 소리로 깨우는 게 아니다. 알람이라고 부르면 시계
             알람을 기대하게 되는데, 켜 보고 기대와 다르면 그냥 끈다.
