@@ -75,10 +75,11 @@
   transform: scale(0.96);
 }
 
-/* 해외 결제 입력 화면이 열려 있는 동안. 같은 칩을 다시 누르면 돌아간다. */
-.foreignChipOn {
-  background: var(--brand);
-  color: #fff;
+/* 해외 결제 입력 화면이 열려 있는 동안: 같은 자리의 칩이 "되돌아가기"가 된다. 들어가는 칩(연보라)과
+   다르게 보여야 해서 차분한 바탕으로 둔다 — 눌러서 나가는 길이지 켜진 상태 표시가 아니다. */
+.foreignChipBack {
+  background: var(--sf2);
+  color: var(--tx);
 }
 
 /* 할부 회차를 고치는 중. 잠긴 이유는 .installNote가 말한다. */
