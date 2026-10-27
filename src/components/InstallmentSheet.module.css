@@ -20,6 +20,10 @@
   letter-spacing: -0.5px;
 }
 
+.valueEmpty {
+  color: var(--tx2);
+}
+
 .note {
   margin: -4px 12px 10px;
   /* 문구가 없을 때도 한 줄만큼 자리를 잡는다. 접히면 금액을 넣는 순간

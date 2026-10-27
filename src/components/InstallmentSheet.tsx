@@ -44,7 +44,13 @@ export function InstallmentSheet({ months, amount, onDone, onClose, onDraft }: P
     <Sheet label="할부 개월 수" onClose={onClose}>
       <div className={styles.head}>
         <span className={styles.label}>할부 개월 수</span>
-        <span className={`${styles.value} tabular`}>{text || '0'}개월</span>
+        {/* 비어 있을 때의 말이 위에 남은 카드 칩("몇 개월")과 같아야 한다 — 칩은 "몇 개월", 시트는
+            "0개월"이면 같은 빈 상태를 두 가지로 말한다. 옅게 두어 값이 아니라 자리표시임을 보인다. */}
+        {text ? (
+          <span className={`${styles.value} tabular`}>{text}개월</span>
+        ) : (
+          <span className={`${styles.value} ${styles.valueEmpty}`}>몇 개월</span>
+        )}
         {text && <ClearAmount onClear={() => setText('')} />}
       </div>
 
