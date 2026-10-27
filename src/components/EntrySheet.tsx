@@ -100,12 +100,17 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
   const categoryId = pickedCategory ?? homeCategories[0]?.id ?? 'etc';
   const category = byId.get(categoryId);
 
-  /* 이 카테고리로 마지막에 낸 결제수단이 있고 아직 고를 수 있는 목록에 있으면
-     그걸 기본값으로 쓴다. 기존 기록을 고칠 때는 적용되지 않는다 —
+  /* 사용자가 카테고리를 직접 고른 뒤에는, 그 카테고리로 마지막에 낸 결제수단이 있고 아직 고를 수 있는
+     목록에 있으면 그걸 기본값으로 쓴다. 기존 기록을 고칠 때는 적용되지 않는다 —
      pickedPayment가 record.paymentMethodId로 이미 채워져 있어서 이 자리까지
      오지 않는다. 카드를 지워도 lastPaymentMethodId는 남을 수 있어서
-     (archivePaymentMethod가 정리하지 않는다) 목록에 있는지부터 확인한다. */
-  const rememberedPaymentId = category?.lastPaymentMethodId;
+     (archivePaymentMethod가 정리하지 않는다) 목록에 있는지부터 확인한다.
+
+     시트를 막 열었을 때는 쓰지 않는다. 그때의 카테고리는 사용자가 고른 게 아니라 맨 앞에 있어서
+     미리 잡힌 것뿐인데, 그 카테고리를 마지막에 카드로 냈다는 이유로 시트가 카드 칩에 가 있으면
+     "현금으로 쓴 하루치를 적으러 왔는데 카드부터 풀어야 하는" 시트가 된다. 입력 탭도 카테고리를 고르기
+     전에는 기본 결제수단(현금)에 있다. */
+  const rememberedPaymentId = pickedCategory !== null ? category?.lastPaymentMethodId : undefined;
   const rememberedPayment =
     rememberedPaymentId && payments.some((p) => p.id === rememberedPaymentId)
       ? rememberedPaymentId
