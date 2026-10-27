@@ -1,4 +1,4 @@
-/* Preset expense categories — 30 items, ported from the design prototype.
+/* Preset expense categories — 31 items, ported from the design prototype.
    `icon` is an SVG path drawn on a 24x24 viewBox with a 1.7 stroke.
    `id` is a stable slug so user edits and records survive preset reordering. */
 
@@ -8,6 +8,9 @@ export type Category = {
   color: string;
   icon: string;
   subs: string[];
+  /** 정렬 값을 직접 정한다. 없으면 배열 순서대로 10씩. 나중에 끼워 넣은 프리셋이 배열 끝에 있으면서도
+   *  화면에서는 어울리는 자리에 서게 하려고 둔다 — 기존 기기의 다른 프리셋 값은 바뀌지 않는다. */
+  order?: number;
 };
 
 export const CATEGORIES: Category[] = [
@@ -221,6 +224,53 @@ export const CATEGORIES: Category[] = [
     icon: 'M6.2 12h.01M12 12h.01M17.8 12h.01',
     subs: ['기타', '수수료', '세금'],
   },
+  {
+    /* 매달 나가는 구독(OTT·AI·음악·클라우드). 문화생활의 '구독', 통신비의 'OTT'는 기존 기록이 그 이름으로
+       남아 있어서 그대로 둔다. 정렬은 경조사(110)와 카페(120) 사이 — 기본 홈 화면에서 카페 자리를 잇는다. */
+    id: 'subscription',
+    name: '구독',
+    color: '#D4BFF5',
+    icon: 'M16.5 3.5L20 7l-3.5 3.5M20 7H8a4 4 0 0 0-4 4M7.5 20.5L4 17l3.5-3.5M4 17h12a4 4 0 0 0 4-4',
+    subs: ['OTT', 'AI', '음악', '클라우드'],
+    order: 115,
+  },
+];
+
+/** 카테고리를 만들거나 고칠 때 고르는 아이콘 + 색. 프리셋 30여 개가 그대로 들어가고, 아래는 프리셋이 아니라
+ *  고르기만 하는 것들이다 — 구독처럼 직접 만들 카테고리를 위한 모양. */
+export type Swatch = Pick<Category, 'id' | 'name' | 'color' | 'icon'>;
+
+export const EXTRA_SWATCHES: Swatch[] = [
+  {
+    id: 'x-play',
+    name: '재생',
+    color: '#F7B9B9',
+    icon: 'M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 14.5zM10 8.5l5 3-5 3zM8 20.5h8',
+  },
+  {
+    id: 'x-music',
+    name: '음악',
+    color: '#F5C6E4',
+    icon: 'M9 17.5V5.5l10-2v12M9 17.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0zM19 15.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z',
+  },
+  {
+    id: 'x-cloud',
+    name: '구름',
+    color: '#B8DDF5',
+    icon: 'M7.5 19a4.5 4.5 0 0 1-.4-8.98 5.5 5.5 0 0 1 10.6 1.3A3.9 3.9 0 0 1 17 19z',
+  },
+  {
+    id: 'x-spark',
+    name: '반짝',
+    color: '#E4CFFA',
+    icon: 'M11 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7zM19 16c.2 1.5.8 2.1 2.3 2.3-1.5.2-2.1.8-2.3 2.3-.2-1.5-.8-2.1-2.3-2.3 1.5-.2 2.1-.8 2.3-2.3z',
+  },
+  {
+    id: 'x-game',
+    name: '게임',
+    color: '#B5E2C4',
+    icon: 'M7 7.5h10a4.5 4.5 0 0 1 4.4 5.4l-.7 3.4a2.4 2.4 0 0 1-4.1 1.2L14.5 15.5h-5l-2.1 2a2.4 2.4 0 0 1-4.1-1.2l-.7-3.4A4.5 4.5 0 0 1 7 7.5zM8 10.5v3M6.5 12h3M15.5 11.2h.01M17.8 13h.01',
+  },
 ];
 
 /** One page of the input screen's category grid: 4 columns x 2 rows. Visible
@@ -236,7 +286,11 @@ export const HOME_CATEGORIES_PER_PAGE = 8;
 
 /** Shown on the input screen out of the box — two full pages. Twelve left the
  *  second page half empty, which reads as something missing rather than as a
- *  page. */
+ *  page.
+ *
+ *  구독이 카페 자리를 이었다 — 쓰던 기록에서 카페는 한 자릿수였고(식비·간식에도 '카페' 세부항목이 있다)
+ *  구독은 매달 나가는 돈이다. 새로 설치한 기기에만 해당하고, 쓰던 기기의 홈 화면은 reconcileCategories가
+ *  건드리지 않는다. */
 export const DEFAULT_VISIBLE: string[] = [
   'food',
   'snack',
@@ -249,7 +303,7 @@ export const DEFAULT_VISIBLE: string[] = [
   'education',
   'telecom',
   'event',
-  'cafe',
+  'subscription',
   'alcohol',
   'housing',
   'utility',
@@ -281,7 +335,7 @@ export const DEFAULT_VISIBLE_V1: string[] = [
    pass runs — this is separate from the Dexie schema version, which only
    moves when tables or indexes change. */
 
-export const PRESET_VERSION = 2;
+export const PRESET_VERSION = 3;
 
 export type PresetCategory = {
   /** Permanent. Doubles as the DB row id, so changing one orphans existing
@@ -305,5 +359,5 @@ export const PRESET_CATEGORIES: readonly PresetCategory[] = CATEGORIES.map((c, i
   subs: c.subs,
   defaultVisibleOnHome: DEFAULT_VISIBLE.includes(c.id),
   // Leaves gaps so a user can drag a category between two presets.
-  defaultSortOrder: (i + 1) * 10,
+  defaultSortOrder: c.order ?? (i + 1) * 10,
 }));

@@ -10,6 +10,7 @@ export type NewCategory = {
   name: string;
   colorHex: string;
   iconPath: string;
+  subs?: string[];
 };
 
 /** Starts off the home grid — turning it on is a separate, explicit step
@@ -24,7 +25,7 @@ export async function addCategory(input: NewCategory): Promise<ID> {
     name: input.name.trim(),
     colorHex: input.colorHex,
     iconPath: input.iconPath,
-    subs: [],
+    subs: normalizeSubs(input.subs ?? []),
     visibleOnHome: false,
     sortOrder: stamp,
     archived: false,
@@ -35,19 +36,40 @@ export async function addCategory(input: NewCategory): Promise<ID> {
   return id;
 }
 
-/** Preset fields a user edit can claim ownership of. `subs` and `type` are
- *  absent because no screen edits them — add them here if that changes. */
-const OWNABLE_FIELDS = ['name', 'colorHex', 'iconPath'] as const;
+/** 세부항목 이름 길이 상한. 칩 여러 개가 한 줄에 앉아야 해서 짧게 둔다. */
+export const MAX_SUB_LENGTH = 10;
+
+/** 세부항목 목록을 저장할 모양으로 다듬는다: 앞뒤 공백을 떼고, 길이를 자르고, 빈 것과 겹치는 것을 뺀다.
+ *  순서는 사용자가 둔 그대로다. */
+export function normalizeSubs(subs: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const raw of subs) {
+    const name = raw.trim().slice(0, MAX_SUB_LENGTH).trim();
+    if (name && !out.includes(name)) out.push(name);
+  }
+  return out;
+}
+
+const sameList = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((v, i) => v === b[i]);
+
+/** Preset fields a user edit can claim ownership of. `type` is absent because
+ *  no screen edits it. `subs` is here since the category sheet in 설정 can
+ *  add, rename and delete them — without the claim, the next PRESET_VERSION
+ *  bump would append a deleted preset sub straight back (reconcileCategories
+ *  only skips the append when 'subs' is claimed). */
+const OWNABLE_FIELDS = ['name', 'colorHex', 'iconPath', 'subs'] as const;
 
 export async function updateCategory(
   id: ID,
-  patch: Partial<Pick<CategoryRecord, 'name' | 'colorHex' | 'iconPath'>>,
+  patch: Partial<Pick<CategoryRecord, 'name' | 'colorHex' | 'iconPath' | 'subs'>>,
 ): Promise<void> {
   const cur = await db.categories.get(id);
   if (!cur) return;
 
   const next: Partial<CategoryRecord> = { ...patch, updatedAt: now() };
   if (patch.name !== undefined) next.name = patch.name.trim();
+  if (patch.subs !== undefined) next.subs = normalizeSubs(patch.subs);
 
   /* Record which preset fields the user has taken over, so the next preset
      catalogue bump leaves them alone — reconcileCategories() reads exactly
@@ -61,7 +83,10 @@ export async function updateCategory(
     const edited = new Set(cur.customizedFields);
     for (const field of OWNABLE_FIELDS) {
       const value = next[field];
-      if (value !== undefined && value !== cur[field]) edited.add(field);
+      if (value === undefined) continue;
+      const changed =
+        field === 'subs' ? !sameList(value as string[], cur.subs) : value !== cur[field];
+      if (changed) edited.add(field);
     }
     if (edited.size !== cur.customizedFields.length) next.customizedFields = [...edited];
   }

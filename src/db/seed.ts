@@ -59,7 +59,10 @@ export async function reconcileCategories(): Promise<void> {
           colorHex: p.colorHex,
           iconPath: p.iconPath,
           subs: [...p.subs],
-          visibleOnHome: p.defaultVisibleOnHome,
+          /* 새로 설치했을 때만 기본 노출을 따른다. 쓰던 기기에 프리셋이 새로 생길 때(예: 구독)는
+             꺼 둔 채로 둔다 — 홈 화면은 사용자가 꾸민 것이라 17번째 칸이 세 번째 장을 만들면 안 된다.
+             설정 > 카테고리 관리에서 켜면 된다. */
+          visibleOnHome: existing.length === 0 ? p.defaultVisibleOnHome : false,
           sortOrder: p.defaultSortOrder,
           archived: false,
           customizedFields: [],

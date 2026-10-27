@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
-import { CATEGORIES } from '../../data/categories';
+import { CATEGORIES, EXTRA_SWATCHES, type Swatch } from '../../data/categories';
 import { addCategory, archiveCategory, setCategoryVisible, updateCategory } from '../../db/categories';
 import type { CategoryRecord } from '../../db/types';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { blurOnEnter } from '../../lib/keyboard';
+import { SubsEditor } from './SubsEditor';
 import styles from './CategorySheet.module.css';
 
 type Props = {
@@ -15,15 +16,21 @@ type Props = {
   onDone: (message: string) => void;
 };
 
+/** 고를 수 있는 아이콘: 프리셋 카테고리 모양 전부 + 프리셋은 아닌 몇 개(구독처럼 직접 만들 때 쓰는 것). */
+const SWATCHES: Swatch[] = [...CATEGORIES, ...EXTRA_SWATCHES];
+
 export function CategorySheet({ category, onClose, onDone }: Props) {
   const editing = category !== null;
   const [name, setName] = useState(category?.name ?? '');
-  const [swatch, setSwatch] = useState(
+  const [swatch, setSwatch] = useState<Swatch>(
     () =>
-      CATEGORIES.find((c) => c.icon === category?.iconPath && c.color === category?.colorHex) ??
-      CATEGORIES[0],
+      SWATCHES.find((c) => c.icon === category?.iconPath && c.color === category?.colorHex) ??
+      SWATCHES[0],
   );
   const [visible, setVisible] = useState(category?.visibleOnHome ?? false);
+  /* 세부항목은 이 시트 안에서 고치다가 "수정 완료"에 이름·아이콘과 같이 저장한다. 지운 걸 되돌리고 싶으면
+     저장하지 않고 닫으면 된다. */
+  const [subs, setSubs] = useState<string[]>(category?.subs ?? []);
   const { busy, guard } = useGuardedAction();
 
   /* 입력 화면에 켤 수 있는 개수는 막지 않는다. 세 줄 격자일 땐 13번째가 줄을
@@ -39,11 +46,11 @@ export function CategorySheet({ category, onClose, onDone }: Props) {
     guard(async () => {
       try {
         if (category) {
-          await updateCategory(category.id, { name, colorHex: swatch.color, iconPath: swatch.icon });
+          await updateCategory(category.id, { name, colorHex: swatch.color, iconPath: swatch.icon, subs });
           if (visible !== category.visibleOnHome) await setCategoryVisible(category.id, visible);
           onDone('수정했어!');
         } else {
-          const id = await addCategory({ name, colorHex: swatch.color, iconPath: swatch.icon });
+          const id = await addCategory({ name, colorHex: swatch.color, iconPath: swatch.icon, subs });
           if (visible) await setCategoryVisible(id, true);
           onDone('카테고리를 추가했어!');
         }
@@ -86,14 +93,16 @@ export function CategorySheet({ category, onClose, onDone }: Props) {
           className={styles.name}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="카테고리 이름 (예: 구독료)"
+          placeholder="카테고리 이름 (예: 데이트)"
           enterKeyHint="done"
           onKeyDown={blurOnEnter}
         />
       </div>
 
+      <SubsEditor subs={subs} onChange={setSubs} />
+
       <div className={styles.swatches}>
-        {CATEGORIES.map((c) => (
+        {SWATCHES.map((c) => (
           <button
             key={c.id}
             type="button"

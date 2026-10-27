@@ -1,0 +1,174 @@
+/* 카테고리 수정 시트의 세부항목 편집. 칩 크기는 시트 안의 세부항목 칩(components/SubChips.module.css의 .compact)과
+   같게 둔다 — 여기서 만든 칩이 기록 화면에서 같은 모양으로 보인다. */
+.wrap {
+  --sub-h: 31px;
+  --sub-px: 13px;
+  --sub-fs: 12.5px;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tx2);
+  margin-bottom: 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 이름 + 지우기(×). 이름을 누르면 고치고, ×를 누르면 지운다. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--sub-h);
+  border-radius: 999px;
+  background: var(--sf2);
+  padding-right: 4px;
+}
+
+.chipName {
+  height: 100%;
+  border: 0;
+  background: none;
+  padding: 0 4px 0 var(--sub-px);
+  font-size: var(--sub-fs);
+  font-weight: 700;
+  color: var(--tx);
+  cursor: pointer;
+}
+
+.remove {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sf);
+  color: var(--tx2);
+  cursor: pointer;
+}
+
+/* ×는 작아서 보이는 것보다 넓게 눌리게 한다. */
+.remove::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+
+/* 방금 생긴 칩이 한 번 튄다(뾰잉). */
+.pop {
+  animation: chipPop 0.3s var(--spring-hard);
+}
+
+/* 끝의 동그란 +. 칩과 같은 높이의 원이라 칩 줄이 "여기서 더 늘어난다"고 읽힌다. */
+.add {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sub-h);
+  height: var(--sub-h);
+  border: 0;
+  border-radius: 50%;
+  background: var(--sf2);
+  color: var(--tx2);
+  cursor: pointer;
+  transition: transform 0.12s var(--spring-hard);
+}
+
+.add::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+
+.add:active {
+  transform: scale(0.9);
+}
+
+.field {
+  box-sizing: border-box;
+  width: 130px;
+  max-width: 100%;
+  height: var(--sub-h);
+  border: 2px solid var(--brand);
+  border-radius: 999px;
+  padding: 0 var(--sub-px);
+  background: var(--sf2);
+  color: var(--tx);
+  font-family: inherit;
+  font-size: var(--sub-fs);
+  font-weight: 700;
+  outline: none;
+}
+
+.field::placeholder {
+  color: var(--tx2);
+  font-weight: 600;
+}
+
+/* `+`를 누르면 그 원이 옆으로 늘어나 입력칸이 된다(또잉). 폭(레이아웃)은 부드럽게, 넘쳤다 돌아오는 탄성은
+   transform에만 준다 — 결제수단 칩이 늘어나는 것과 같은 방식(components/PaymentChips.module.css 참고).
+   `backwards`라서 끝난 뒤에는 원래 폭으로 풀린다. */
+.fieldGrow {
+  transform-origin: left center;
+  animation:
+    fieldGrow 0.38s cubic-bezier(0.3, 0, 0.3, 1) backwards,
+    fieldBoing 0.46s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+
+/* 이 모듈 안에 둔다 — CSS Modules는 같은 파일의 @keyframes만 이름을 맞춰 준다. */
+@keyframes chipPop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fieldGrow {
+  from {
+    width: var(--sub-h);
+    opacity: 0.4;
+  }
+  to {
+    width: 130px;
+    opacity: 1;
+  }
+}
+
+@keyframes fieldBoing {
+  0% {
+    transform: scaleX(0.6);
+  }
+  55% {
+    transform: scaleX(1.05);
+  }
+  80% {
+    transform: scaleX(0.99);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}

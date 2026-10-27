@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_VISIBLE, DEFAULT_VISIBLE_V1, PRESET_CATEGORIES } from '../data/categories';
-import { addCategory, rememberCategoryPayment, setCategoryVisible, updateCategory } from './categories';
+import {
+  MAX_SUB_LENGTH,
+  addCategory,
+  normalizeSubs,
+  rememberCategoryPayment,
+  setCategoryVisible,
+  updateCategory,
+} from './categories';
 import { db } from './db';
 import { archivePaymentMethod } from './paymentMethods';
 import { bootstrap, reconcileCategories } from './seed';
@@ -116,6 +123,90 @@ describe('home grid defaults', () => {
     await simulatePresetBump();
 
     expect(await visibleKeys()).toHaveLength(DEFAULT_VISIBLE_V1.length);
+  });
+});
+
+describe('구독 preset', () => {
+  async function visibleKeys(): Promise<string[]> {
+    const rows = await db.categories.toArray();
+    return rows.filter((c) => c.visibleOnHome).map((c) => c.presetKey ?? c.id);
+  }
+
+  it('takes the cafe slot on the home grid of a new install', async () => {
+    await bootstrap();
+
+    const keys = await visibleKeys();
+    expect(keys).toContain('subscription');
+    expect(keys).not.toContain('cafe');
+    expect(keys).toHaveLength(16);
+  });
+
+  it('arrives hidden on a device that already had the grid arranged', async () => {
+    await bootstrap();
+    // 쓰던 기기: 구독이 생기기 전 상태로 되돌리고, 홈 화면은 카페까지 켠 채로 둔다.
+    await db.categories.delete('subscription');
+    await setCategoryVisible('cafe', true);
+    await simulatePresetBump();
+
+    const row = await db.categories.get('subscription');
+    expect(row?.name).toBe('구독');
+    expect(row?.visibleOnHome).toBe(false);
+    expect(await visibleKeys()).toContain('cafe');
+  });
+
+  it('sorts between 경조사 and 카페 so turning it on lands next to them', async () => {
+    await bootstrap();
+
+    const [event, sub, cafe] = await Promise.all(
+      ['event', 'subscription', 'cafe'].map((k) => db.categories.get(k)),
+    );
+    expect(event!.sortOrder).toBeLessThan(sub!.sortOrder);
+    expect(sub!.sortOrder).toBeLessThan(cafe!.sortOrder);
+  });
+});
+
+describe('editing subs (설정 > 카테고리 수정)', () => {
+  it('tidies the list: trims, caps the length, drops blanks and twins, keeps the order', () => {
+    expect(normalizeSubs(['  넷플릭스 ', '', 'AI', 'AI', '가'.repeat(MAX_SUB_LENGTH + 3)])).toEqual([
+      '넷플릭스',
+      'AI',
+      '가'.repeat(MAX_SUB_LENGTH),
+    ]);
+  });
+
+  it('saves added, renamed and deleted subs together', async () => {
+    await bootstrap();
+
+    await updateCategory('subscription', { subs: ['OTT', '챗GPT', '음악', '넷플릭스'] });
+
+    expect((await db.categories.get('subscription'))?.subs).toEqual(['OTT', '챗GPT', '음악', '넷플릭스']);
+  });
+
+  it('keeps a deleted preset sub deleted through a preset bump', async () => {
+    await bootstrap();
+    await updateCategory('food', { subs: ['점심', '저녁'] });
+    expect((await db.categories.get('food'))?.customizedFields).toContain('subs');
+
+    await simulatePresetBump();
+
+    expect((await db.categories.get('food'))?.subs).toEqual(['점심', '저녁']);
+  });
+
+  it('does not claim the subs when the sheet saves them unchanged', async () => {
+    await bootstrap();
+    const before = (await db.categories.get('food'))!.subs;
+
+    await updateCategory('food', { name: '식비', subs: [...before] });
+
+    expect((await db.categories.get('food'))?.customizedFields).not.toContain('subs');
+  });
+
+  it('gives a category the user made its subs at creation', async () => {
+    await bootstrap();
+
+    const id = await addCategory({ name: '커피콩', colorHex: '#fff', iconPath: 'M0 0h1', subs: [' 원두', '원두'] });
+
+    expect((await db.categories.get(id))?.subs).toEqual(['원두']);
   });
 });
 
