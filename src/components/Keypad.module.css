@@ -19,8 +19,13 @@
   transition: transform 0.12s var(--spring-hard);
 }
 
-.key:active {
+.key:active:not(:disabled) {
   transform: scale(0.93);
+}
+
+.key:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .muted {

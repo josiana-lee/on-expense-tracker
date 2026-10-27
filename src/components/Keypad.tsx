@@ -11,9 +11,12 @@ type Props = {
   /** `00` 자리를 소수점으로 바꾼다. 소수가 있는 외화를 칠 때만 켠다 — 원화에는 소수점이
    *  없으니 다른 곳의 키패드는 그대로다. */
   dot?: boolean;
+  /** 지금은 칠 때가 아니라서 잠가 둔다 — 누를 수 없고 흐리게 보인다. 눌려도 아무 일도 안 일어나는 키패드는
+   *  고장으로 보이고, 숫자가 보이지 않는 곳에 쌓이기도 한다. */
+  disabled?: boolean;
 };
 
-export function Keypad({ onPress, compact, dot }: Props) {
+export function Keypad({ onPress, compact, dot, disabled }: Props) {
   const keys: readonly KeypadKey[] = dot ? KEYS.map((k) => (k === '00' ? '.' : k)) : KEYS;
   return (
     <div className={`${styles.grid} ${compact ? styles.compactGrid : ''}`}>
@@ -22,6 +25,7 @@ export function Keypad({ onPress, compact, dot }: Props) {
           key={k}
           type="button"
           onClick={() => onPress(k)}
+          disabled={disabled}
           aria-label={k === 'del' ? '지우기' : k === '.' ? '소수점' : k}
           className={[styles.key, compact ? styles.compact : '', k === 'del' ? styles.muted : '']
             .filter(Boolean)

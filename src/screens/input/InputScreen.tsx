@@ -527,6 +527,8 @@ export function InputScreen() {
             /* 소수점은 소수가 있는 외화를 치거나 환율을 고칠 때만 나온다. */
             dot={fx.entry.editing === 'rate' || (fx.entry.code !== null && currencyOf(fx.entry.code).decimals > 0)}
             onPress={(k) => (fx.active ? fx.press(k) : setAmount((a) => applyKey(a, k)))}
+            /* 환율을 받을지 답하기 전에는 숫자를 칠 수 없다. */
+            disabled={fx.status === 'ask'}
           />
           <button type="button" className={styles.done} onClick={() => setKeypadOpen(false)}>
             완료

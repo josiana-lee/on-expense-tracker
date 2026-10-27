@@ -60,6 +60,8 @@ export function ForeignAmountView({ amount, fxLookup, onAmount, onDone }: Props)
       <Keypad
         dot={fx.entry.editing === 'rate' || (fx.entry.code !== null && currencyOf(fx.entry.code).decimals > 0)}
         onPress={(k) => fx.press(k)}
+        /* 환율을 받을지 답하기 전에는 숫자를 칠 수 없다. */
+        disabled={fx.status === 'ask'}
       />
       <button type="button" className={styles.done} onClick={onDone}>
         완료

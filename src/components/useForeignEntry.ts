@@ -133,7 +133,10 @@ export function useForeignEntry({ open, fxLookup, onAmount }: Params) {
       if (c === null) setExpanded(false);
       act({ type: 'currency', code: c });
     },
-    press: (key: string) => act({ type: 'key', key }),
+    // 환율을 받을지 묻는 동안은 키를 받지 않는다(키패드도 잠겨 있다). 받아 두면 보이지 않는 곳에 숫자가 쌓인다.
+    press: (key: string) => {
+      if (status !== 'ask') act({ type: 'key', key });
+    },
     clear: () => act({ type: 'clear' }),
     editRate: () => act({ type: 'editRate' }),
     doneRate: () => act({ type: 'doneRate' }),
