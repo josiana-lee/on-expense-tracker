@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { ClearAmount } from '../../components/ClearAmount';
+import { PaymentChips } from '../../components/PaymentChips';
 import { Sheet } from '../../components/Sheet';
 import type { RecurringRuleInput } from '../../db/recurring';
 import {
@@ -174,18 +175,7 @@ export function RecurringRuleSheet({ rule, onClose, onDone }: Props) {
         onKeyDown={blurOnEnter}
       />
 
-      <div className={styles.pays}>
-        {payments.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setPickedPayment(p.id)}
-            className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
-          >
-            {p.name}
-          </button>
-        ))}
-      </div>
+      <PaymentChips compact payments={payments} selectedId={paymentId} onSelect={setPickedPayment} />
 
       <Keypad compact onPress={(k) => setAmount((a) => applyKey(a, k))} />
 

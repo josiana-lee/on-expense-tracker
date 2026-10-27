@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { applyMonthKey, installmentPreview } from '../db/installments';
 import { ClearAmount } from './ClearAmount';
 import { Keypad } from './Keypad';
@@ -13,6 +13,9 @@ type Props = {
   /** 확정된 개월 수. 1이면 일시불로 되돌린다. */
   onDone: (months: number) => void;
   onClose: () => void;
+  /** 치는 도중의 개월 수 글자. 시트가 화면의 아래쪽만 덮어서 위에 남은 칩이 치는 값을 따라 바뀌게 하려는 것이다
+   *  (입력 탭의 카드 칩). 확정이 아니라서 닫기를 눌러 취소하면 이 값은 어디에도 남지 않는다. */
+  onDraft?: (text: string) => void;
 };
 
 /** 할부 개월 수를 직접 입력하는 시트.
@@ -22,8 +25,13 @@ type Props = {
  *
  *  금액 시트와 같은 구조를 쓴다 — 사용자가 이미 아는 조작이고, 개월 수도 결국
  *  숫자 하나다. */
-export function InstallmentSheet({ months, amount, onDone, onClose }: Props) {
+export function InstallmentSheet({ months, amount, onDone, onClose, onDraft }: Props) {
   const [text, setText] = useState(months > 1 ? String(months) : '');
+  useEffect(() => {
+    onDraft?.(text);
+    // 칩이 따라가는 건 글자가 바뀔 때뿐이다. onDraft는 매 렌더 새로 만들어져도 다시 부르지 않는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
   const n = Number(text || '0');
 
   /* 여기서 말하는 건 두 가지뿐이다 — 얼마씩 나뉘는지, 그리고 왜 안 되는지.

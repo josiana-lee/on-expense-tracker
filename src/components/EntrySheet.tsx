@@ -4,7 +4,7 @@ import { Keypad, applyKey } from './Keypad';
 import { ClearAmount } from './ClearAmount';
 import { DatePicker } from './DatePicker';
 import { ForeignAmountView } from './ForeignAmountView';
-import { InstallmentChips } from './InstallmentChips';
+import { PaymentChips } from './PaymentChips';
 import { Sheet } from './Sheet';
 import { rememberCategoryPayment } from '../db/categories';
 import { parseDateStr } from '../db/date';
@@ -540,31 +540,27 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
         onKeyDown={blurOnEnter}
       />
 
-      <div className={styles.pays}>
-        {payChoices.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setPickedPayment(p.id)}
-            className={`${styles.pay} ${paymentId === p.id ? styles.payOn : ''}`}
-          >
-            {p.name}
-          </button>
-        ))}
-      </div>
-
-      {canInstall && (
-        <InstallmentChips
-          months={months}
-          /* 일시불로 되돌리면 개월 칸이 사라지므로 숫자판도 금액으로 돌려놓는다. */
-          onCash={() => {
-            setMonthText('');
-            setTarget('amount');
-          }}
-          onOpen={aimAtMonths}
-          field={{ text: monthText, active: target === 'months' }}
-        />
-      )}
+      <PaymentChips
+        compact
+        payments={payChoices}
+        selectedId={paymentId}
+        onSelect={setPickedPayment}
+        installment={
+          canInstall
+            ? {
+                months,
+                /* 개월 칸을 치는 동안엔 칩의 "할부" 칸이 그 글자를 보여준다. 입력 탭의 시트와 같은 모습. */
+                draft: target === 'months' ? monthText : null,
+                /* 일시불로 되돌리면 개월 칸이 사라지므로 숫자판도 금액으로 돌려놓는다. */
+                onCash: () => {
+                  setMonthText('');
+                  setTarget('amount');
+                },
+                onOpen: aimAtMonths,
+              }
+            : undefined
+        }
+      />
 
       {showPreview && (
         <p className={`${styles.monthNote} ${preview.bad ? styles.monthNoteBad : ''}`}>

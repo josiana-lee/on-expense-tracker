@@ -6,7 +6,7 @@ import { InstallmentSheet } from '../../components/InstallmentSheet';
 import { EntrySheet } from '../../components/EntrySheet';
 import { ForeignPanel } from '../../components/ForeignPanel';
 import { useForeignEntry } from '../../components/useForeignEntry';
-import { InstallChip } from './InstallChip';
+import { PaymentChips } from '../../components/PaymentChips';
 import { Sheet } from '../../components/Sheet';
 import { Toast } from '../../components/Toast';
 import { HOME_CATEGORIES_PER_PAGE } from '../../data/categories';
@@ -66,6 +66,17 @@ export function InputScreen() {
     onAmount: setAmount,
   });
   const [installOpen, setInstallOpen] = useState(false);
+  /** 할부 개월 수를 치는 중인 글자. 시트가 닫혀 있으면 null. 카드 칩의 "할부" 칸이 이걸 따라 바뀐다 —
+   *  누르는 순간 포커스가 그 칸으로 가고, 치는 숫자가 칸에 보인다. 취소하면 칩은 원래대로 돌아온다. */
+  const [installDraft, setInstallDraft] = useState<string | null>(null);
+  const openInstall = () => {
+    setInstallDraft(months > 1 ? String(months) : '');
+    setInstallOpen(true);
+  };
+  const closeInstall = () => {
+    setInstallOpen(false);
+    setInstallDraft(null);
+  };
   /** 오늘 기록에서 탭한 줄. 그 자리에서 고칠 수 있어야 한다 — 방금 잘못 넣은
    *  걸 고치려고 달력까지 건너가는 건 되돌리기가 아니라 수색이다. */
   const [editing, setEditing] = useState<ExpenseRecord | null>(null);
@@ -381,39 +392,19 @@ export function InputScreen() {
           )}
         </div>
 
-        {/* 할부 칩을 감싸는 기준. 흐름에 넣으면 칩이 뜨고 사라질 때마다 아래 오늘
-            기록이 그만큼 줄었다 늘었다 한다 — 카드를 골랐을 뿐인데 화면이
-            흔들리는 것으로 보인다. */}
+        {/* 신용카드를 고르면 그 칩이 같은 줄 안에서 늘어나 일시불/할부를 품는다 — 줄 높이가 그대로라
+            아래 오늘 기록이 흔들리지 않는다. */}
         <div className={styles.paysWrap}>
-          <div className={styles.pays}>
-            {payments.map((p) => {
-              const on = paymentId === p.id;
-              /* 신용카드를 고르면 그 칩이 옆으로 늘어나 안에서 일시불/할부를 고른다. 할부는 금액이
-                 아니라 결제수단에 딸린 선택이라 칩 안이 제자리이고, 아래 카드를 덮는 것도 줄이 밀리는
-                 것도 없다. */
-              if (on && canInstall) {
-                return (
-                  <InstallChip
-                    key={p.id}
-                    name={p.name}
-                    months={months}
-                    onCash={() => setMonths(1)}
-                    onOpen={() => setInstallOpen(true)}
-                  />
-                );
-              }
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setStagedPaymentId(p.id)}
-                  className={`${styles.pay} ${on ? styles.payOn : ''}`}
-                >
-                  {p.name}
-                </button>
-              );
-            })}
-          </div>
+          <PaymentChips
+            payments={payments}
+            selectedId={paymentId}
+            onSelect={setStagedPaymentId}
+            installment={
+              canInstall
+                ? { months, draft: installDraft, onCash: () => setMonths(1), onOpen: openInstall }
+                : undefined
+            }
+          />
         </div>
 
         <section className={styles.today}>
@@ -557,7 +548,8 @@ export function InputScreen() {
           months={months}
           amount={amount}
           onDone={setMonths}
-          onClose={() => setInstallOpen(false)}
+          onDraft={setInstallDraft}
+          onClose={closeInstall}
         />
       )}
 
