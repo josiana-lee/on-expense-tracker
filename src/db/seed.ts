@@ -47,10 +47,17 @@ export async function reconcileCategories(): Promise<void> {
     const adoptDefaults =
       (homeDefaults ?? 0) < HOME_DEFAULTS_VERSION && isUntouchedHomeGrid(existing);
 
+    /* 쓰던 기기에서 이미 쓰고 있는 이름. 새 프리셋이 같은 이름이면(예: 직접 만든 '구독'이 있는데 프리셋
+       '구독'이 새로 생김) 목록에 '구독'이 두 개가 되어, 아이콘 말고는 구분할 수 없다. */
+    const namesInUse = new Set(existing.filter((c) => !c.archived).map((c) => c.name.trim()));
+
     for (const p of PRESET_CATEGORIES) {
       const cur = byKey.get(p.key);
 
       if (!cur) {
+        /* 그런 때는 프리셋을 보관(삭제와 같은 상태)으로 넣는다 — 사용자가 쓰던 쪽 하나만 보이고, 그 기록도
+           그대로다. 아예 안 넣으면 다음 프리셋 갱신 때 또 넣으려 들기 때문에, 행은 만들어 둔다. */
+        const clash = existing.length > 0 && namesInUse.has(p.name);
         await db.categories.add({
           id: p.key,
           presetKey: p.key,
@@ -64,7 +71,7 @@ export async function reconcileCategories(): Promise<void> {
              설정 > 카테고리 관리에서 켜면 된다. */
           visibleOnHome: existing.length === 0 ? p.defaultVisibleOnHome : false,
           sortOrder: p.defaultSortOrder,
-          archived: false,
+          archived: clash,
           customizedFields: [],
           createdAt: now(),
           updatedAt: now(),

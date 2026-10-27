@@ -154,6 +154,28 @@ describe('구독 preset', () => {
     expect(await visibleKeys()).toContain('cafe');
   });
 
+  it('stays out of the way of a 구독 category the user had already made', async () => {
+    await bootstrap();
+    // 업데이트 전 기기: 프리셋 구독은 없고, 사용자가 만든 '구독'이 있다.
+    await db.categories.delete('subscription');
+    const mine = await addCategory({ name: '구독', colorHex: '#fff', iconPath: 'M0 0h1', subs: ['넷플릭스'] });
+    await simulatePresetBump();
+
+    const live = (await db.categories.toArray()).filter((c) => c.name === '구독' && !c.archived);
+    expect(live.map((c) => c.id)).toEqual([mine]);
+    // 행은 있다 — 다음 갱신이 또 넣으려 들지 않게.
+    expect((await db.categories.get('subscription'))?.archived).toBe(true);
+
+    await simulatePresetBump();
+    expect((await db.categories.get('subscription'))?.archived).toBe(true);
+  });
+
+  it('is added normally on a fresh install', async () => {
+    await bootstrap();
+
+    expect((await db.categories.get('subscription'))?.archived).toBe(false);
+  });
+
   it('sorts between 경조사 and 카페 so turning it on lands next to them', async () => {
     await bootstrap();
 
