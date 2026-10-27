@@ -93,7 +93,10 @@ export function ForeignPanel({
         </div>
       )}
 
-      {cur && status !== 'ask' && (
+      {/* 환율을 물어보는 중에도 친 숫자는 이 줄에 보인다. 숫자판은 그 사이에도 눌리는데 줄을 숨겼더니,
+          손가락 밑에서는 아무 일도 안 일어나는 것처럼 보여서 숫자를 계속 눌렀고 답을 고르는 순간 쌓인
+          숫자가 한꺼번에 나타났다. 환율을 모르니 원화는 말하지 않고 친 외화 금액만 보인다. */}
+      {cur && (
         <div className={styles.line}>
           <span className={`${styles.krw} tabular`}>
             {entry.text === ''
