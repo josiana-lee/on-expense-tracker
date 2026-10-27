@@ -75,6 +75,13 @@
   transform: scale(0.96);
 }
 
+/* 해외 결제 입력 화면이 열려 있는 동안 "되돌아가기"가 된다. 날짜 필(연보라)과 들어가는 칩(연보라)과
+   나란히 있어서 같은 색이면 어느 게 눌러서 나가는 칩인지 구분이 안 된다 — 진한 보라로 채워서 둔다. */
+.foreignChipBack {
+  background: var(--brand);
+  color: #fff;
+}
+
 /* 할부 회차를 고치는 중. 잠긴 이유는 .installNote가 말한다. */
 .dateChipLocked {
   opacity: 0.5;

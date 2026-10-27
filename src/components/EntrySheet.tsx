@@ -411,7 +411,7 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           {!editing && (
             <button
               type="button"
-              className={styles.foreignChip}
+              className={`${styles.foreignChip} ${foreignMode ? styles.foreignChipBack : ''}`}
               aria-label={foreignMode ? '해외 결제 입력을 마치고 되돌아가기' : '해외 결제 금액 입력'}
               onClick={() => setForeignMode((v) => !v)}
             >
