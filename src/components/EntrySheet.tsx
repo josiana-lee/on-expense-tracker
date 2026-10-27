@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { Keypad, applyKey } from './Keypad';
 import { ClearAmount } from './ClearAmount';
@@ -233,6 +233,19 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
     if (!installment) setMonthText('');
     setTarget('amount');
   }, [canInstall, installment]);
+
+  /* 할부는 그 카드에 건 것이라, 다른 카드로 바꾸면 일시불로 돌아간다. 현대카드를 눌렀더니 삼성카드에서 친
+     "6개월 할부"가 그대로 따라온 적이 있다. 카테고리를 골라 마지막에 쓴 카드로 넘어갈 때도 같으니 바뀐 결과만
+     본다. 이미 할부인 기록의 카드를 바로잡는 건 예외다 — 개월 수는 그 기록의 구조라서, 카드를 고친다고 일시불로
+     합쳐지면 안 된다. */
+  const lastPaymentRef = useRef(paymentId);
+  useEffect(() => {
+    if (lastPaymentRef.current === paymentId) return;
+    lastPaymentRef.current = paymentId;
+    if (installment) return;
+    setMonthText('');
+    setTarget('amount');
+  }, [paymentId, installment]);
 
   const pickCategory = (id: string) => {
     setPickedCategory(id);

@@ -140,6 +140,16 @@ export function InputScreen() {
     if (!canInstall && months > 1) setMonths(1);
   }, [canInstall, months]);
 
+  /* 할부는 그 카드에 건 것이다. 삼성카드로 6개월을 걸고 현대카드를 누르면 현대카드 칩에 "6개월 할부"가
+     그대로 따라와서, 건 적 없는 할부가 걸린 것처럼 보였다. 결제수단이 바뀌면 — 칩을 눌러서든, 카테고리를
+     골라 마지막에 쓴 카드로 넘어가서든 — 일시불로 돌아간다. 위와 같은 이유로 바뀐 결과만 본다. */
+  const lastPaymentRef = useRef(paymentId);
+  useEffect(() => {
+    if (lastPaymentRef.current === paymentId) return;
+    lastPaymentRef.current = paymentId;
+    setMonths(1);
+  }, [paymentId]);
+
   /* 카테고리는 8개씩(4열 × 2줄) 페이지로 나눠 옆으로 넘긴다. 지금 몇 번째
      페이지인지는 스크롤 위치에서 읽는다 — 손으로 넘긴 것도 코드로 넘긴 것도
      같은 길로 점에 반영된다. */
