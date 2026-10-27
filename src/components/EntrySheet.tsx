@@ -411,13 +411,13 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
           {!editing && (
             <button
               type="button"
-              className={`${styles.foreignChip} ${foreignMode ? styles.foreignChipBack : ''}`}
+              className={styles.foreignChip}
               aria-label={foreignMode ? '해외 결제 입력을 마치고 되돌아가기' : '해외 결제 금액 입력'}
               onClick={() => setForeignMode((v) => !v)}
             >
               {/* 들어간 뒤에는 같은 자리의 칩이 나가는 길로 바뀐다. 같은 이름의 칩을 한 번 더 눌러야
                   빠진다고 알려 주지 않는 것보다, 지금 누르면 무엇이 되는지를 이름으로 말한다. */}
-              {foreignMode ? '← 되돌아가기' : '해외 결제 입력'}
+              {foreignMode ? '되돌아가기' : '해외 결제 입력'}
             </button>
           )}
         </div>
