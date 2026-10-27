@@ -73,28 +73,9 @@
   color: var(--brand);
 }
 
+/* 칩 줄 자체의 모양은 components/SubChips.module.css. 여기엔 팝업 안에서의 간격만 둔다. */
 .subs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
   margin-top: 16px;
-}
-
-.sub {
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 15px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  background: var(--sf2);
-  color: var(--tx2);
-}
-
-.subOn {
-  background: var(--brand);
-  color: #fff;
-  animation: chipPop 0.3s var(--spring-hard);
 }
 
 .memo {
@@ -208,14 +189,3 @@
   }
 }
 
-@keyframes chipPop {
-  0% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(1.14);
-  }
-  100% {
-    transform: scale(1);
-  }
-}

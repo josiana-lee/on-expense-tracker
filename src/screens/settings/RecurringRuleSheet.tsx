@@ -3,6 +3,7 @@ import { Icon } from '../../components/Icon';
 import { Keypad, applyKey } from '../../components/Keypad';
 import { ClearAmount } from '../../components/ClearAmount';
 import { PaymentChips } from '../../components/PaymentChips';
+import { SubChips } from '../../components/SubChips';
 import { Sheet } from '../../components/Sheet';
 import type { RecurringRuleInput } from '../../db/recurring';
 import {
@@ -152,18 +153,12 @@ export function RecurringRuleSheet({ rule, onClose, onDone }: Props) {
       </div>
 
       {category && category.subs.length > 0 && (
-        <div className={styles.subs}>
-          {category.subs.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSubLabel((cur) => (cur === s ? undefined : s))}
-              className={`${styles.sub} ${subLabel === s ? styles.subOn : ''}`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <SubChips
+          compact
+          subs={category.subs}
+          selected={subLabel}
+          onPick={(s) => setSubLabel((cur) => (cur === s ? undefined : s))}
+        />
       )}
 
       <input

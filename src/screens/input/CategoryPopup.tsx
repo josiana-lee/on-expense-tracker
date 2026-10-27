@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { createPortal } from 'react-dom';
 import { useMemo, useState, type CSSProperties, type MouseEvent } from 'react';
 import { Icon } from '../../components/Icon';
+import { SubChips } from '../../components/SubChips';
 import { loadMemoStats } from '../../db/memoStats';
 import type { CategoryRecord } from '../../db/types';
 import { useShell } from '../../shell/ShellContext';
@@ -92,19 +93,13 @@ export function CategoryPopup({
           </div>
         </div>
 
-        <div className={styles.subs}>
-          {category.subs.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onSelectSub(s)}
-              onMouseDown={keepFocus}
-              className={`${styles.sub} ${sub === s ? styles.subOn : ''}`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <SubChips
+          className={styles.subs}
+          subs={category.subs}
+          selected={sub}
+          onPick={onSelectSub}
+          onMouseDown={keepFocus}
+        />
 
         <input
           className={styles.memo}

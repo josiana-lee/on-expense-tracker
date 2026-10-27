@@ -5,6 +5,7 @@ import { ClearAmount } from './ClearAmount';
 import { DatePicker } from './DatePicker';
 import { ForeignAmountView } from './ForeignAmountView';
 import { PaymentChips } from './PaymentChips';
+import { SubChips } from './SubChips';
 import { Sheet } from './Sheet';
 import { rememberCategoryPayment } from '../db/categories';
 import { parseDateStr } from '../db/date';
@@ -540,18 +541,12 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
       {/* Appears once a category is picked — the list depends on which one,
           and showing an empty row before that just wastes a beat. */}
       {category && category.subs.length > 0 && (
-        <div className={styles.subs}>
-          {category.subs.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSubLabel((cur) => (cur === s ? undefined : s))}
-              className={`${styles.sub} ${subLabel === s ? styles.subOn : ''}`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <SubChips
+          compact
+          subs={category.subs}
+          selected={subLabel}
+          onPick={(s) => setSubLabel((cur) => (cur === s ? undefined : s))}
+        />
       )}
 
       <input

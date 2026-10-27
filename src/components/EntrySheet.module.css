@@ -248,44 +248,6 @@
   font-weight: 800;
 }
 
-.subs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.sub {
-  border: 0;
-  border-radius: 999px;
-  padding: 8px 13px;
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  background: var(--sf2);
-  color: var(--tx2);
-}
-
-.subOn {
-  background: var(--brand);
-  color: #fff;
-  animation: chipPop 0.3s var(--spring-hard);
-}
-
-/* Local rather than shared: CSS Modules hashes this animation-name
-   regardless of whether a matching @keyframes exists in the same file, so a
-   name from a plain global stylesheet resolves to nothing. */
-@keyframes chipPop {
-  0% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(1.14);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 .memo {
   width: 100%;
   border: 0;

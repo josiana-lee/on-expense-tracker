@@ -1,0 +1,50 @@
+/* 세부항목 칩 줄. 카테고리 팝업(기본 크기)과 바텀시트(.compact)가 같은 규칙을 쓰고, 달라지는 건 아래 변수뿐이다 —
+   모양을 바꿀 때는 이 파일만 고치면 된다. */
+.subs {
+  --sub-h: 35px;
+  --sub-px: 15px;
+  --sub-fs: 13px;
+  --sub-gap: 7px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sub-gap);
+}
+
+.compact {
+  --sub-h: 31px;
+  --sub-px: 13px;
+  --sub-fs: 12.5px;
+  --sub-gap: 6px;
+}
+
+.sub {
+  border: 0;
+  border-radius: 999px;
+  height: var(--sub-h);
+  padding: 0 var(--sub-px);
+  font-size: var(--sub-fs);
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--sf2);
+  color: var(--tx2);
+}
+
+.subOn {
+  background: var(--brand);
+  color: #fff;
+  animation: chipPop 0.3s var(--spring-hard);
+}
+
+/* 이 모듈 안에 둔다 — CSS Modules는 같은 파일의 @keyframes만 이름을 맞춰 준다. */
+@keyframes chipPop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
