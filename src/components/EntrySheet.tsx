@@ -418,7 +418,12 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
               type="button"
               className={`${styles.foreignChip} ${foreignMode ? styles.foreignChipBack : ''}`}
               aria-label={foreignMode ? '해외 결제 입력을 마치고 되돌아가기' : '해외 결제 금액 입력'}
-              onClick={() => setForeignMode((v) => !v)}
+              onClick={() => {
+                setForeignMode((v) => !v);
+                /* 개월 수를 치던 중이었다면 거기서 손을 뗀다. 안 그러면 돌아왔을 때 숫자판은 금액인데
+                   칩은 "6개월"에 커서가 켜진 입력 중 모양으로 남는다. 친 개월 수는 그대로 남아 "6개월 할부"로 보인다. */
+                setTarget('amount');
+              }}
             >
               {/* 들어간 뒤에는 같은 자리의 칩이 나가는 길로 바뀐다. 같은 이름의 칩을 한 번 더 눌러야
                   빠진다고 알려 주지 않는 것보다, 지금 누르면 무엇이 되는지를 이름으로 말한다. */}
