@@ -20,33 +20,33 @@
     "android:aab": "scripts/android-build.sh bundleRelease"
   },
   "dependencies": {
-    "@capacitor/android": "^8.5.0",
+    "@capacitor/android": "^8.5.3",
     "@capacitor/app": "^8.1.1",
-    "@capacitor/core": "^8.5.0",
+    "@capacitor/core": "^8.5.3",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/local-notifications": "^8.2.1",
     "@capacitor/share": "^8.0.1",
-    "dexie": "^4.0.11",
+    "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "pretendard": "^1.3.9",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "sql.js": "^1.14.2",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.5.0",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
+    "@capacitor/cli": "^8.5.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "@types/sql.js": "^1.4.11",
-    "@vitejs/plugin-react": "^4.4.1",
+    "@vitejs/plugin-react": "^4.7.0",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^30.0.1",
-    "sharp": "^0.35.3",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5",
-    "vite-plugin-pwa": "^1.0.0",
-    "vitest": "^4.1.10"
+    "sharp": "^0.35.5",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.5",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^4.1.12"
   }
 }
