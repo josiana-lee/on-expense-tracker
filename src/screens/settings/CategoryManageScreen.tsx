@@ -50,7 +50,7 @@ export function CategoryManageScreen({ onBack }: Props) {
           </span>
           <p className={styles.noteText}>
             표시 중인 카테고리는 입력 화면에서 {HOME_CATEGORIES_PER_PAGE}개씩 옆으로 넘겨 볼 수 있어.
-            눌러서 이름·아이콘·표시 여부를 바꾸거나 삭제할 수 있어.
+            눌러서 이름·아이콘·세부항목·표시 여부를 바꾸거나 삭제할 수 있어.
           </p>
         </div>
         <div className={styles.subCard}>

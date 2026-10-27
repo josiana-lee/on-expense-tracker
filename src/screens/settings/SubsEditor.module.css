@@ -98,7 +98,8 @@
 
 .field {
   box-sizing: border-box;
-  width: 130px;
+  /* 10자(MAX_SUB_LENGTH)가 잘리지 않는 폭. */
+  width: 156px;
   max-width: 100%;
   height: var(--sub-h);
   border: 2px solid var(--brand);
@@ -153,7 +154,7 @@
     opacity: 0.4;
   }
   to {
-    width: 130px;
+    width: 156px;
     opacity: 1;
   }
 }

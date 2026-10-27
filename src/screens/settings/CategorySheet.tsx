@@ -4,6 +4,7 @@ import { Sheet } from '../../components/Sheet';
 import { CATEGORIES, EXTRA_SWATCHES, type Swatch } from '../../data/categories';
 import { addCategory, archiveCategory, setCategoryVisible, updateCategory } from '../../db/categories';
 import type { CategoryRecord } from '../../db/types';
+import { useCatalog } from '../../hooks/useCatalog';
 import { useGuardedAction } from '../../hooks/useGuardedAction';
 import { blurOnEnter } from '../../lib/keyboard';
 import { SubsEditor } from './SubsEditor';
@@ -32,6 +33,7 @@ export function CategorySheet({ category, onClose, onDone }: Props) {
      저장하지 않고 닫으면 된다. */
   const [subs, setSubs] = useState<string[]>(category?.subs ?? []);
   const { busy, guard } = useGuardedAction();
+  const { categories } = useCatalog();
 
   /* 입력 화면에 켤 수 있는 개수는 막지 않는다. 세 줄 격자일 땐 13번째가 줄을
      늘려 한 화면을 넘겼지만, 이제는 다음 페이지로 넘어갈 뿐이다. */
@@ -40,6 +42,12 @@ export function CategorySheet({ category, onClose, onDone }: Props) {
   const save = () => {
     if (!name.trim()) {
       onDone('이름을 입력해줘');
+      return;
+    }
+    /* 같은 이름이 둘이면 기록 화면과 예산에서 아이콘 말고는 구분할 수 없다. 지운(보관한) 카테고리는 목록에 안
+       나오니 같은 이름을 다시 써도 된다. */
+    if (categories.some((c) => c.id !== category?.id && c.name.trim() === name.trim())) {
+      onDone('이미 있는 이름이야');
       return;
     }
 
@@ -99,7 +107,7 @@ export function CategorySheet({ category, onClose, onDone }: Props) {
         />
       </div>
 
-      <SubsEditor subs={subs} onChange={setSubs} />
+      <SubsEditor subs={subs} onChange={setSubs} existing={editing} />
 
       <div className={styles.swatches}>
         {SWATCHES.map((c) => (
