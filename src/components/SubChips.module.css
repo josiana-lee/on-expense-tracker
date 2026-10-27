@@ -19,6 +19,13 @@
 }
 
 .sub {
+  /* 칩은 줄 폭을 넘지 않고 넘치는 글자는 말줄임한다. 목록에 없는 옛 세부항목도 칩으로 보이는데, 가져온 기록에는
+     "picktoon.kr,co.kr,app"처럼 띄어쓰기 없이 긴 글자가 있어서 그대로 두면 시트가 옆으로 밀렸다. 전체 글자는
+     시트 제목에 보인다. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border: 0;
   border-radius: 999px;
   height: var(--sub-h);
