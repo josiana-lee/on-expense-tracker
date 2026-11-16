@@ -1,5 +1,7 @@
 package com.jdblabs.onexpense;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Lifecycle;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -31,8 +33,20 @@ public class PlayReviewPlugin extends Plugin {
                     call.reject("review flow unavailable");
                     return;
                 }
-                ReviewInfo info = request.getResult();
-                manager.launchReviewFlow(getActivity(), info).addOnCompleteListener(flow -> call.resolve());
+                AppCompatActivity activity = getActivity();
+                // 요청을 주고받는 사이 사용자가 앱을 나갔으면 띄우지 않는다. 다른 앱 위로 튀어나오거나, 백그라운드
+                // 시작 제한에 막혀 이 호출이 끝나지 않는다.
+                if (activity == null || !activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                    call.reject("app not in foreground");
+                    return;
+                }
+                // 리스너는 메인 스레드에서 돈다. 여기서 던지면 잡을 곳이 없어 앱이 꺼진다 — 저장 직후에.
+                try {
+                    ReviewInfo info = request.getResult();
+                    manager.launchReviewFlow(activity, info).addOnCompleteListener(flow -> call.resolve());
+                } catch (Exception e) {
+                    call.reject("review flow failed", e);
+                }
             });
     }
 }

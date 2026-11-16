@@ -118,6 +118,35 @@ describe('maybeAskForReview', () => {
     expect(launch).toHaveBeenCalledTimes(1);
   });
 
+  /* 저장하고 바로 홈으로 나가면 0.8초 뒤엔 앱이 화면에 없다. 그때 띄우면 다른 앱 위로 튀어나오거나 막혀서 한 번뿐인
+     기회만 사라진다. 이번엔 건너뛰고 다음 저장 때 다시 본다. */
+  it('앱이 화면에 없으면 띄우지 않고 표시도 안 남긴다', async () => {
+    await add();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    const launch = launcher();
+    expect(await maybeAskForReview({ now: Date.now() + REVIEW_WAIT_MS, native: true, launch })).toBe(false);
+    expect(launch).not.toHaveBeenCalled();
+    expect(localStorage.getItem(REVIEW_ASKED_KEY)).toBeNull();
+  });
+
+  /* 다른 가계부에서 수만 건을 가져온 사람은 첫 주 동안 저장할 때마다 전체를 훑게 된다. 훑는 동안 다음 저장이 기다린다. */
+  it('처음 쓴 날은 한 번 찾으면 다시 훑지 않는다', async () => {
+    await add();
+    const each = vi.spyOn(db.expenses, 'each');
+    const launch = launcher();
+    await maybeAskForReview({ now: Date.now() + 1000, native: true, launch });
+    await maybeAskForReview({ now: Date.now() + 2000, native: true, launch });
+    expect(each).toHaveBeenCalledTimes(1);
+  });
+
+  it('직접 적은 기록이 없을 때는 기억하지 않는다', async () => {
+    const launch = launcher();
+    expect(await maybeAskForReview({ now: Date.now(), native: true, launch })).toBe(false);
+    const id = await add();
+    await db.expenses.update(id, { createdAt: Date.now() - REVIEW_WAIT_MS });
+    expect(await maybeAskForReview({ now: Date.now(), native: true, launch })).toBe(true);
+  });
+
   /* 표시를 읽을 수 없으면 이미 물었는지 모른다. 모르면 묻지 않는 쪽 — 매번 묻는 것보다 낫다. */
   it('localStorage가 던지면 묻지 않는다', async () => {
     await add();

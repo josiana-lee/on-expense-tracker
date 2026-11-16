@@ -50,6 +50,11 @@ function markAsked(now: number): void {
   }
 }
 
+/** 찾은 "처음 쓴 날". 새 기록은 언제나 그보다 늦으니 앱이 켜져 있는 동안 바뀌지 않는다 — 다시 훑지 않는다.
+ *  다른 가계부에서 수만 건을 가져온 사람은 첫 주 동안 저장할 때마다 전체를 훑게 되고, 훑는 동안 다음 저장이
+ *  기다린다. 아직 직접 적은 기록이 없으면(null) 기억하지 않는다 — 곧 생길 것이다. */
+let firstOwnCache: number | null = null;
+
 /** 판단부터 띄우기까지 진행 중인가. 저장을 빠르게 두 번 하면 두 호출이 겹치는데, 첫 await 전에 켜서 막는다. */
 let inFlight = false;
 
@@ -63,7 +68,11 @@ export async function maybeAskForReview(opts?: {
   if (!native || inFlight || alreadyAsked()) return false;
   inFlight = true;
   try {
-    if (!shouldAskForReview(await firstOwnRecordAt(), now)) return false;
+    firstOwnCache ??= await firstOwnRecordAt();
+    if (!shouldAskForReview(firstOwnCache, now)) return false;
+    /* 저장하고 바로 앱을 나갔으면 건너뛴다. 띄우면 다른 앱 위로 튀어나오거나 막혀서 한 번뿐인 기회만 사라진다.
+       표시를 남기지 않으니 다음 저장 때 다시 본다. */
+    if (globalThis.document?.visibilityState === 'hidden') return false;
     markAsked(now);
     await launch().catch(() => {});
     return true;
@@ -81,4 +90,5 @@ export function askForReviewSoon(): void {
 
 export function resetReviewPromptForTest(): void {
   inFlight = false;
+  firstOwnCache = null;
 }
