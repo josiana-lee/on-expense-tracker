@@ -25,6 +25,7 @@ import { useRecurringRules } from '../../hooks/useRecurringRules';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { remindersAreReliable, requestReminderPermission } from '../../lib/notifications';
+import { isNative } from '../../lib/platform';
 import { CategoryManageScreen } from './CategoryManageScreen';
 import { LicenseScreen } from './LicenseScreen';
 import { DefaultPaymentSheet } from './DefaultPaymentSheet';
@@ -518,6 +519,21 @@ export function SettingsScreen({ onManageCards }: Props) {
           >
             <span className={styles.rowLabel}>문의하기</span>
             <span className={styles.rowValue}>{APP_INFO.supportEmail}</span>
+            <span className={styles.chevron}>
+              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
+            </span>
+          </a>
+        )}
+
+        {/* 앱에서만. 웹에서 보는 사람에게 스토어 평가는 맞지 않는다. */}
+        {isNative && APP_INFO.playStoreUrl && (
+          <a
+            className={`${styles.row} ${styles.rowLink}`}
+            href={APP_INFO.playStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className={styles.rowLabel}>Play 스토어에서 평가하기</span>
             <span className={styles.chevron}>
               <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
             </span>

@@ -51,6 +51,11 @@ export const APP_INFO = {
    *  more than one of ours writes to the same place. */
   supportEmail: 'jdblabskento@gmail.com',
 
+  /** 설정 › 정보의 "Play 스토어에서 평가하기" 줄이 여는 스토어 페이지. 앱 안 리뷰 창(db/reviewPrompt.ts)을 여는
+   *  버튼은 두지 않는다 — 구글이 짧은 기간에 여러 번 부르면 창을 안 띄워서 눌러도 아무 일 없는 버튼이 될 수 있고,
+   *  구글 지침도 버튼은 스토어로 보내라고 한다. */
+  playStoreUrl: 'https://play.google.com/store/apps/details?id=com.jdblabs.onexpense',
+
   /** Bumped by hand at release; also stamped into backup files by
    *  db/backup.ts's APP_VERSION, which should move with it. */
   version: '1.5.0',
