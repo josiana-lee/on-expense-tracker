@@ -13,6 +13,7 @@ import { HOME_CATEGORIES_PER_PAGE } from '../../data/categories';
 import { rememberCategoryPayment } from '../../db/categories';
 import { fmt } from '../../db/date';
 import { addExpense } from '../../db/expenses';
+import { askForReviewSoon } from '../../db/reviewPrompt';
 import {
   InstallmentRangeError,
   addInstallment,
@@ -237,6 +238,8 @@ export function InputScreen() {
         flash(
           months > 1 ? `${months}개월 할부로 저장했어!` : `${won(amount)}원 저장했어!`,
         );
+        /* 처음 쓴 지 일주일이 지났으면 Play 리뷰 창을 한 번 띄운다(db/reviewPrompt.ts). 기다리지 않는다. */
+        askForReviewSoon();
         setAmount('');
         setMonths(1);
         setStagedCategoryId(null);

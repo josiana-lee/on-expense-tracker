@@ -10,6 +10,7 @@ import { Sheet } from './Sheet';
 import { rememberCategoryPayment } from '../db/categories';
 import { parseDateStr } from '../db/date';
 import { addExpense, deleteExpense, updateExpense } from '../db/expenses';
+import { askForReviewSoon } from '../db/reviewPrompt';
 import {
   InstallmentRangeError,
   addInstallment,
@@ -334,9 +335,12 @@ export function EntrySheet({ record, date, onClose, onDone }: Props) {
             at: stampFor(pickedDate),
           });
           onDone(`${months}개월 할부로 저장했어!`);
+          askForReviewSoon();
         } else {
           await addExpense({ ...common, amount: Number(amount), at: stampFor(pickedDate) });
           onDone(`${won(amount)}원 저장했어!`);
+          /* 새 기록일 때만. 고치기·할부 다시 나누기는 위 분기들이라 여기 오지 않는다(db/reviewPrompt.ts). */
+          askForReviewSoon();
         }
         /* 저장은 이미 끝났다. 기억은 다음 기본값을 위한 부가 정보라 여기서
            실패해도 저장을 되돌리거나 실패로 알릴 일이 아니다 — InputScreen의
