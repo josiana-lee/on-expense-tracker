@@ -27,7 +27,7 @@ import { useToast } from '../../hooks/useToast';
 import { remindersAreReliable, requestReminderPermission } from '../../lib/notifications';
 import { isNative } from '../../lib/platform';
 import { CategoryManageScreen } from './CategoryManageScreen';
-import { LicenseScreen } from './LicenseScreen';
+import { PolicyScreen } from './PolicyScreen';
 import { DefaultPaymentSheet } from './DefaultPaymentSheet';
 import { MonthStartDaySheet } from './MonthStartDaySheet';
 import { RecurringManageScreen } from './RecurringManageScreen';
@@ -43,7 +43,7 @@ const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
 const IMPORT_FORMATS = ['백업 파일', 'CSV', 'SQLite', 'mmbak'];
 
 type Sheet = 'monthStart' | 'weekStart' | 'defaultPayment' | 'colorTheme' | null;
-type Sub = 'categories' | 'recurring' | 'licenses' | null;
+type Sub = 'categories' | 'recurring' | 'policies' | null;
 
 type Props = {
   /** 카드 추가·결제 주기 설정은 이미 자산 탭에 있어 — 설정에 따로 화면을 만드는 대신
@@ -478,47 +478,19 @@ export function SettingsScreen({ onManageCards }: Props) {
         onChange={onFileChosen}
       />
 
-      {/* The licence and version rows are always here, so the section always
-          shows. The three above them come from data/appInfo.ts and render
-          only once their field has a value — an unfilled one is absent
-          rather than a dead link. */}
+      {/* 자주 쓰는 것만 겉에 둔다. 법적 문서(개인정보처리방침·이용약관·오픈소스 라이선스)는
+          "약관 및 정책" 한 줄 안에 모았다(PolicyScreen). 그 줄과 버전 줄은 늘 있어서 이 칸은
+          늘 보인다. 나머지는 data/appInfo.ts의 값이 있을 때만 — 빈 값은 죽은 링크 대신 없는 줄. */}
       <div className={styles.sectionTitle}>정보</div>
       <div className={styles.card}>
-        {APP_INFO.privacyPolicyUrl && (
-          <a
-            className={`${styles.row} ${styles.rowLink}`}
-            href={APP_INFO.privacyPolicyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span className={styles.rowLabel}>개인정보처리방침</span>
-            <span className={styles.chevron}>
-              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
-            </span>
-          </a>
-        )}
-
-        {APP_INFO.termsUrl && (
-          <a
-            className={`${styles.row} ${styles.rowLink}`}
-            href={APP_INFO.termsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span className={styles.rowLabel}>이용약관</span>
-            <span className={styles.chevron}>
-              <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
-            </span>
-          </a>
-        )}
-
+        {/* 주소는 줄에 적지 않는다. 메일 앱이 받는 사람 칸에 채워 주고, 메일 앱이 없으면
+            스토어 페이지의 연락처 이메일이 있다. */}
         {APP_INFO.supportEmail && (
           <a
             className={`${styles.row} ${styles.rowLink}`}
             href={`mailto:${APP_INFO.supportEmail}`}
           >
             <span className={styles.rowLabel}>문의하기</span>
-            <span className={styles.rowValue}>{APP_INFO.supportEmail}</span>
             <span className={styles.chevron}>
               <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
             </span>
@@ -540,12 +512,8 @@ export function SettingsScreen({ onManageCards }: Props) {
           </a>
         )}
 
-        <button
-          type="button"
-          className={styles.row}
-          onClick={() => setSub('licenses')}
-        >
-          <span className={styles.rowLabel}>오픈소스 라이선스</span>
+        <button type="button" className={styles.row} onClick={() => setSub('policies')}>
+          <span className={styles.rowLabel}>약관 및 정책</span>
           <span className={styles.chevron}>
             <Icon path={CHEVRON} size={16} stroke="currentColor" strokeWidth={2.2} />
           </span>
@@ -578,7 +546,7 @@ export function SettingsScreen({ onManageCards }: Props) {
 
       {sub === 'categories' && <CategoryManageScreen onBack={() => setSub(null)} />}
       {sub === 'recurring' && <RecurringManageScreen onBack={() => setSub(null)} />}
-      {sub === 'licenses' && <LicenseScreen onBack={() => setSub(null)} />}
+      {sub === 'policies' && <PolicyScreen onBack={() => setSub(null)} />}
 
       {sheet === 'monthStart' && (
         <MonthStartDaySheet value={monthStartDay} onClose={() => setSheet(null)} />

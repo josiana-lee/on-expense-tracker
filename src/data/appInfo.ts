@@ -1,10 +1,11 @@
-/* The app's identity: its name, publisher, and the legal links shown in the
- * settings footer. Single source of truth — vite.config.ts reads the names
- * for the PWA manifest too, so the launcher and the UI can't drift apart.
+/* The app's identity: its name, publisher, and the legal links shown under
+ * 설정 › 정보 › 약관 및 정책 (screens/settings/PolicyScreen.tsx). Single
+ * source of truth — vite.config.ts reads the names for the PWA manifest too,
+ * so the launcher and the UI can't drift apart.
  *
  * The URLs are real-world facts this repo can't invent, so they start empty
- * and the footer skips whatever is still blank — better a missing row than a
- * link that 404s in production.
+ * and the settings screens skip whatever is still blank — better a missing
+ * row than a link that 404s in production.
  *
  * privacyPolicyUrl is not optional in practice: Google Play requires a
  * reachable privacy policy URL for any app that touches personal or
